@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "npm"
+  },
+  "newProjectRoot": "projects",
+  "projects": {
+    "padel-engine": {
+      "projectType": "library",
+      "root": "projects/padel-engine",
+      "sourceRoot": "projects/padel-engine/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/padel-engine/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/padel-engine/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/padel-engine/tsconfig.spec.json"
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/padel-engine/**/*.ts",
+              "projects/padel-engine/**/*.html"
+            ],
+            "eslintConfig": "projects/padel-engine/eslint.config.js"
+          }
+        }
+      }
+    }
+  }
+}

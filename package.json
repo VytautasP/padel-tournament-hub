@@ -1,0 +1,38 @@
+{
+  "name": "padel-tournament-hub",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "build": "ng build padel-engine",
+    "test": "ng test padel-engine --watch=false",
+    "lint": "ng lint",
+    "format": "prettier --write \"**/*.{ts,js,mjs,json,html,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,mjs,json,html,css}\"",
+    "verify:boundary": "node tools/verify-engine-boundary.mjs",
+    "verify": "npm run format:check && npm run lint && npm run verify:boundary && npm run build && npm test"
+  },
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "dependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.21",
+    "@angular/cli": "^21.2.21",
+    "@angular/compiler-cli": "^21.2.0",
+    "@eslint/js": "^10.0.1",
+    "angular-eslint": "21.4.0",
+    "eslint": "^10.3.0",
+    "jsdom": "^28.0.0",
+    "ng-packagr": "^21.2.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "8.59.2",
+    "vitest": "^4.0.8"
+  }
+}

@@ -7,7 +7,8 @@ next partner. Installable as a PWA, so it behaves like an app without ever touch
 
 ## Status
 
-**Pre-implementation.** The design is locked; no application code exists yet.
+**Scaffolded.** The Angular workspace and the empty `padel-engine` library exist and build; no
+application code exists yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —
 live in **[docs/DECISIONS.md](docs/DECISIONS.md)**. That file is the source of truth. If code and
@@ -25,6 +26,20 @@ decisions ever disagree, one of them is a bug.
 
 The engine holds every scheduling and scoring rule and runs entirely in the browser, which is why
 there is no custom backend: the server only ever stores and serves session documents.
+
+## Getting started
+
+Requires Node 20.19+ or 22.12+ (see [ADR-0002](docs/adr/0002-angular-21-until-node-is-upgraded.md)).
+
+```bash
+npm install
+npm run verify     # format, lint, engine boundary check, build, tests
+```
+
+The workspace currently holds one project: `projects/padel-engine`, the pure TypeScript rules
+library. The Angular app arrives with build-order step 2. The engine may not import Angular or
+Firebase, and that is enforced by lint rather than by convention — see
+[ADR-0001](docs/adr/0001-enforce-the-engine-boundary-with-eslint.md).
 
 ## Build order
 

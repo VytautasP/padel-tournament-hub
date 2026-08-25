@@ -1,0 +1,7 @@
+# Prose is formatted by hand, not by Prettier.
+*.md
+
+dist/
+.angular/
+coverage/
+package-lock.json

@@ -1,0 +1,9 @@
+{
+  "name": "padel-engine",
+  "version": "0.0.1",
+  "description": "Pure TypeScript rules engine for padel Americano, Mixicano and Team Americano sessions.",
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}
