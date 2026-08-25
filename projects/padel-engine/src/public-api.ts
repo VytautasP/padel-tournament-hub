@@ -1,11 +1,24 @@
 /*
  * Public API surface of padel-engine.
  *
- * This file is the library's only entry point: everything the app is allowed to
- * touch is re-exported from here, and the tests consume the engine through this
- * file and nowhere deeper.
+ * This file is the library's only entry point: everything the app is allowed to touch is
+ * re-exported from here, and the tests consume the engine through this file and nowhere deeper.
  *
- * It intentionally exports nothing yet — the scheduling, scoring and standings
- * work lands in later tickets.
+ * The scheduling itself — the circle-method rotation, the court-assignment search and the
+ * histories they read — is private and free to be rewritten.
  */
-export {};
+export type {
+  Match,
+  MatchId,
+  PlayerId,
+  RosterEntry,
+  Round,
+  RoundId,
+  Session,
+  SessionConfig,
+  SessionMode,
+} from './lib/model';
+
+export { createSession } from './lib/create-session';
+export { generateRemaining } from './lib/generate-remaining';
+export { assertSessionValid } from './lib/assert-session-valid';

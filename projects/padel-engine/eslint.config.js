@@ -8,6 +8,11 @@ const rootConfig = require('../../eslint.config.js');
  * reaching for an Angular or Firebase import in here fails `ng lint` rather than
  * being discovered months later.
  *
+ * The same block also forbids the two impurities the engine must never have: a clock read and a
+ * random source. Generation has to be deterministic (decision #6 lives or dies on it — a fairness
+ * bug found tonight has to be reproducible tomorrow), and the cheapest way to keep it that way is
+ * to make `Math.random()` and `new Date()` fail lint rather than fail a test six months later.
+ *
  * `tools/verify-engine-boundary.mjs` proves the rules actually bite.
  */
 module.exports = defineConfig([
@@ -15,6 +20,32 @@ module.exports = defineConfig([
   {
     files: ['**/*.ts'],
     rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'Date',
+          message:
+            'padel-engine reads no clock — scheduling must be deterministic (decision #6). Pass any time the app needs in as data.',
+        },
+        {
+          name: 'performance',
+          message: 'padel-engine reads no clock — scheduling must be deterministic (decision #6).',
+        },
+      ],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message:
+            'padel-engine has no random source — tie-breaking is seeded from session data so the same input always yields the same schedule.',
+        },
+        {
+          object: 'Date',
+          property: 'now',
+          message: 'padel-engine reads no clock — scheduling must be deterministic (decision #6).',
+        },
+      ],
       'no-restricted-imports': 'off',
       '@typescript-eslint/no-restricted-imports': [
         'error',

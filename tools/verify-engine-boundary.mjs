@@ -23,6 +23,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const engineRoot = path.join(repoRoot, 'projects', 'padel-engine');
 const probePath = path.join(engineRoot, 'src', 'boundary-probe.ts');
 const RULE = '@typescript-eslint/no-restricted-imports';
+const PURITY_RULES = ['no-restricted-globals', 'no-restricted-properties'];
 
 const ANGULAR_PROBE = `import { Injectable } from '@angular/core';\nexport const probe: unknown = Injectable;\n`;
 
@@ -51,6 +52,28 @@ const forbidden = [
   ],
 ];
 
+/**
+ * Impurities that MUST be rejected. The engine reads no clock and has no random source: generation
+ * is deterministic, so the same input schedules identically every run (decision #6).
+ */
+const impure = [
+  [
+    'a random source',
+    `export const probe = Math.random();
+`,
+  ],
+  [
+    'a clock read',
+    `export const probe = new Date().getTime();
+`,
+  ],
+  [
+    'a timestamp read',
+    `export const probe = Date.now();
+`,
+  ],
+];
+
 /** Sources that MUST still be allowed — the rule has to be a boundary, not a wall. */
 const allowed = [
   ['a relative import', `import { thing } from './thing';\nexport const probe: unknown = thing;\n`],
@@ -75,6 +98,16 @@ for (const [label, source] of forbidden) {
     console.log(`  ok      ${label} is rejected — ${hit.message.split('.')[0]}.`);
   } else {
     failures.push(`${label} lints clean inside padel-engine — the boundary is not enforced.`);
+  }
+}
+
+for (const [label, source] of impure) {
+  const [result] = await eslint.lintText(source, { filePath: probePath });
+  const hit = result.messages.find((message) => PURITY_RULES.includes(message.ruleId));
+  if (hit) {
+    console.log(`  ok      ${label} is rejected — ${hit.message.split('—')[0].trim()}`);
+  } else {
+    failures.push(`${label} lints clean inside padel-engine — the engine is not provably pure.`);
   }
 }
 
@@ -117,5 +150,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `\npadel-engine boundary holds: ${forbidden.length} forbidden and ${allowed.length} allowed imports behaved as specified, and ng lint fails on the real thing.`,
+  `\npadel-engine boundary holds: ${forbidden.length} forbidden and ${allowed.length} allowed imports, plus ${impure.length} impurities, behaved as specified, and ng lint fails on the real thing.`,
 );

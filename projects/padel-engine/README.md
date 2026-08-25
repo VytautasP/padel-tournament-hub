@@ -3,7 +3,24 @@
 The rules engine for padel sessions: scheduling, scoring and standings for Americano, Mixicano and
 Team Americano. It is the only part of the system that knows what padel is.
 
-Nothing is implemented yet — this is the empty shell the rest of the engine tickets land in.
+So far it schedules **Americano for an exact-fit roster** — 4 players on 1 court, 8 on 2, 12 on 3,
+so that nobody is ever benched. Bench rotation, scoring, standings, roster mutation, Mixicano and
+Team Americano land in later tickets.
+
+```ts
+createSession(config);       // an organizer's configuration -> a session with empty rounds
+generateRemaining(session);  // fill every unplayed round -> a new session
+assertSessionValid(session); // throw unless every invariant holds, at every round prefix
+```
+
+Partners come from the circle method — fix one player, rotate the rest — so over a roster of n
+players every partnership is played exactly once in n-1 rounds, and a partnership only repeats
+once nobody has an unplayed partner left. Which pair faces which is a small deterministic search
+that minimises opponent repeats. Nothing reads a clock or a random source: the player rotation is
+seeded from the session id, so the same input always yields the same schedule.
+
+Every operation returns a new session and mutates nothing; returned sessions are deep-frozen, so
+an accidental write fails loudly instead of corrupting a session document.
 
 ## The boundary
 
@@ -27,6 +44,6 @@ re-exported from there, and tests consume the engine through that file and nowhe
 
 | Command                   | What it does                                                     |
 | ------------------------- | ---------------------------------------------------------------- |
-| `npm run build:engine`    | Builds the library to `dist/padel-engine`                        |
-| `npm run test:engine`     | Runs the engine's unit tests once                                |
+| `npm run build`           | Builds the library to `dist/padel-engine`                        |
+| `npm test`                | Runs the engine's unit tests once                                |
 | `npm run verify:boundary` | Proves the no-Angular / no-Firebase rules still fail as intended |
