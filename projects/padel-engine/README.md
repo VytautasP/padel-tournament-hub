@@ -11,6 +11,7 @@ Team Americano land in later tickets.
 createSession(config);       // an organizer's configuration -> a session with empty rounds
 generateRemaining(session);  // fill every unplayed round -> a new session
 assertSessionValid(session); // throw unless every invariant holds, at every round prefix
+formatSchedule(session);     // the session as text a human can read
 ```
 
 Partners come from the circle method — fix one player, rotate the rest — so over a roster of n
@@ -21,6 +22,18 @@ seeded from the session id, so the same input always yields the same schedule.
 
 Every operation returns a new session and mutates nothing; returned sessions are deep-frozen, so
 an accidental write fails loudly instead of corrupting a session document.
+
+## Reading a schedule
+
+`formatSchedule` renders a session as text: a block per round showing each court's match and who is
+benched, then a block per player showing who they partnered, who they played and how often they sat
+out. It exists for reading, not for asserting — no test asserts on its output, so the format stays
+free to change (ADR-0005).
+
+```
+npm run print:schedule           # a few sessions worth looking at, including a benched roster
+npm run print:schedule -- 12 3 7 # 12 players, 3 courts, 7 rounds
+```
 
 ## The boundary
 
@@ -42,8 +55,9 @@ re-exported from there, and tests consume the engine through that file and nowhe
 
 ## Commands
 
-| Command                   | What it does                                                     |
-| ------------------------- | ---------------------------------------------------------------- |
-| `npm run build`           | Builds the library to `dist/padel-engine`                        |
-| `npm test`                | Runs the engine's unit tests once                                |
-| `npm run verify:boundary` | Proves the no-Angular / no-Firebase rules still fail as intended |
+| Command                   | What it does                                                        |
+| ------------------------- | ------------------------------------------------------------------- |
+| `npm run build`           | Builds the library to `dist/padel-engine`                           |
+| `npm test`                | Runs the engine's unit tests once                                   |
+| `npm run verify:boundary` | Proves the no-Angular / no-Firebase rules still fail as intended    |
+| `npm run print:schedule`  | Builds, then prints schedules so fairness can be eyeballed          |

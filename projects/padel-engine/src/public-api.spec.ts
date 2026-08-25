@@ -1,5 +1,5 @@
 import * as publicApi from './public-api';
-import { assertSessionValid, createSession, generateRemaining } from './public-api';
+import { assertSessionValid, createSession, formatSchedule, generateRemaining } from './public-api';
 import { americanoConfig } from './test-support/session-fixtures';
 
 describe('padel-engine public API', () => {
@@ -10,8 +10,15 @@ describe('padel-engine public API', () => {
       .filter((name) => name !== 'default')
       .sort();
 
-    expect(exported).toEqual(['assertSessionValid', 'createSession', 'generateRemaining']);
+    expect(exported).toEqual([
+      'assertSessionValid',
+      'createSession',
+      'formatSchedule',
+      'generateRemaining',
+    ]);
 
-    assertSessionValid(generateRemaining(createSession(americanoConfig())));
+    const session = generateRemaining(createSession(americanoConfig()));
+    assertSessionValid(session);
+    expect(formatSchedule(session).length).toBeGreaterThan(0);
   });
 });

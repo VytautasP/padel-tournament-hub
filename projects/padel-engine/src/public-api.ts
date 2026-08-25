@@ -22,3 +22,4 @@ export type {
 export { createSession } from './lib/create-session';
 export { generateRemaining } from './lib/generate-remaining';
 export { assertSessionValid } from './lib/assert-session-valid';
+export { formatSchedule } from './lib/format-schedule';

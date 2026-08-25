@@ -9,8 +9,9 @@ next partner. Installable as a PWA, so it behaves like an app without ever touch
 
 **Engine, first slice.** `padel-engine` schedules Americano for an exact-fit roster — 4 players on
 1 court, 8 on 2, 12 on 3 — through `createSession`, `generateRemaining` and the referee that ships
-with them, `assertSessionValid`. Bench rotation for any roster >= 4, scoring, standings, roster
-mutation, Mixicano and Team Americano are still to come; see
+with them, `assertSessionValid`. `formatSchedule` renders a session as readable text, so fairness
+can be eyeballed and not only asserted — `npm run print:schedule`. Bench rotation for any roster
+>= 4, scoring, standings, roster mutation, Mixicano and Team Americano are still to come; see
 [ADR-0004](docs/adr/0004-exact-fit-americano-first.md). No application code exists yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —
@@ -37,7 +38,8 @@ Requires Node 22.22.3+, 24.15+ or 26+ (Angular 22's floor — see
 
 ```bash
 npm install
-npm run verify     # format, lint, engine boundary check, build, tests
+npm run verify         # format, lint, engine boundary check, build, tests
+npm run print:schedule # build, then print a few schedules to read
 ```
 
 The workspace currently holds one project: `projects/padel-engine`, the pure TypeScript rules
