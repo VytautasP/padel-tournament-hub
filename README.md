@@ -29,7 +29,8 @@ there is no custom backend: the server only ever stores and serves session docum
 
 ## Getting started
 
-Requires Node 20.19+ or 22.12+ (see [ADR-0002](docs/adr/0002-angular-21-until-node-is-upgraded.md)).
+Requires Node 22.22.3+, 24.15+ or 26+ (Angular 22's floor — see
+[ADR-0003](docs/adr/0003-upgrade-to-angular-22.md)).
 
 ```bash
 npm install

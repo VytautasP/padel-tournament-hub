@@ -1,6 +1,6 @@
 # 2. Scaffold on Angular 21, not 22, until Node is upgraded
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0003](0003-upgrade-to-angular-22.md) (2026-08-25)
 - **Date:** 2026-08-25
 
 ## Context
@@ -13,6 +13,11 @@ Angular 21 requires `^20.19.0 || ^22.12.0 || >=24.0.0`, which this machine satis
 
 Scaffold the workspace on Angular 21 (`@angular/cli@21`, Angular 21.2). Revisit after Node is
 upgraded to 22.22.3 or later; `ng update` from 21 to 22 is a supported single-major step.
+
+## Outcome
+
+Superseded the same day: Node was upgraded to v24.19.0, and the workspace moved to Angular 22.
+See [ADR-0003](0003-upgrade-to-angular-22.md).
 
 ## Consequences
 
