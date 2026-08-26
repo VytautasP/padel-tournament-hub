@@ -11,11 +11,14 @@
  * an already-generated round.
  */
 import type { MatchId, MatchScore, PlayerId, RosterEntry, Session } from 'padel-engine';
+import { courtNameFor } from '../session/court-names';
 
 export interface CourtView {
   /** What a score is addressed to. Courts are scored by id and never by position (ADR-0007). */
   readonly matchId: MatchId;
   readonly courtNumber: number;
+  /** What the organizer calls this court, or `Court N` where they named nothing (ADR-0017 §6). */
+  readonly name: string;
   readonly sideA: readonly string[];
   readonly sideB: readonly string[];
   /** The result, or `undefined` while the court is still playing. */
@@ -29,8 +32,19 @@ export interface RoundView {
   readonly bench: readonly string[];
 }
 
-/** The round as the Round tab renders it, or `null` if it has not been generated yet. */
-export function roundView(session: Session, roundNumber: number): RoundView | null {
+/**
+ * The round as the Round tab renders it, or `null` if it has not been generated yet.
+ *
+ * `courtNames` arrives beside the session rather than inside it because the engine's document has
+ * no idea a court can be called anything. Resolving it here, where ids already become names, is
+ * what lets every screen holding a `CourtView` — the card, the sheet, the label read out loud —
+ * say the same word without each one remembering the fallback rule.
+ */
+export function roundView(
+  session: Session,
+  roundNumber: number,
+  courtNames: readonly string[],
+): RoundView | null {
   const round = session.rounds.find((candidate) => candidate.number === roundNumber);
   if (round === undefined || round.matches.length === 0) {
     return null;
@@ -48,6 +62,7 @@ export function roundView(session: Session, roundNumber: number): RoundView | nu
     courts: round.matches.map((match) => ({
       matchId: match.id,
       courtNumber: match.courtNumber,
+      name: courtNameFor(courtNames, match.courtNumber),
       sideA: match.sideA.map(nameOf),
       sideB: match.sideB.map(nameOf),
       score: match.score,

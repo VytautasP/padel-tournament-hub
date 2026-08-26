@@ -82,6 +82,17 @@ export class AppHarness {
     return this.controls().some((control) => labelOf(control) === label);
   }
 
+  /**
+   * Whether a field carrying this visible label is on screen.
+   *
+   * `isOnScreen` answers for controls, and a field is not one. Reading a field that is absent is
+   * an error rather than an answer, which is right for `textIn` and useless for a test whose whole
+   * subject is a field appearing and disappearing.
+   */
+  hasField(label: string): boolean {
+    return this.labelFor(label) !== undefined;
+  }
+
   /** Type into the field carrying this placeholder, as a person does: keystrokes, then look. */
   async type(placeholder: string, value: string): Promise<void> {
     const field = this.field(`[placeholder="${cssEscape(placeholder)}"]`);
@@ -192,14 +203,18 @@ export class AppHarness {
   }
 
   private labelledFieldId(label: string): string {
-    const found = this.roots()
-      .flatMap((root) => [...root.querySelectorAll('label')])
-      .find((element) => element.textContent?.trim() === label && !isHidden(element));
+    const found = this.labelFor(label);
     if (found === undefined) {
       throw new Error(`No field is labelled "${label}".`);
     }
 
     return found.htmlFor;
+  }
+
+  private labelFor(label: string): HTMLLabelElement | undefined {
+    return this.roots()
+      .flatMap((root) => [...root.querySelectorAll('label')])
+      .find((element) => element.textContent?.trim() === label && !isHidden(element));
   }
 
   private async settle(): Promise<void> {

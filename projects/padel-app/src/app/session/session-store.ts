@@ -31,6 +31,8 @@ export interface SessionDraft {
   /** The roster in the order it was typed. Ids are the store's business, not the wizard's. */
   readonly playerNames: readonly string[];
   readonly courtCount: number;
+  /** What each court is called, in court-number order. Blanks are allowed and mean `Court N`. */
+  readonly courtNames: readonly string[];
   readonly targetScore: number;
   readonly roundCount: number;
 }
@@ -45,6 +47,14 @@ export class SessionStore {
   readonly ready = this.restored.asReadonly();
 
   readonly activeSession = computed<Session | null>(() => this.record()?.session ?? null);
+
+  /**
+   * What the organizer calls each court of the active session (ADR-0017 §6).
+   *
+   * Empty where there is no session, and empty too for a record written before courts could be
+   * named — both of which `courtNameFor` reads as "nobody named this one".
+   */
+  readonly courtNames = computed<readonly string[]>(() => this.record()?.courtNames ?? []);
 
   /**
    * The round the evening is on: the lowest-numbered generated round still holding an unscored
@@ -101,7 +111,11 @@ export class SessionStore {
       }),
     );
 
-    const record: SessionRecord = { session, createdAt: new Date().toISOString() };
+    const record: SessionRecord = {
+      session,
+      createdAt: new Date().toISOString(),
+      courtNames: draft.courtNames,
+    };
     await this.repository.saveActive(record);
     this.record.set(record);
   }

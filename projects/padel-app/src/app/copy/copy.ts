@@ -64,6 +64,14 @@ export const copy = {
       targetScore: 'Target score',
       courtCount: 'Courts',
       roundCount: 'Rounds',
+      courtNames: 'Court names',
+      /**
+       * The label beside one court's name field.
+       *
+       * It names the slot rather than the court, because the field beside it is where the court
+       * gets its name — "Court 2 name" still means something once the field says "Far end".
+       */
+      courtName: (courtNumber: number): string => `Court ${courtNumber} name`,
       create: 'Create session',
     },
   },
@@ -77,6 +85,7 @@ export const copy = {
   round: {
     heading: (roundNumber: number, roundCount: number): string =>
       `Round ${roundNumber} of ${roundCount}`,
+    /** What a court is called when the organizer did not call it anything (ADR-0017 §6). */
     courtName: (courtNumber: number): string => `Court ${courtNumber}`,
     side: (names: readonly string[]): string => names.join(' & '),
     versus: 'v',
@@ -87,8 +96,12 @@ export const copy = {
     /**
      * What tapping a court does. One wording whether or not the court has a score already:
      * correcting a typo is the ordinary path (ADR-0007), not a second, differently-named action.
+     *
+     * It says the court's name rather than its number, because the name is what the organizer is
+     * looking at and a label that disagreed with the card would be the one thing on the screen
+     * still sending people to the wrong end of the building.
      */
-    enterScore: (courtNumber: number): string => `Enter score for court ${courtNumber}`,
+    enterScore: (courtName: string): string => `Enter score for ${courtName}`,
   },
 
   score: {

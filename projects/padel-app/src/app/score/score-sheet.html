@@ -1,6 +1,6 @@
 <section class="space-y-5 rounded-t-3xl border border-line bg-surface-raised p-5">
   <h2 class="text-xs font-medium tracking-wide text-ink-muted uppercase">
-    {{ copy.round.courtName(data.court.courtNumber) }}
+    {{ data.court.name }}
   </h2>
 
   @for (entry of sides; track entry.side) {

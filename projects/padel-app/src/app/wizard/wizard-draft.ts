@@ -12,6 +12,7 @@
  */
 import { computed, signal } from '@angular/core';
 import type { SessionMode } from 'padel-engine';
+import { copy } from '../copy/copy';
 import {
   completeRotationRoundCount,
   DEFAULT_COURT_COUNT,
@@ -39,6 +40,35 @@ export class WizardDraft {
   private nextId = 1;
 
   readonly players = this.entries.asReadonly();
+
+  /**
+   * What has been typed into the court name fields, by court number, whether or not the court is
+   * still in play.
+   *
+   * Kept full length rather than cut down with the court count, so that dropping a court and
+   * putting it back does not lose the name it was given. Someone who typed "Far end", noticed the
+   * club only booked one court and then found they had booked two after all has not changed their
+   * mind about what the far end is called.
+   */
+  private readonly typedCourtNames = signal<readonly string[]>([]);
+
+  /**
+   * One name per court in play, pre-filled `Court 1…N`.
+   *
+   * The pre-fill is the dictionary's default rather than a blank field: the organizer who does
+   * not care never touches these, and an empty row per court would read as a question they have
+   * to answer. It is a starting value the organizer edits, which is why the English is allowed in
+   * here where a sentence about the draft's own state would not be — this is the same string
+   * their typing replaces.
+   */
+  readonly courtNames = computed<readonly string[]>(() => {
+    const typed = this.typedCourtNames();
+
+    return Array.from(
+      { length: this.courtCount() },
+      (_, index) => typed[index] ?? copy.round.courtName(index + 1),
+    );
+  });
 
   /**
    * The round count Review pre-fills: a complete rotation for this roster on these courts.
@@ -114,6 +144,23 @@ export class WizardDraft {
     this.courtCount.set(wholeNumber(value, this.courtCount()));
   }
 
+  /**
+   * Name one court, keeping whatever the organizer typed — including nothing at all.
+   *
+   * A blank is stored as a blank rather than snapped back to `Court N`. Clearing the field is a
+   * deliberate gesture with a defined meaning (ADR-0017 §6), and rewriting it under the cursor
+   * would make it impossible to perform. Nothing is trimmed here either — the field is bound to
+   * what this holds, so trimming would delete the space a two-word name is typed through.
+   */
+  setCourtName(courtNumber: number, name: string): void {
+    this.typedCourtNames.update((names) => {
+      const next = [...names];
+      next[courtNumber - 1] = name;
+
+      return next;
+    });
+  }
+
   setRoundCount(value: number): void {
     this.chosenRoundCount.set(wholeNumber(value, this.roundCount()));
   }
@@ -123,6 +170,7 @@ export class WizardDraft {
       mode: this.mode(),
       playerNames: this.entries().map((player) => player.name),
       courtCount: this.courtCount(),
+      courtNames: this.courtNames(),
       targetScore: this.targetScore(),
       roundCount: this.roundCount(),
     };
