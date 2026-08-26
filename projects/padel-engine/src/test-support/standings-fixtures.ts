@@ -35,6 +35,7 @@ export function scoredSession(
   return {
     id: 'session-1',
     mode: 'americano',
+    status: 'in-progress',
     roster: roster(playerCount),
     courtCount: Math.max(1, ...rounds.map((round) => round.length)),
     targetScore: options.targetScore ?? 24,

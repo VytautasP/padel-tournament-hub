@@ -1,4 +1,4 @@
-import { assertSessionValid, createSession, generateRemaining } from './public-api';
+import { assertSessionValid, createSession, finishSession, generateRemaining } from './public-api';
 import type { Session } from './public-api';
 import { damaged } from './test-support/damaged-session';
 import type { MutableSession } from './test-support/damaged-session';
@@ -20,6 +20,25 @@ describe('assertSessionValid', () => {
     expect(() => assertSessionValid(session)).not.toThrow();
 
     assertSessionValid(session);
+  });
+
+  it('accepts a finished session', () => {
+    // Finishing closes a session to changes, not to reading: the referee still has to answer.
+    const session = finishSession(valid());
+
+    expect(() => assertSessionValid(session)).not.toThrow();
+
+    assertSessionValid(session);
+  });
+
+  it('rejects a status the engine never sets', () => {
+    const session = broken((copy) => {
+      copy.status = 'abandoned';
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/status "abandoned"/);
+
+    assertSessionValid(valid());
   });
 
   it('rejects a player scheduled on two courts in the same round', () => {

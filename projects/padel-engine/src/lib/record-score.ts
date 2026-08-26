@@ -22,9 +22,11 @@ import type { MatchScore, Round, ScoreEntry, Session } from './model';
 import { assertPointsInRange } from './score-rules';
 import { copyRound, copySession } from './session-copy';
 import { assertSessionShape } from './session-shape';
+import { assertSessionOpen } from './session-status';
 
 export function recordScore(session: Session, entry: ScoreEntry): Session {
   assertSessionShape(session);
+  assertSessionOpen(session, 'recording a score');
   assertPointsInRange(entry.points, session.targetScore, `Side ${entry.side}'s score`);
 
   const score = derivePair(entry, session.targetScore);

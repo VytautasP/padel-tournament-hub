@@ -25,9 +25,11 @@ import { planRound } from './plan-round';
 import { copyRound, copySession } from './session-copy';
 import { SessionHistory } from './session-history';
 import { assertSessionShape, courtsInPlay } from './session-shape';
+import { assertSessionOpen } from './session-status';
 
 export function generateRemaining(session: Session): Session {
   assertSessionShape(session);
+  assertSessionOpen(session, 'generating rounds');
 
   const order = seededOrder(session);
   const history = new SessionHistory(order);

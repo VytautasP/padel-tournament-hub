@@ -30,6 +30,15 @@ export interface RosterEntry {
   readonly name: string;
 }
 
+/**
+ * Where the session is in its life.
+ *
+ * `'finished'` is set by the organizer and by nothing else — not by a clock, and not by the last
+ * court finishing (decision #8). A finished session takes no further operations, so this field is
+ * the difference between a document that can still change and one that is a record.
+ */
+export type SessionStatus = 'in-progress' | 'finished';
+
 /** Which side of a match a number belongs to. */
 export type Side = 'A' | 'B';
 
@@ -86,6 +95,7 @@ export interface Round {
 export interface Session {
   readonly id: string;
   readonly mode: SessionMode;
+  readonly status: SessionStatus;
   readonly roster: readonly RosterEntry[];
   readonly courtCount: number;
   /** Fixed point total per match (decision #3). */

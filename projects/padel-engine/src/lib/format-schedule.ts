@@ -82,6 +82,10 @@ function renderer(session: Session): {
         ? `${session.courtCount} court(s)`
         : `${session.courtCount} court(s), ${inPlay} in play`;
 
+    // A finished session is said so out loud: the counts above look the same either way, and
+    // whether the evening is still open is the first thing a reader of a printout wants to know.
+    const finishedNote = session.status === 'finished' ? ['finished'] : [];
+
     return [
       `${titleCase(session.mode)} — ${session.id}`,
       [
@@ -89,6 +93,7 @@ function renderer(session: Session): {
         courts,
         `${generated}/${session.rounds.length} rounds generated`,
         `first to ${session.targetScore}`,
+        ...finishedNote,
       ].join(' · '),
     ].join('\n');
   };

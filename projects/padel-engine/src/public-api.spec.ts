@@ -11,9 +11,11 @@ describe('padel-engine public API', () => {
       .sort();
 
     expect(exported).toEqual([
+      'addRound',
       'assertSessionValid',
       'computeStandings',
       'createSession',
+      'finishSession',
       'formatSchedule',
       'generateRemaining',
       'recordScore',

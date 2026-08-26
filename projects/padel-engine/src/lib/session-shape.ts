@@ -31,6 +31,9 @@ export function assertSessionShape(session: Session): void {
   if (session.mode !== 'americano') {
     throw new Error(`Unknown session mode "${String(session.mode)}".`);
   }
+  if (session.status !== 'in-progress' && session.status !== 'finished') {
+    throw new Error(`Unknown session status "${String(session.status)}".`);
+  }
   if (!isPositiveInteger(session.courtCount)) {
     throw new Error('A session needs at least one court.');
   }

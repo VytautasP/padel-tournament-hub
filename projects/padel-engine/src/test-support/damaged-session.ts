@@ -24,8 +24,10 @@ export interface MutableMatch {
   score?: MutableScore;
 }
 
-export interface MutableSession extends Omit<Session, 'id' | 'roster' | 'rounds'> {
+export interface MutableSession extends Omit<Session, 'id' | 'status' | 'roster' | 'rounds'> {
   id: string;
+  /** Widened to `string`, so a test can damage a session with a status the engine never sets. */
+  status: string;
   roster: { id: string; name: string }[];
   rounds: { id: string; number: number; matches: MutableMatch[] }[];
 }

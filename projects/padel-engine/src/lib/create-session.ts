@@ -1,6 +1,9 @@
 /*
  * Session creation: turn an organizer's configuration into a schedulable session document.
  *
+ * A new session is in progress: the round count here is where the evening starts, not where it
+ * has to end — `addRound` extends it and `finishSession` closes it.
+ *
  * Creation is pure — the ids come from the caller and the round ids are derived from the
  * session id, so no clock is read and no random source is touched. The rounds start empty;
  * `generateRemaining` fills them.
@@ -19,6 +22,7 @@ export function createSession(config: SessionConfig): Session {
   const session: Session = {
     id: config.id,
     mode: config.mode,
+    status: 'in-progress',
     roster: config.players.map((player) => ({ id: player.id, name: player.name })),
     courtCount: config.courtCount,
     targetScore: config.targetScore,

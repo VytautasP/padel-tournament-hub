@@ -240,6 +240,7 @@ describe('computeStandings', () => {
         'mode',
         'roster',
         'rounds',
+        'status',
         'targetScore',
       ]);
     });
