@@ -16,7 +16,7 @@
  *     than inventing a separator. Roster order is not evidence.
  */
 import { deepFreeze } from './freeze';
-import type { Match, PlayerId, Session } from './model';
+import type { Match, MatchScore, PlayerId, RosterEntry, Session } from './model';
 import { assertSessionShape } from './session-shape';
 
 /**
@@ -42,27 +42,35 @@ export interface Standing {
   readonly pointsPerMatch: number;
 }
 
-/** What a player has done so far: the raw pair every tier is computed from. */
+/**
+ * What a player has done across some set of matches: the raw pair every tier is computed from.
+ *
+ * The same shape answers two different questions — the whole session for the ranking, and the
+ * matches inside a tied group for the head-to-head tier — which is why one fold builds both and
+ * one comparison orders both.
+ */
 interface Tally {
   readonly playerId: PlayerId;
+  readonly name: string;
   points: number;
   matchesPlayed: number;
 }
+
+/** A match that has been played, so its score is there to be read rather than checked for. */
+type PlayedMatch = Match & { readonly score: MatchScore };
 
 /** The standings, ranked, one line per roster entry. Frozen, like every other engine result. */
 export function computeStandings(session: Session): readonly Standing[] {
   assertSessionShape(session);
 
-  const tallies = tallyPlayed(session);
-  const ranked = rank([...tallies.values()], scoredMatches(session));
-
-  const names = new Map(session.roster.map((entry) => [entry.id, entry.name]));
+  const played = playedMatches(session);
+  const ranked = rank(tallyMatches(session.roster, played), played);
 
   return deepFreeze(
     ranked.flatMap((group, index) =>
       group.map((tally) => ({
         playerId: tally.playerId,
-        name: names.get(tally.playerId) ?? tally.playerId,
+        name: tally.name,
         position: placeOf(ranked, index),
         joint: group.length > 1,
         matchesPlayed: tally.matchesPlayed,
@@ -74,20 +82,31 @@ export function computeStandings(session: Session): readonly Standing[] {
 }
 
 /**
- * Every roster entry's points and matches, counting only matches that carry a score.
+ * Fold played matches into one tally per player, in the order the players were given.
  *
- * Keyed off the roster rather than off the matches, so a player who has not been on court gets a
- * line of zeroes instead of being missing, and a player id that appears in a match but not on the
- * roster is ignored rather than conjuring a competitor. Insertion order is roster order, which is
- * the tie-breaker of last resort below.
+ * Seeded from a list of players rather than discovered from the matches, so a player who has not
+ * been on court gets a line of zeroes instead of being missing, and an id that appears in a match
+ * but not in the seed is ignored rather than conjuring a competitor. `counts` decides whether a
+ * side's result belongs in the tally, which is the only thing the head-to-head tier needs to say
+ * differently: it counts a side only where that side faced the tied group.
  */
-function tallyPlayed(session: Session): Map<PlayerId, Tally> {
+function tallyMatches(
+  players: readonly RosterEntry[],
+  matches: readonly PlayedMatch[],
+  counts: (opponents: readonly PlayerId[]) => boolean = () => true,
+): Tally[] {
   const tallies = new Map<PlayerId, Tally>(
-    session.roster.map((entry) => [entry.id, { playerId: entry.id, points: 0, matchesPlayed: 0 }]),
+    players.map((entry) => [
+      entry.id,
+      { playerId: entry.id, name: entry.name, points: 0, matchesPlayed: 0 },
+    ]),
   );
 
-  for (const match of scoredMatches(session)) {
-    for (const [side, points] of sidesOf(match)) {
+  for (const match of matches) {
+    for (const [side, points, opponents] of sidesOf(match)) {
+      if (!counts(opponents)) {
+        continue;
+      }
       for (const id of side) {
         const tally = tallies.get(id);
         if (tally) {
@@ -98,7 +117,7 @@ function tallyPlayed(session: Session): Map<PlayerId, Tally> {
     }
   }
 
-  return tallies;
+  return [...tallies.values()];
 }
 
 /**
@@ -107,9 +126,9 @@ function tallyPlayed(session: Session): Map<PlayerId, Tally> {
  * The tiers are applied in order and each one only ever splits a group further, so a group that
  * survives to the end is a genuine joint position rather than a tier that was skipped.
  */
-function rank(tallies: readonly Tally[], played: readonly Match[]): Tally[][] {
+function rank(tallies: readonly Tally[], played: readonly PlayedMatch[]): Tally[][] {
   const compare = (a: Tally, b: Tally): number => compareRate(a, b) || comparePoints(a, b);
-  const byPoints = groupBy([...tallies].sort(compare), compare);
+  const byPoints = runsOf([...tallies].sort(compare), compare);
 
   return byPoints.flatMap((group) => splitByHeadToHead(group, played));
 }
@@ -118,60 +137,50 @@ function rank(tallies: readonly Tally[], played: readonly Match[]): Tally[][] {
  * A group tied on rate and on total points, split by what the players did to each other.
  *
  * Head-to-head only speaks where there is something to hear: every player in the group needs at
- * least one match against another member, or the tier would be comparing a record against no
- * record at all. Where it applies, a player's head-to-head standing is again a rate — points per
- * meeting — because members of the group need not have met the same number of times, and the
- * same reasoning that rules out total points at the top rules them out here.
+ * least one match against another member, or the tier would be ranking a record against no record
+ * at all. A roster too big to fit a complete round-robin makes that ordinary rather than exotic,
+ * so where one member never met the group the tier declines for the whole group and the tie
+ * stands as joint — half a tier is not a tier.
+ *
+ * Where it does apply, a player's head-to-head standing is again a rate — points per meeting —
+ * because members of the group need not have met the same number of times, and the same reasoning
+ * that rules out total points at the top rules them out here. One number per player is also what
+ * orders three players who beat each other in a circle, where comparing them in pairs would not.
  */
-function splitByHeadToHead(group: readonly Tally[], played: readonly Match[]): Tally[][] {
+function splitByHeadToHead(group: readonly Tally[], played: readonly PlayedMatch[]): Tally[][] {
   if (group.length === 1) {
     return [[...group]];
   }
 
   const meetings = headToHead(group, played);
-  const evidence = (tally: Tally): Tally => meetings.get(tally.playerId) ?? tally;
-  if (group.some((tally) => evidence(tally).matchesPlayed === 0)) {
+  if (meetings.some((player) => player.meeting.matchesPlayed === 0)) {
     return [[...group]];
   }
 
-  const compare = (a: Tally, b: Tally): number => compareRate(evidence(a), evidence(b));
+  const compare = (a: Meeting, b: Meeting): number => compareRate(a.meeting, b.meeting);
 
-  return groupBy([...group].sort(compare), compare);
+  return runsOf([...meetings].sort(compare), compare).map((run) =>
+    run.map((player) => player.overall),
+  );
 }
 
-/** Each member's points and matches from the matches where they faced another member. */
-function headToHead(group: readonly Tally[], played: readonly Match[]): Map<PlayerId, Tally> {
+/** A tied player's whole-session record, alongside what they did against the rest of the group. */
+interface Meeting {
+  readonly overall: Tally;
+  readonly meeting: Tally;
+}
+
+/** Each member of the group, paired with their record from the matches where they faced another. */
+function headToHead(group: readonly Tally[], played: readonly PlayedMatch[]): Meeting[] {
   const members = new Set(group.map((tally) => tally.playerId));
-  const meetings = new Map<PlayerId, Tally>(
-    group.map((tally) => [
-      tally.playerId,
-      { playerId: tally.playerId, points: 0, matchesPlayed: 0 },
-    ]),
+  const meetings = tallyMatches(
+    group.map((tally) => ({ id: tally.playerId, name: tally.name })),
+    played,
+    (opponents) => opponents.some((id) => members.has(id)),
   );
 
-  for (const match of played) {
-    const [[sideA, pointsA], [sideB, pointsB]] = sidesOf(match);
-    const facesAMember = (opponents: readonly PlayerId[]): boolean =>
-      opponents.some((id) => members.has(id));
-
-    for (const [side, points, opponents] of [
-      [sideA, pointsA, sideB],
-      [sideB, pointsB, sideA],
-    ] as const) {
-      if (!facesAMember(opponents)) {
-        continue;
-      }
-      for (const id of side) {
-        const meeting = meetings.get(id);
-        if (meeting) {
-          meeting.points += points;
-          meeting.matchesPlayed++;
-        }
-      }
-    }
-  }
-
-  return meetings;
+  // `tallyMatches` returns one tally per player given, in the order given, so the lists line up.
+  return group.map((overall, index) => ({ overall, meeting: meetings[index] }));
 }
 
 /** Higher rate first. Compared as a fraction, so two whole tallies never disagree by a rounding. */
@@ -193,24 +202,24 @@ function rateOf(tally: Tally): number {
 }
 
 /**
- * Split a sorted list wherever `compare` says two neighbours differ.
+ * Split a sorted list into runs: consecutive entries `compare` cannot tell apart.
  *
- * The list is already in order, so neighbours are all that need asking: everything that compares
- * equal to its predecessor belongs in the same group.
+ * The list is already in order, so neighbours are all that need asking — everything that compares
+ * equal to the entry that opened the run belongs in it.
  */
-function groupBy(sorted: readonly Tally[], compare: (a: Tally, b: Tally) => number): Tally[][] {
-  const groups: Tally[][] = [];
+function runsOf<T>(sorted: readonly T[], compare: (a: T, b: T) => number): T[][] {
+  const runs: T[][] = [];
 
-  for (const tally of sorted) {
-    const last = groups.at(-1);
-    if (last && compare(last[0], tally) === 0) {
-      last.push(tally);
+  for (const entry of sorted) {
+    const last = runs.at(-1);
+    if (last && compare(last[0], entry) === 0) {
+      last.push(entry);
     } else {
-      groups.push([tally]);
+      runs.push([entry]);
     }
   }
 
-  return groups;
+  return runs;
 }
 
 /** The place a group occupies: one past everyone above it, so joint positions use their places up. */
@@ -219,18 +228,18 @@ function placeOf(groups: readonly Tally[][], index: number): number {
 }
 
 /** Every match that has been played — a match without a score is a court that has not finished. */
-function scoredMatches(session: Session): Match[] {
-  return session.rounds.flatMap((round) => round.matches).filter((match) => match.score);
+function playedMatches(session: Session): PlayedMatch[] {
+  return session.rounds
+    .flatMap((round) => round.matches)
+    .filter((match): match is PlayedMatch => match.score !== undefined);
 }
 
-/** Both sides of a played match, each with the points it scored. */
+/** Both sides of a played match: who was on it, what it scored, and who it was against. */
 function sidesOf(
-  match: Match,
-): readonly [readonly [readonly PlayerId[], number], readonly [readonly PlayerId[], number]] {
-  const score = match.score ?? { sideA: 0, sideB: 0 };
-
+  match: PlayedMatch,
+): readonly (readonly [readonly PlayerId[], number, readonly PlayerId[]])[] {
   return [
-    [match.sideA, score.sideA],
-    [match.sideB, score.sideB],
+    [match.sideA, match.score.sideA, match.sideB],
+    [match.sideB, match.score.sideB, match.sideA],
   ];
 }

@@ -183,6 +183,26 @@ describe('computeStandings', () => {
       expect(standingOf(standings, 'p1').joint).toBe(true);
     });
 
+    it('declines head-to-head for the whole group when one member never met it', () => {
+      // p1, p2 and p8 all finish on 24 from two matches. p1 and p2 met, and p1 took the meeting —
+      // but p8 met neither of them, and there is no place to put a player with no record. Half a
+      // tier would rank p8 on nothing, so the tier declines and all three stand joint.
+      const standings = computeStandings(
+        scoredSession([
+          [{ sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [20, 4] }],
+          [{ sideA: ['p1', 'p7'], sideB: ['p3', 'p4'], score: [4, 20] }],
+          [{ sideA: ['p2', 'p7'], sideB: ['p3', 'p4'], score: [20, 4] }],
+          [{ sideA: ['p8', 'p5'], sideB: ['p3', 'p4'], score: [12, 12] }],
+          [{ sideA: ['p8', 'p5'], sideB: ['p3', 'p4'], score: [12, 12] }],
+        ]),
+      );
+
+      const shared = positionOf(standings, 'p1');
+      expect(positionOf(standings, 'p2')).toBe(shared);
+      expect(positionOf(standings, 'p8')).toBe(shared);
+      expect(standingOf(standings, 'p1').joint).toBe(true);
+    });
+
     it('leaves the places a joint position occupies empty below it', () => {
       const standings = computeStandings(
         scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }]]),
@@ -190,6 +210,20 @@ describe('computeStandings', () => {
 
       expect(standings.map((standing) => standing.position)).toEqual([1, 1, 3, 3]);
     });
+  });
+
+  it('does not rank a benched player above or below one who played and scored nothing', () => {
+    // p5 has been on the bench all evening and p3 and p4 were whitewashed. Neither has a point,
+    // and nothing in a session says which of them is better, so the standings do not pretend.
+    const standings = computeStandings(
+      scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [24, 0] }]], {
+        playerCount: 5,
+      }),
+    );
+
+    const shared = positionOf(standings, 'p5');
+    expect(positionOf(standings, 'p3')).toBe(shared);
+    expect(standingOf(standings, 'p5').joint).toBe(true);
   });
 
   describe('as a derived view', () => {

@@ -41,7 +41,10 @@ is why this tier is a rate too, for the same reason the top-level ranking is.
 
 **4. Head-to-head only speaks where every member of the group has a record.** If any tied player
 never faced another member, the tier declines to separate anyone in that group rather than ranking
-a record against no record. The tie then stands as joint.
+a record against no record — half a tier is not a tier, and a group where two members met but a
+third met nobody has no ordering to offer, only a partial one. The tie then stands as joint. An
+Americano roster too big for a complete round-robin makes this the ordinary case rather than an
+exotic one.
 
 **5. A surviving tie is a joint position, and it uses up the places it occupies.** Two players tied
 for second are both `position: 2`, both `joint: true`, and the next player is fourth. `joint` is on
@@ -59,6 +62,10 @@ that order carries no meaning.
   builds rounds outright for that, alongside the config-level fixtures.
 - The tie-break tiers only ever split a group further. A group that survives all three is a genuine
   joint position rather than a tier that was skipped, and that is what makes point 4 safe.
+- A player who has been on the bench all evening finishes joint with one who played and was
+  whitewashed: both have no points, and points per match is 0 for both. That follows from decision
+  #4 rather than working around it — ranking the benched player below would be the bench costing
+  position, and ranking them above would be it gaining one.
 - Head-to-head counts a player's own points in a meeting, not their partner's or their side's
   margin. Points scored is the currency everywhere else in the engine, and margin would be a fourth
   tier that decision #8 does not list.
