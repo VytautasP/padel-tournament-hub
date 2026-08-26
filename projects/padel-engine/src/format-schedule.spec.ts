@@ -1,4 +1,4 @@
-import { createSession, formatSchedule, generateRemaining } from './public-api';
+import { createSession, finishSession, formatSchedule, generateRemaining } from './public-api';
 import type { Session } from './public-api';
 import { americanoConfig, roster } from './test-support/session-fixtures';
 
@@ -23,7 +23,7 @@ describe('formatSchedule', () => {
     expect(renders(session)).toBe(true);
   });
 
-  it('renders a session whose rounds are still unplayed', () => {
+  it('renders a session whose rounds are still ungenerated', () => {
     expect(renders(createSession(americanoConfig()))).toBe(true);
   });
 
@@ -39,6 +39,10 @@ describe('formatSchedule', () => {
     expect(renders(halfPlayed)).toBe(true);
   });
 
+  it('renders a session the organizer has finished', () => {
+    expect(renders(finishSession(generateRemaining(createSession(americanoConfig()))))).toBe(true);
+  });
+
   // The scheduler is exact-fit for now (ADR-0004), so a benched session has to be hand-built.
   // The renderer is held to the awkward rosters of build-order step 1 regardless, because the
   // whole point of printing a schedule is to notice what a validator cannot.
@@ -47,6 +51,7 @@ describe('formatSchedule', () => {
     const benched: Session = {
       id: 'awkward',
       mode: 'americano',
+      status: 'in-progress',
       roster: players,
       courtCount: 2,
       targetScore: 24,

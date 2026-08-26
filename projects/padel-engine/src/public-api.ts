@@ -8,18 +8,39 @@
  * read — is private and free to be rewritten.
  */
 export type {
+  Gender,
   Match,
   MatchId,
+  MatchScore,
+  MatchTeams,
   PlayerId,
   RosterEntry,
   Round,
   RoundId,
+  ScoreEntry,
   Session,
   SessionConfig,
   SessionMode,
+  SessionStatus,
+  Side,
+  Team,
+  TeamId,
 } from './lib/model';
 
+export type { OrphanedTeam } from './lib/teams';
+export type { Standing } from './lib/standings';
+export type { TeamStanding } from './lib/team-standings';
+
 export { createSession } from './lib/create-session';
+export { addRound } from './lib/add-round';
+export { addPlayer, removePlayer } from './lib/change-roster';
+export { assignPartner } from './lib/assign-partner';
+export { teamsNeedingPartner } from './lib/teams';
 export { generateRemaining } from './lib/generate-remaining';
+export { finishSession } from './lib/finish-session';
+export { recordScore } from './lib/record-score';
 export { assertSessionValid } from './lib/assert-session-valid';
 export { formatSchedule } from './lib/format-schedule';
+export { sameGenderSides } from './lib/mixed-pairing';
+export { computeStandings } from './lib/standings';
+export { computeTeamStandings } from './lib/team-standings';

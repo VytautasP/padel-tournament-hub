@@ -3,22 +3,95 @@
 The rules engine for padel sessions: scheduling, scoring and standings for Americano, Mixicano and
 Team Americano. It is the only part of the system that knows what padel is.
 
-So far it schedules **Americano for an exact-fit roster** — 4 players on 1 court, 8 on 2, 12 on 3,
-so that nobody is ever benched. Bench rotation, scoring, standings, roster mutation, Mixicano and
-Team Americano land in later tickets.
+It schedules **all three modes for any roster of four or more** on any number of courts, with the
+bench rotating evenly, records the results and ranks them.
 
 ```ts
-createSession(config);       // an organizer's configuration -> a session with empty rounds
-generateRemaining(session);  // fill every unplayed round -> a new session
-assertSessionValid(session); // throw unless every invariant holds, at every round prefix
-formatSchedule(session);     // the session as text a human can read
+createSession(config);          // an organizer's configuration -> a session with empty rounds
+generateRemaining(session);     // fill every ungenerated round -> a new session
+addRound(session);              // one more round on the end -> a new session
+addPlayer(session, entry);      // someone arrives late -> a new session, rescheduled
+removePlayer(session, id);      // someone goes home -> a new session, rescheduled
+recordScore(session, entry);    // one side's points for one match -> a new session
+computeStandings(session);      // the leaderboard, derived on every call
+computeTeamStandings(session);  // the same ladder, for the teams of a Team Americano session
+finishSession(session);         // the organizer closes the evening
+assertSessionValid(session);    // throw unless every invariant holds, at every round prefix
+formatSchedule(session);        // the session as text a human can read
+sameGenderSides(session, match) // which sides Mixicano had to pair same-gender
 ```
 
-Partners come from the circle method — fix one player, rotate the rest — so over a roster of n
-players every partnership is played exactly once in n-1 rounds, and a partnership only repeats
-once nobody has an unplayed partner left. Which pair faces which is a small deterministic search
-that minimises opponent repeats. Nothing reads a clock or a random source: the player rotation is
-seeded from the session id, so the same input always yields the same schedule.
+Who sits out and who partners whom is decided round by round against the history of the rounds
+before it, so the evening is as fair after round seven as after round twelve. Bench counts are held
+within one by construction; partner and opponent repeats are costs a bounded search minimises
+(ADR-0006). Nothing reads a clock or a random source: the player rotation is seeded from the
+session id, so the same input always yields the same schedule.
+
+## Mixicano
+
+`mode: 'mixicano'` wants every pair mixed-gender, and needs a `gender` on every roster entry to
+know what that means. It is the same scheduler: bench rotation, partner variety and prefix
+fairness are untouched, and mixing is one more term in the cost function (ADR-0010).
+
+Real rosters do not split evenly, so seven women and three men fill the courts with mixed pairs
+and let the surplus play same-gender — **hybrid fill** (decision #7). Two rules govern the
+compromise, and the referee checks both at every round prefix. There are never more same-gender
+pairs than the players on court force, `|women - men| / 2`. And they rotate: nobody is in one
+while a player of their gender is on court, out of one, and has been in fewer.
+
+```ts
+sameGenderSides(session, match); // -> ['A'] — side A had nobody left to mix with
+```
+
+The mark is derived from the roster rather than stored, so correcting a gender re-marks the whole
+schedule instead of leaving stale flags behind. `formatSchedule` stars those pairs.
+
+## Team Americano
+
+`mode: 'team-americano'` fixes the partnerships for the whole evening. The organizer assigns them
+at creation and passes them as `teams` — every player in exactly one team, checked on the way in
+so a bad pairing is refused at the pairing screen rather than three rounds later.
+
+From there it is the same engine with the team as its unit (decision #2c, ADR-0011). Five teams on
+two courts bench a whole team each round and rotate the bye; team bench counts stay within one at
+every prefix; teams meet every other team before meeting any of them twice. Each match records the
+teams that played it, so a team's points follow the team rather than the two names that happened
+to be on court:
+
+```ts
+computeTeamStandings(session); // -> [{ teamId: 't3', name: 'Elin & Finn', position: 1, ... }]
+```
+
+`computeStandings` still works, and reads a player's line as their team's evening under their own
+name.
+
+When one half of a pair goes home the team keeps its slot and its points, and the player left
+behind is flagged `needs partner` (decision #2b, ADR-0012). Their team takes no court until
+somebody replaces the half that left:
+
+```ts
+teamsNeedingPartner(session); // -> [{ teamId: 't1', playerId: 'p2' }]
+assignPartner(session, 't1', { id: 'p11', name: 'Kaja' });
+// -> t1 plays again from the next unplayed round, with every point it has already won
+```
+
+Removing the stranded player instead retires the team, which also keeps what it won. `addPlayer`
+is refused here — a player arriving alone is a player in no team — and a removal that would leave
+fewer than two teams able to take the court is refused at the moment it is asked for.
+
+## Recording scores
+
+The organizer enters one side's points and the engine derives the other from the session target
+(decision #3), so an invalid scoreline cannot be constructed:
+
+```ts
+recordScore(session, { matchId: 'session-1:r1:c1', side: 'A', points: 15 });
+// -> that match is now scored 15-9 against a target of 24
+```
+
+Matches are addressed by id, so courts are scored in whatever order they finish, across rounds.
+Re-recording replaces a score outright — nothing accumulates — which is what makes correcting a
+typo at the side of a court safe (ADR-0007).
 
 Every operation returns a new session and mutates nothing; returned sessions are deep-frozen, so
 an accidental write fails loudly instead of corrupting a session document.
@@ -31,8 +104,9 @@ out. It exists for reading, not for asserting — no test asserts on its output,
 free to change (ADR-0005).
 
 ```
-npm run print:schedule           # a few sessions worth looking at, including a benched roster
-npm run print:schedule -- 12 3 7 # 12 players, 3 courts, 7 rounds
+npm run print:schedule             # a few sessions worth looking at, benched and skewed
+npm run print:schedule -- 12 3 7   # 12 players, 3 courts, 7 rounds
+npm run print:schedule -- 10 2 8 7 # ...as Mixicano, seven of the ten women
 ```
 
 ## The boundary

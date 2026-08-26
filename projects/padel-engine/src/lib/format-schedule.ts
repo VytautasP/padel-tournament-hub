@@ -17,8 +17,11 @@
  *
  * It stays inside the engine boundary: a pure `Session -> string`, no I/O, no clock.
  */
-import type { Match, PlayerId, Round, Session } from './model';
+import { mixedPairingIn } from './mixed-pairing';
+import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
+import { hasLeft, isAvailableIn, joinedAtRound, leftAfterRound } from './roster-availability';
 import { courtsInPlay } from './session-shape';
+import { teamLineupIn, teamPlayIn, teamsAvailableIn, teamsNeedingPartner } from './teams';
 
 /** A session as readable text: a block per round, then a block per player. */
 export function formatSchedule(session: Session): string {
@@ -44,11 +47,19 @@ function renderer(session: Session): {
 } {
   const names = displayNames(session);
   const nameOf = (id: PlayerId): string => names.get(id) ?? id;
+  const mixed = mixedPairingIn(session);
+  const play = teamPlayIn(session);
   const rosterOrder = new Map(session.roster.map((entry, index) => [entry.id, index]));
   const stats = tallies(session);
+  // Who is flagged `needs partner` (decision #2b) — the one state a Team Americano session can be
+  // in that a reader cannot work out from the courts, because it shows up as an absence.
+  const stranded = new Set(teamsNeedingPartner(session).map((orphan) => orphan.playerId));
 
+  // A same-gender pair is marked where it is read, so the organizer standing in front of the
+  // player who asks why can point at the line rather than remember (decision #7). The mark is
+  // derived from the roster on the way out, never stored (ADR-0010).
   const pairLabel = (pair: readonly [PlayerId, PlayerId]): string =>
-    `${nameOf(pair[0])} & ${nameOf(pair[1])}`;
+    `${nameOf(pair[0])} & ${nameOf(pair[1])}${mixed.sameGender(pair[0], pair[1]) ? ' *' : ''}`;
 
   // Court lines align on the widest pair in the session, so every round reads as one column.
   const pairColumn = Math.max(
@@ -75,12 +86,26 @@ function renderer(session: Session): {
 
     // Courts booked and courts staffed are different numbers once a roster benches, and the
     // reader needs to see both — an evening on "two courts" that only ever fills one is exactly
-    // the sort of surprise a printout exists to surface.
-    const inPlay = courtsInPlay(session);
+    // the sort of surprise a printout exists to surface. Read off the last round, because that is
+    // the roster the session has now: people arrive and leave while it runs.
+    const inPlay = courtsInPlay(session, session.rounds.length);
     const courts =
       inPlay === session.courtCount
         ? `${session.courtCount} court(s)`
         : `${session.courtCount} court(s), ${inPlay} in play`;
+
+    // A finished session is said so out loud: the counts above look the same either way, and
+    // whether the evening is still open is the first thing a reader of a printout wants to know.
+    const finishedNote = session.status === 'finished' ? ['finished'] : [];
+
+    // The legend for the marked pairs, once at the top rather than under every round that has
+    // one — on a skewed roster that is every round, and a note repeated eleven times stops
+    // being read. Absent when nothing is marked, which is the whole of Americano.
+    const compromised = session.rounds.some((round) =>
+      round.matches.some((match) =>
+        [match.sideA, match.sideB].some((pair) => mixed.sameGender(pair[0], pair[1])),
+      ),
+    );
 
     return [
       `${titleCase(session.mode)} — ${session.id}`,
@@ -89,7 +114,9 @@ function renderer(session: Session): {
         courts,
         `${generated}/${session.rounds.length} rounds generated`,
         `first to ${session.targetScore}`,
+        ...finishedNote,
       ].join(' · '),
+      ...(compromised ? ['* same-gender pair — the roster left nobody to mix with'] : []),
     ].join('\n');
   };
 
@@ -120,12 +147,26 @@ function renderer(session: Session): {
   const players = (): string => {
     const blocks = session.roster.map((entry) => {
       const played = stats.get(entry.id) ?? emptyTally();
-      const missing = session.roster
-        .filter((other) => other.id !== entry.id && !played.partners.has(other.id))
-        .map((other) => nameOf(other.id));
+      // Only players this one could have been partnered with: someone who left before they
+      // arrived was never a partner they could have had, and in Mixicano nor was anyone of the
+      // same gender — that column is empty by design rather than by neglect. In Team Americano
+      // the whole line is: a player has one partner all evening and is owed no others.
+      const missing = play.plays
+        ? []
+        : session.roster
+            .filter(
+              (other) =>
+                other.id !== entry.id &&
+                !played.partners.has(other.id) &&
+                !mixed.sameGender(entry.id, other.id) &&
+                overlaps(entry, other),
+            )
+            .map((other) => nameOf(other.id));
 
       const lines = [
-        `${nameOf(entry.id)} — played ${played.matches}, benched ${played.benched}`,
+        `${nameOf(entry.id)}${genderNote(entry)}${windowNote(entry)}` +
+          `${stranded.has(entry.id) ? ' (needs partner)' : ''} — played ${played.matches}, ` +
+          `benched ${played.benched}`,
         `  partners:  ${namesByCount(played.partners)}`,
         `  opponents: ${namesByCount(played.opponents)}`,
       ];
@@ -188,10 +229,49 @@ function tallies(session: Session): ReadonlyMap<PlayerId, PlayerTally> {
   return byPlayer;
 }
 
+/**
+ * Who sat this round out: on the roster, in the session for that round, able to be scheduled into
+ * it, and off court. Someone who had not arrived yet, or had already gone home, is not on the
+ * bench — they are not here. Nor is somebody whose partner has gone home: no bye fell on them,
+ * there was simply no team for them to play in (decision #2b).
+ */
 function benchedIn(round: Round, session: Session): PlayerId[] {
   const playing = new Set(round.matches.flatMap(playersOf));
+  const play = teamPlayIn(session);
+  const onCall = new Set(
+    teamsAvailableIn(session, round.number).flatMap((team) =>
+      teamLineupIn(team, session.roster, round.number),
+    ),
+  );
 
-  return session.roster.map((entry) => entry.id).filter((id) => !playing.has(id));
+  return session.roster
+    .filter(
+      (entry) =>
+        isAvailableIn(entry, round.number) &&
+        !playing.has(entry.id) &&
+        (!play.plays || onCall.has(entry.id)),
+    )
+    .map((entry) => entry.id);
+}
+
+/** How a Mixicano roster shows the field it pairs across; empty where the mode has no use for it. */
+function genderNote(entry: RosterEntry): string {
+  return entry.gender === undefined ? '' : ` [${entry.gender}]`;
+}
+
+/** How a player who did not have the whole evening is labelled: `(from round 4)`, `(left after 6)`. */
+function windowNote(entry: RosterEntry): string {
+  const notes = [
+    ...(joinedAtRound(entry) > 1 ? [`from round ${joinedAtRound(entry)}`] : []),
+    ...(hasLeft(entry) ? [`left after round ${entry.leftAfterRound}`] : []),
+  ];
+
+  return notes.length > 0 ? ` (${notes.join(', ')})` : '';
+}
+
+/** Were these two ever in the session at the same time, and so ever able to be partners? */
+function overlaps(a: RosterEntry, b: RosterEntry): boolean {
+  return joinedAtRound(a) <= leftAfterRound(b) && joinedAtRound(b) <= leftAfterRound(a);
 }
 
 /**
@@ -248,6 +328,10 @@ function label(text: string): string {
   return text.padEnd(9);
 }
 
+/** `team-americano` reads as `Team Americano`: a mode is a name, not an identifier, to a reader. */
 function titleCase(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  return value
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
