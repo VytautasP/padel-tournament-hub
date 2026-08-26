@@ -1,12 +1,22 @@
 /*
- * The Round tab: where the evening actually is (ADR-0016).
+ * The Round tab: where the evening actually is, and how the rest of it is reached (ADR-0016).
  *
  * It opens on the current round — the lowest-numbered round still holding an unscored match,
  * derived from the scores and never stored — and then stays there. Scoring the last court of a
  * round does not move the screen: the moment right after a score lands is exactly when a typo
  * gets spotted (ADR-0016 §3), so the round the organizer was looking at is the round they are
- * still looking at. Paging to another round arrives with its own slice; until then, the round is
- * pinned when the tab opens and released when the session does.
+ * still looking at. What a played-out round offers instead is a `Round 4 →` card: a destination
+ * to tap, not a screen that has already gone.
+ *
+ * The round on screen is therefore a signal the organizer moves and nothing else does. Prev and
+ * next walk every generated round, and `Back to current round` is the way back from wherever
+ * paging left them — which is what lets one round at a time still answer "who am I with in round
+ * six?" (ADR-0016 §2).
+ *
+ * One page past the last round is the Add round card. It is not a round, which is why `showing`
+ * ranges one beyond the round count rather than being clamped to it: the place the evening
+ * visibly runs out is the place the question gets asked (ADR-0016 §4), and it keeps a
+ * schedule-lengthening button off the screen in use all night.
  *
  * Tapping a court opens the score sheet for that one match, scored or not. Courts finish minutes
  * apart and corrections are ordinary (ADR-0007), so there is one gesture rather than two.
@@ -30,8 +40,11 @@ export class RoundTab {
   private readonly dialog = inject(Dialog);
   private readonly overlay = inject(Overlay);
 
-  /** The round this tab is showing. Set when the tab opens, and not moved by a score landing. */
-  private readonly showing = signal(this.store.currentRoundNumber());
+  /**
+   * The page the tab is showing: a round number, or one past the last round for the Add round
+   * card. Set when the tab opens, moved only by the organizer, and never by a score landing.
+   */
+  protected readonly showing = signal(this.store.currentRoundNumber() ?? FIRST_ROUND);
 
   protected readonly copy = copy;
 
@@ -39,12 +52,79 @@ export class RoundTab {
 
   protected readonly round = computed(() => {
     const session = this.store.activeSession();
-    const roundNumber = this.showing();
 
-    return session === null || roundNumber === null
-      ? null
-      : roundView(session, roundNumber, this.store.courtNames());
+    return session === null ? null : roundView(session, this.showing(), this.store.courtNames());
   });
+
+  /**
+   * The page the Add round card is on: one past the last round generated (ADR-0016 §4).
+   *
+   * It is the far end of the paging range as well as the card's address, which is why it is one
+   * expression rather than two — a range that stopped at the last round would put the card
+   * somewhere the organizer cannot page to.
+   */
+  private readonly addRoundPage = computed(() => this.roundCount() + 1);
+
+  /** Whether the page on screen is the Add round card rather than a round. */
+  protected readonly pastTheLastRound = computed(() => this.showing() >= this.addRoundPage());
+
+  protected readonly canPage = computed(() => ({
+    back: this.showing() > FIRST_ROUND,
+    forward: this.showing() < this.addRoundPage(),
+  }));
+
+  /** Whether the round on screen is the one the evening is on, which is when there is no way back. */
+  protected readonly atCurrentRound = computed(
+    () => this.showing() === this.store.currentRoundNumber(),
+  );
+
+  /**
+   * The round to offer once every court on screen has a score, or `null` while one is still
+   * playing or when this is the last round generated.
+   *
+   * There is deliberately no offer past the last round: what is there is the Add round card, and
+   * a `Round 4 →` that led to it would be selling one more round as the natural next step rather
+   * than as the decision it is.
+   */
+  protected readonly advanceTo = computed(() => {
+    const view = this.round();
+    const finished = view !== null && view.courts.every((court) => court.score !== undefined);
+
+    return finished && this.showing() < this.roundCount() ? this.showing() + 1 : null;
+  });
+
+  protected previous(): void {
+    this.show(this.showing() - 1);
+  }
+
+  protected next(): void {
+    this.show(this.showing() + 1);
+  }
+
+  /**
+   * Show one page, held inside the range there is something to show.
+   *
+   * The controls are disabled at both ends, so nothing in the app asks for a page outside it. The
+   * clamp is here anyway because the range is this component's invariant and not the template's:
+   * a round count that shrank under a stale page would otherwise render nothing at all.
+   */
+  protected show(page: number): void {
+    this.showing.set(Math.min(Math.max(page, FIRST_ROUND), this.addRoundPage()));
+  }
+
+  protected backToCurrentRound(): void {
+    this.show(this.store.currentRoundNumber() ?? FIRST_ROUND);
+  }
+
+  /**
+   * Append one round and stay where the organizer is standing.
+   *
+   * `showing` does not move: it was one past the last round, and the round just added is that
+   * number, so the card the organizer tapped becomes the round they asked for.
+   */
+  protected async addRound(): Promise<void> {
+    await this.store.addRound();
+  }
 
   /** Open the sheet for one court, and record whatever comes back out of it. */
   protected async score(court: CourtView): Promise<void> {
@@ -63,3 +143,6 @@ export class RoundTab {
     }
   }
 }
+
+/** Rounds are numbered from one, which is where the paging range starts. */
+const FIRST_ROUND = 1;

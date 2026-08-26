@@ -12,6 +12,7 @@
  */
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
+  addRound,
   computeStandings,
   createSession,
   generateRemaining,
@@ -119,6 +120,24 @@ export class SessionStore {
     };
     await this.repository.saveActive(record);
     this.record.set(record);
+  }
+
+  /**
+   * Append one more round to the evening and generate it (decision #6).
+   *
+   * The engine plans the added round against everything already played rather than against the
+   * round count the session was created with, so nothing behind it moves and the round it adds is
+   * the one the schedule would have held all along had the organizer asked at the start.
+   */
+  async addRound(): Promise<void> {
+    const current = this.record();
+    if (current === null) {
+      throw new Error('There is no active session to add a round to.');
+    }
+
+    const updated: SessionRecord = { ...current, session: addRound(current.session) };
+    await this.repository.saveActive(updated);
+    this.record.set(updated);
   }
 
   /**

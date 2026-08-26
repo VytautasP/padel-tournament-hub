@@ -8,10 +8,11 @@
  *
  * Side names double as the sheet's field labels, so the tests read the roster off the stored
  * session to find out who the engine put together. That is the one thing about a generated
- * schedule a test cannot spell out in advance.
+ * schedule a test cannot spell out in advance, and it is why the drivers in `session-driver`
+ * exist: creating an evening and scoring a court is setup for every spec here, and none of them
+ * is about the wizard.
  */
-import type { Match, MatchScore } from 'padel-engine';
-import { AppHarness } from './testing/app-harness';
+import { createSession, openSheet, score, scoreOf } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 const EIGHT = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin', 'Finn', 'Gita', 'Hugo'];
@@ -246,81 +247,3 @@ describe('scoring a court', () => {
     });
   });
 });
-
-interface Sides {
-  readonly a: string;
-  readonly b: string;
-}
-
-/** One court of round one, as the repository is holding it. */
-function matchOn(app: AppHarness, courtNumber: number): Match {
-  const session = app.repository.activeRecord()?.session;
-  if (session === undefined || session === null) {
-    throw new Error('No session has been created.');
-  }
-
-  const match = session.rounds[0].matches.find(
-    (candidate) => candidate.courtNumber === courtNumber,
-  );
-  if (match === undefined) {
-    throw new Error(`Round 1 has no court ${courtNumber}.`);
-  }
-
-  return match;
-}
-
-/** Who the engine put on each side of a court, as the screen spells them. */
-function sidesOn(app: AppHarness, courtNumber: number): Sides {
-  const roster = app.repository.activeRecord()?.session.roster ?? [];
-  const match = matchOn(app, courtNumber);
-  const nameOf = (id: string): string => roster.find((entry) => entry.id === id)?.name ?? id;
-
-  return {
-    a: match.sideA.map(nameOf).join(' & '),
-    b: match.sideB.map(nameOf).join(' & '),
-  };
-}
-
-function scoreOf(app: AppHarness, courtNumber = 1): MatchScore | undefined {
-  return matchOn(app, courtNumber).score;
-}
-
-async function openSheet(app: AppHarness, courtNumber = 1): Promise<Sides> {
-  await app.tap(`Enter score for Court ${courtNumber}`);
-
-  return sidesOn(app, courtNumber);
-}
-
-async function score(app: AppHarness, points: number, courtNumber = 1): Promise<Sides> {
-  const sides = await openSheet(app, courtNumber);
-  await app.setNumber(sides.a, points);
-  await app.tap('Save');
-
-  return sides;
-}
-
-async function createSession(
-  names: readonly string[],
-  courtCount = 1,
-  targetScore = 24,
-): Promise<AppHarness> {
-  const app = await AppHarness.launch();
-  await app.tap('New session');
-  await app.tap('Americano');
-
-  for (const name of names) {
-    await app.type('Name', name);
-    await app.tap('Add');
-  }
-
-  await app.tap('Next');
-  if (courtCount !== 1) {
-    await app.setNumber('Courts', courtCount);
-  }
-  if (targetScore !== 24) {
-    await app.setNumber('Target score', targetScore);
-  }
-  await app.tap('Create session');
-
-  return app;
-}

@@ -1,9 +1,45 @@
-@if (round(); as view) {
-  <section class="flex flex-col gap-5 px-4 py-6">
-    <h1 class="text-2xl font-semibold tracking-tight text-ink">
-      {{ copy.round.heading(view.number, roundCount()) }}
+<section class="flex flex-col gap-5 px-4 py-6">
+  <header class="flex items-center justify-between gap-3">
+    <button
+      type="button"
+      class="rounded-full border border-line px-3 py-2 text-ink-muted disabled:opacity-30"
+      [attr.aria-label]="copy.round.previous"
+      [disabled]="!canPage().back"
+      (click)="previous()"
+    >
+      {{ copy.round.previousGlyph }}
+    </button>
+
+    <h1 class="text-center text-xl font-semibold tracking-tight text-ink">
+      @if (pastTheLastRound()) {
+        {{ copy.round.addRound.heading }}
+      } @else {
+        {{ copy.round.heading(showing(), roundCount()) }}
+      }
     </h1>
 
+    <button
+      type="button"
+      class="rounded-full border border-line px-3 py-2 text-ink-muted disabled:opacity-30"
+      [attr.aria-label]="copy.round.next"
+      [disabled]="!canPage().forward"
+      (click)="next()"
+    >
+      {{ copy.round.nextGlyph }}
+    </button>
+  </header>
+
+  @if (!atCurrentRound()) {
+    <button
+      type="button"
+      class="self-center text-sm font-medium text-brand underline"
+      (click)="backToCurrentRound()"
+    >
+      {{ copy.round.backToCurrent }}
+    </button>
+  }
+
+  @if (round(); as view) {
     <ul class="space-y-3">
       @for (court of view.courts; track court.courtNumber) {
         <li>
@@ -39,5 +75,26 @@
     @if (view.bench.length > 0) {
       <p class="text-sm text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
     }
-  </section>
-}
+
+    @if (advanceTo(); as nextRound) {
+      <button
+        type="button"
+        class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+        (click)="show(nextRound)"
+      >
+        {{ copy.round.advance(nextRound) }}
+      </button>
+    }
+  } @else if (pastTheLastRound()) {
+    <div class="space-y-3 rounded-2xl border border-dashed border-line p-4 text-center">
+      <p class="text-sm text-ink-muted">{{ copy.round.addRound.lead }}</p>
+      <button
+        type="button"
+        class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+        (click)="addRound()"
+      >
+        {{ copy.round.addRound.action }}
+      </button>
+    </div>
+  }
+</section>

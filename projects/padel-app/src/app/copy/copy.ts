@@ -97,6 +97,30 @@ export const copy = {
     /** The result on the court card. An en dash, because it is a scoreline and not a subtraction. */
     score: (sideA: number, sideB: number): string => `${sideA} – ${sideB}`,
     /**
+     * The paging controls. Each is an arrow on screen and a sentence to a screen reader: the
+     * glyph is all a thumb needs beside a header that already says which round this is, and
+     * "Previous" alone would not say previous *what* to somebody who cannot see the header.
+     */
+    previous: 'Previous round',
+    previousGlyph: '←',
+    next: 'Next round',
+    nextGlyph: '→',
+    /** The way back from wherever the organizer paged to (ADR-0016 §2). */
+    backToCurrent: 'Back to current round',
+    /**
+     * The call to action on a round every court of which has been scored (ADR-0016 §3).
+     *
+     * It names the round it goes to rather than saying "next", because the screen does not move
+     * on its own and the organizer is being offered a destination, not told where they now are.
+     */
+    advance: (roundNumber: number): string => `Round ${roundNumber} →`,
+    /** The card past the last round, which is where "have we time for another?" gets asked. */
+    addRound: {
+      heading: 'The evening ends here',
+      lead: 'One more round is planned against everything already played. Nothing behind it moves.',
+      action: 'Add round',
+    },
+    /**
      * What tapping a court does. One wording whether or not the court has a score already:
      * correcting a typo is the ordinary path (ADR-0007), not a second, differently-named action.
      *
