@@ -12,6 +12,7 @@ describe('padel-engine public API', () => {
 
     expect(exported).toEqual([
       'assertSessionValid',
+      'computeStandings',
       'createSession',
       'formatSchedule',
       'generateRemaining',

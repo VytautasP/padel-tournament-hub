@@ -21,7 +21,14 @@ eyeballed and not only asserted — `npm run print:schedule`.
 other from the session target, so an invalid scoreline cannot be constructed rather than merely
 rejected. Courts are scored in whatever order they finish, across rounds, and re-recording replaces
 a score outright — which is what makes correcting a typo at the side of a court safe. See
-[ADR-0007](docs/adr/0007-scores-are-a-derived-pair-on-the-match.md). Standings, roster mutation,
+[ADR-0007](docs/adr/0007-scores-are-a-derived-pair-on-the-match.md).
+
+`computeStandings` turns those results into the leaderboard: ranked by points per match played, so
+sitting out never costs or gains position, and derived on every call rather than stored, so a
+corrected score recomputes for free. Ties break by total points and then by a head-to-head
+mini-league among the tied players; a tie that survives all three tiers is returned as a declared
+joint position rather than ordered arbitrarily. See
+[ADR-0008](docs/adr/0008-standings-are-derived-and-ties-stop-at-the-evidence.md). Roster mutation,
 Mixicano and Team Americano are still to come. No application code exists yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —

@@ -22,8 +22,11 @@ export type {
   Side,
 } from './lib/model';
 
+export type { Standing } from './lib/standings';
+
 export { createSession } from './lib/create-session';
 export { generateRemaining } from './lib/generate-remaining';
 export { recordScore } from './lib/record-score';
 export { assertSessionValid } from './lib/assert-session-valid';
 export { formatSchedule } from './lib/format-schedule';
+export { computeStandings } from './lib/standings';
