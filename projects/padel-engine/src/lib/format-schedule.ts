@@ -17,6 +17,7 @@
  *
  * It stays inside the engine boundary: a pure `Session -> string`, no I/O, no clock.
  */
+import { mixedPairingIn } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
 import { hasLeft, isAvailableIn, joinedAtRound, leftAfterRound } from './roster-availability';
 import { courtsInPlay } from './session-shape';
@@ -45,11 +46,15 @@ function renderer(session: Session): {
 } {
   const names = displayNames(session);
   const nameOf = (id: PlayerId): string => names.get(id) ?? id;
+  const mixed = mixedPairingIn(session);
   const rosterOrder = new Map(session.roster.map((entry, index) => [entry.id, index]));
   const stats = tallies(session);
 
+  // A same-gender pair is marked where it is read, so the organizer standing in front of the
+  // player who asks why can point at the line rather than remember (decision #7). The mark is
+  // derived from the roster on the way out, never stored (ADR-0010).
   const pairLabel = (pair: readonly [PlayerId, PlayerId]): string =>
-    `${nameOf(pair[0])} & ${nameOf(pair[1])}`;
+    `${nameOf(pair[0])} & ${nameOf(pair[1])}${mixed.sameGender(pair[0], pair[1]) ? ' *' : ''}`;
 
   // Court lines align on the widest pair in the session, so every round reads as one column.
   const pairColumn = Math.max(
@@ -88,6 +93,15 @@ function renderer(session: Session): {
     // whether the evening is still open is the first thing a reader of a printout wants to know.
     const finishedNote = session.status === 'finished' ? ['finished'] : [];
 
+    // The legend for the marked pairs, once at the top rather than under every round that has
+    // one — on a skewed roster that is every round, and a note repeated eleven times stops
+    // being read. Absent when nothing is marked, which is the whole of Americano.
+    const compromised = session.rounds.some((round) =>
+      round.matches.some((match) =>
+        [match.sideA, match.sideB].some((pair) => mixed.sameGender(pair[0], pair[1])),
+      ),
+    );
+
     return [
       `${titleCase(session.mode)} — ${session.id}`,
       [
@@ -97,6 +111,7 @@ function renderer(session: Session): {
         `first to ${session.targetScore}`,
         ...finishedNote,
       ].join(' · '),
+      ...(compromised ? ['* same-gender pair — the roster left nobody to mix with'] : []),
     ].join('\n');
   };
 
@@ -127,17 +142,21 @@ function renderer(session: Session): {
   const players = (): string => {
     const blocks = session.roster.map((entry) => {
       const played = stats.get(entry.id) ?? emptyTally();
-      // Only players whose evening overlapped this one: someone who left before this player
-      // arrived was never a partner they could have had.
+      // Only players this one could have been partnered with: someone who left before they
+      // arrived was never a partner they could have had, and in Mixicano nor was anyone of the
+      // same gender — that column is empty by design rather than by neglect.
       const missing = session.roster
         .filter(
           (other) =>
-            other.id !== entry.id && !played.partners.has(other.id) && overlaps(entry, other),
+            other.id !== entry.id &&
+            !played.partners.has(other.id) &&
+            !mixed.sameGender(entry.id, other.id) &&
+            overlaps(entry, other),
         )
         .map((other) => nameOf(other.id));
 
       const lines = [
-        `${nameOf(entry.id)}${windowNote(entry)} — played ${played.matches}, ` +
+        `${nameOf(entry.id)}${genderNote(entry)}${windowNote(entry)} — played ${played.matches}, ` +
           `benched ${played.benched}`,
         `  partners:  ${namesByCount(played.partners)}`,
         `  opponents: ${namesByCount(played.opponents)}`,
@@ -211,6 +230,11 @@ function benchedIn(round: Round, session: Session): PlayerId[] {
   return session.roster
     .filter((entry) => isAvailableIn(entry, round.number) && !playing.has(entry.id))
     .map((entry) => entry.id);
+}
+
+/** How a Mixicano roster shows the field it pairs across; empty where the mode has no use for it. */
+function genderNote(entry: RosterEntry): string {
+  return entry.gender === undefined ? '' : ` [${entry.gender}]`;
 }
 
 /** How a player who did not have the whole evening is labelled: `(from round 4)`, `(left after 6)`. */

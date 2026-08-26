@@ -1,7 +1,8 @@
 import { assertSessionValid, createSession, finishSession, generateRemaining } from './public-api';
-import type { Session } from './public-api';
+import type { PlayerId, Session } from './public-api';
 import { damaged } from './test-support/damaged-session';
-import type { MutableSession } from './test-support/damaged-session';
+import type { MutableMatch, MutableSession } from './test-support/damaged-session';
+import { mixedRoster, mixicanoConfig } from './test-support/mixicano-fixtures';
 import { americanoConfig, roster } from './test-support/session-fixtures';
 
 function valid(): Session {
@@ -200,5 +201,132 @@ describe('assertSessionValid', () => {
     expect(() => assertSessionValid(session)).toThrow(/duplicate match id/i);
 
     assertSessionValid(valid());
+  });
+});
+
+/*
+ * The Mixicano branches, damaged one at a time.
+ *
+ * Both rules the referee adds are about a choice the scheduler made — how many same-gender pairs
+ * it formed, and which players it asked to carry them — so neither can be provoked by a session
+ * the engine builds. Each test therefore takes a valid one and rearranges the players on court,
+ * leaving everyone in the same round they were already in so that the bench spread it is checked
+ * against first stays untouched.
+ */
+
+/** An even split on two courts: nothing forces a same-gender pair, so any of them is one too many. */
+function evenlyMixed(): Session {
+  return generateRemaining(
+    createSession(mixicanoConfig({ players: mixedRoster(4, 4), courtCount: 2, roundCount: 5 })),
+  );
+}
+
+/** Seven women and three men: one same-gender pair a round, and seven women to spread it over. */
+function unevenlyMixed(): Session {
+  return generateRemaining(
+    createSession(mixicanoConfig({ players: mixedRoster(7, 3), courtCount: 2, roundCount: 6 })),
+  );
+}
+
+/** The ids the roster calls women — read off the document, not asked of the engine. */
+function womenOf(copy: MutableSession): Set<PlayerId> {
+  return new Set(copy.roster.filter((entry) => entry.gender === 'woman').map((entry) => entry.id));
+}
+
+/** Every side of a round, so a test can find the compromised pair or a mixed one. */
+function sidesOf(round: { matches: MutableMatch[] }): [PlayerId, PlayerId][] {
+  return round.matches.flatMap((match) => [match.sideA, match.sideB]);
+}
+
+/** Put `arriving` wherever `leaving` is standing in this round. */
+function substitute(
+  round: { matches: MutableMatch[] },
+  leaving: PlayerId,
+  arriving: PlayerId,
+): void {
+  for (const side of sidesOf(round)) {
+    const index = side.indexOf(leaving);
+    if (index !== -1) {
+      side[index] = arriving;
+    }
+  }
+}
+
+describe('assertSessionValid — Mixicano', () => {
+  it('accepts a generated Mixicano session, evenly split or not', () => {
+    for (const session of [evenlyMixed(), unevenlyMixed()]) {
+      expect(() => assertSessionValid(session)).not.toThrow();
+    }
+  });
+
+  it('rejects a same-gender pair the roster did not force', () => {
+    // Four women and four men pair cleanly. Trading two players of the same gender across the net
+    // on court one leaves the same eight players on the same two courts, and two pairs that did
+    // not have to exist.
+    const session = damaged(evenlyMixed(), (copy) => {
+      const women = womenOf(copy);
+      const [sideA, sideB] = sidesOf(copy.rounds[0]);
+      const swappable = sideB.findIndex((id) => women.has(id) === women.has(sideA[1]));
+      const moving = sideB[swappable];
+
+      sideB[swappable] = sideA[0];
+      sideA[0] = moving;
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/same-gender pair\(s\) where 0 is forced/);
+
+    assertSessionValid(evenlyMixed());
+  });
+
+  it('rejects a compromise handed to a player who has already carried more of them', () => {
+    // Seven women and three men compromise somebody every round, and the referee's rule is that
+    // it is whoever has carried least. So the damage is a swap between two women on court in the
+    // same round: the one in the same-gender pair steps out, and one who has carried more steps
+    // in. It is invisible to every other check — the same players are on the same courts, the
+    // bench has not moved, and the number of same-gender pairs is exactly what it was.
+    const valid = unevenlyMixed();
+    const session = damaged(valid, (copy) => {
+      const women = womenOf(copy);
+      const carried = new Map<PlayerId, number>();
+      const burden = (id: PlayerId): number => carried.get(id) ?? 0;
+
+      for (const round of copy.rounds) {
+        const sides = sidesOf(round);
+        const compromised = sides.filter((side) => women.has(side[0]) && women.has(side[1]));
+        const inAPair = new Set(compromised.flat());
+        const stepsOut = compromised.flat().sort((a, b) => burden(a) - burden(b))[0];
+        const stepsIn = sides
+          .flat()
+          .find((id) => women.has(id) && !inAPair.has(id) && burden(id) > burden(stepsOut));
+
+        if (stepsIn !== undefined) {
+          substitute(round, stepsOut, 'placeholder');
+          substitute(round, stepsIn, stepsOut);
+          substitute(round, 'placeholder', stepsIn);
+
+          return;
+        }
+
+        for (const id of inAPair) {
+          carried.set(id, burden(id) + 1);
+        }
+      }
+
+      throw new Error('The fixture no longer sets this scenario up.');
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/same-gender pair for the \d+ time\(s\)/);
+
+    assertSessionValid(valid);
+  });
+
+  it('rejects a Mixicano roster entry with no gender on it', () => {
+    const session = damaged(evenlyMixed(), (copy) => {
+      delete copy.roster[2].gender;
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/needs a gender on every roster entry/);
+
+    assertSessionValid(evenlyMixed());
   });
 });

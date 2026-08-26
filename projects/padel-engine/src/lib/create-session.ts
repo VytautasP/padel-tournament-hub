@@ -9,7 +9,7 @@
  * `generateRemaining` fills them.
  */
 import { deepFreeze } from './freeze';
-import type { Session, SessionConfig } from './model';
+import type { RosterEntry, Session, SessionConfig } from './model';
 import { assertSessionShape } from './session-shape';
 
 export function createSession(config: SessionConfig): Session {
@@ -23,7 +23,7 @@ export function createSession(config: SessionConfig): Session {
     id: config.id,
     mode: config.mode,
     status: 'in-progress',
-    roster: config.players.map((player) => ({ id: player.id, name: player.name })),
+    roster: config.players.map((player) => rosterEntry(player)),
     courtCount: config.courtCount,
     targetScore: config.targetScore,
     rounds: Array.from({ length: config.roundCount }, (_, index) => ({
@@ -36,6 +36,20 @@ export function createSession(config: SessionConfig): Session {
   assertSessionShape(session);
 
   return deepFreeze(session);
+}
+
+/**
+ * A roster entry as the session stores it: the fields the engine schedules from, and nothing a
+ * caller happened to hang off the object it passed in.
+ *
+ * Availability windows are not among them — a session starts with everybody here, and it is
+ * `addPlayer` and `removePlayer` that open and close windows (decision #5). `addPlayer` builds on
+ * this and adds the one it needs, so the two paths cannot disagree about what an entry holds.
+ */
+export function rosterEntry(player: RosterEntry): RosterEntry {
+  return player.gender === undefined
+    ? { id: player.id, name: player.name }
+    : { id: player.id, name: player.name, gender: player.gender };
 }
 
 export function roundId(sessionId: string, roundNumber: number): string {

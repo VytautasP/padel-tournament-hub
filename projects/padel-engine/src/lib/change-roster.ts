@@ -23,6 +23,7 @@
  *     against everything that has actually been played — including the matches of the player who
  *     has just gone home. This is the same delegation `addRound` makes, for the same reason.
  */
+import { rosterEntry } from './create-session';
 import { generateRemaining } from './generate-remaining';
 import type { PlayerId, RosterEntry, Session } from './model';
 import { hasLeft, joinedAtRound } from './roster-availability';
@@ -42,9 +43,11 @@ export function addPlayer(session: Session, player: RosterEntry): Session {
     throw new Error(`Player "${player.id}" is already on the roster.`);
   }
 
+  // Built the same way creation builds one, so a gender arrives with a late player exactly as it
+  // arrives with an original one — and is demanded of them by the same shape check, which the
+  // reschedule below runs.
   const arriving: RosterEntry = {
-    id: player.id,
-    name: player.name,
+    ...rosterEntry(player),
     joinedAtRound: firstUnplayedRound(session),
   };
 

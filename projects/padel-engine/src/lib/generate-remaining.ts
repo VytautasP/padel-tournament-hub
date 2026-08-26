@@ -1,5 +1,5 @@
 /*
- * Americano scheduling for any roster of four or more, on any number of courts.
+ * Americano and Mixicano scheduling for any roster of four or more, on any number of courts.
  *
  * The generator walks the session in round order, carrying a `SessionHistory` with it. Rounds that
  * are already generated are carried through untouched and folded into that history; empty ones are
@@ -16,6 +16,10 @@
  *     arrive late and go home early. It is this walk, carrying history across a roster that moves
  *     under it, that lets `addPlayer` and `removePlayer` own no scheduling of their own.
  *
+ * Mixicano is not a second walk. It is this one carrying a `MixedPairing` — the mode's answer to
+ * "are these two the same gender?" — down into the round planner, where it becomes one more term
+ * in the cost function. Bench rotation, partner variety and prefix fairness are untouched by it.
+ *
  * `planRound` decides who sits out and who partners whom; this file is the walk, the ids and the
  * copying. The rotation is seeded from the session id, so two sessions do not open with the same
  * fixture list and the same session always schedules identically.
@@ -24,6 +28,8 @@
  */
 import { matchId } from './create-session';
 import { deepFreeze } from './freeze';
+import { mixedPairingIn } from './mixed-pairing';
+import type { MixedPairing } from './mixed-pairing';
 import type { Match, PlayerId, Round, Session } from './model';
 import { planRound } from './plan-round';
 import { availableOf } from './roster-availability';
@@ -37,7 +43,8 @@ export function generateRemaining(session: Session): Session {
   assertSessionOpen(session, 'generating rounds');
 
   const order = seededOrder(session);
-  const history = new SessionHistory(session.roster);
+  const mixed = mixedPairingIn(session);
+  const history = new SessionHistory(session.roster, mixed);
   const rounds: Round[] = [];
 
   for (const round of session.rounds) {
@@ -46,7 +53,7 @@ export function generateRemaining(session: Session): Session {
     const filled: Round =
       round.matches.length > 0
         ? copyRound(round)
-        : { ...round, matches: buildMatches(session, order, round, history) };
+        : { ...round, matches: buildMatches(session, order, round, history, mixed) };
 
     history.record(filled);
     rounds.push(filled);
@@ -80,10 +87,11 @@ function buildMatches(
   order: readonly PlayerId[],
   round: Round,
   history: SessionHistory,
+  mixed: MixedPairing,
 ): Match[] {
   const available = availableOf(order, session.roster, round.number);
 
-  return planRound(available, courtsInPlay(session, round.number), history).map(
+  return planRound(available, courtsInPlay(session, round.number), history, mixed).map(
     (planned, index) => ({
       id: matchId(session.id, round.number, index + 1),
       courtNumber: index + 1,

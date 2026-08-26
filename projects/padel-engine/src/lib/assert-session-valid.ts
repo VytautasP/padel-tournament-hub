@@ -14,8 +14,11 @@
  * It throws on the first violation with a message naming the round and the players involved,
  * because a fairness bug is only useful if you can see what it did.
  */
+import { mixedPairingIn } from './mixed-pairing';
+import type { MixedPairing } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
 import { PairTally } from './pair-tally';
+import { seedAtFloor } from './queue-seed';
 import { availableIn, joinedAtRound } from './roster-availability';
 import { assertScorePairValid } from './score-rules';
 import { assertSessionShape, courtsInPlay, PLAYERS_PER_COURT } from './session-shape';
@@ -30,8 +33,10 @@ export function assertSessionValid(session: Session): void {
   assertGeneratedRoundsComeFirst(session);
   assertScoresSumToTarget(session);
 
+  const mixed = mixedPairingIn(session);
   const partnerCounts = new PairTally();
   const benchCounts = new Map<PlayerId, number>();
+  const sameGenderCounts = new Map<PlayerId, number>();
 
   for (const round of session.rounds) {
     if (round.matches.length === 0) {
@@ -48,7 +53,8 @@ export function assertSessionValid(session: Session): void {
     // Everything from here down is a prefix check: it holds after this round, given every
     // round before it, so a session truncated at any point is still valid.
     assertBenchSpread(round, available, benchCounts, nameOf);
-    assertPartnerVariety(round, available, partnerCounts, nameOf);
+    assertMixedPairing(round, available, mixed, sameGenderCounts, nameOf);
+    assertPartnerVariety(round, available, partnerCounts, mixed, nameOf);
   }
 }
 
@@ -211,6 +217,73 @@ function assertBenchSpread(
 }
 
 /**
+ * Mixicano's two rules, both consequences of same-gender pairing being a soft cost rather than a
+ * hard constraint (decision #7).
+ *
+ *   - **Minimised.** A round forms exactly as many same-gender pairs as the players on court
+ *     force and not one more: `|women - men| / 2`, since every man on court can partner a woman
+ *     and only the surplus on one side is left over. Fewer is arithmetically impossible; more
+ *     means the scheduler compromised somebody it did not have to.
+ *   - **Rotated.** Which players carry that compromise is free, and it goes to whoever has
+ *     carried it least. So nobody in a same-gender pair this round has been in more of them than
+ *     a player of their gender who is on court and *not* in one — that player could have taken
+ *     their place, because within a gender the surplus is interchangeable.
+ *
+ * Both are prefix checks, like the bench spread: an evening that stops after round four has to
+ * have spread its compromises over those four rounds, not over the twelve it planned for.
+ *
+ * A mode that does not pair across gender skips the check, where every question it asks would
+ * answer "none forced" and "nobody compromised".
+ */
+function assertMixedPairing(
+  round: Round,
+  available: readonly RosterEntry[],
+  mixed: MixedPairing,
+  sameGenderCounts: Map<PlayerId, number>,
+  nameOf: (id: PlayerId) => string,
+): void {
+  if (!mixed.mixes) {
+    return;
+  }
+
+  const playing = round.matches.flatMap(playersOf);
+  const sides = round.matches.flatMap((match) => [match.sideA, match.sideB]);
+  const compromised = sides.filter((side) => mixed.sameGender(side[0], side[1]));
+  const forced = mixed.forcedSameGenderPairs(playing);
+
+  if (compromised.length > forced) {
+    const [a, b] = compromised[0];
+    throw new Error(
+      `Round ${round.number} makes ${compromised.length} same-gender pair(s) where ${forced} ` +
+        `is forced — ${nameOf(a)} and ${nameOf(b)} could have been paired across.`,
+    );
+  }
+
+  // Counts as they stood *before* this round: the question is who was owed the compromise when
+  // the round was planned, not who is owed it now that it has been handed out.
+  seedAtFloor(sameGenderCounts, available, (a, b) => mixed.sameGender(a, b));
+  const carried = new Set(compromised.flat());
+  const burden = (id: PlayerId): number => sameGenderCounts.get(id) ?? 0;
+
+  for (const id of carried) {
+    const spared = playing.find(
+      (other) => !carried.has(other) && mixed.sameGender(id, other) && burden(other) < burden(id),
+    );
+
+    if (spared) {
+      throw new Error(
+        `Round ${round.number} puts ${nameOf(id)} in a same-gender pair for the ` +
+          `${burden(id) + 1} time(s) while ${nameOf(spared)} has been in ${burden(spared)}.`,
+      );
+    }
+  }
+
+  for (const id of carried) {
+    sameGenderCounts.set(id, burden(id) + 1);
+  }
+}
+
+/**
  * No partnership repeats while either player still has an unplayed partner. Generalised past the
  * first full rotation: a partnership played `n` times requires both players to have partnered
  * everyone else at least `n - 1` times.
@@ -221,11 +294,19 @@ function assertBenchSpread(
  * Someone who arrived two rounds ago has an empty column because they were not here — and since
  * one late arrival can absorb only one partnership a round, counting them would condemn every
  * other pairing on the court for a repeat there was no way to avoid.
+ *
+ * In Mixicano it is also the players they could be partnered *with*. A woman's partners come from
+ * the men, so the empty columns under the other women are not debts either — they are the format.
+ * Counting them would make the fifth round of an eight-player Mixicano evening a violation: by the
+ * fourth everyone has partnered every eligible player once, and the fifth has to repeat one of
+ * them. Same-gender pairs answer to the rules above this one instead — minimised and rotated —
+ * because they are the compromise hybrid fill forced rather than a partnership anyone chose.
  */
 function assertPartnerVariety(
   round: Round,
   available: readonly RosterEntry[],
   partnerCounts: PairTally,
+  mixed: MixedPairing,
   nameOf: (id: PlayerId) => string,
 ): void {
   const repeated: Pairing[] = [];
@@ -233,7 +314,7 @@ function assertPartnerVariety(
   for (const match of round.matches) {
     for (const side of [match.sideA, match.sideB]) {
       const count = partnerCounts.increment(side[0], side[1]);
-      if (count > 1) {
+      if (count > 1 && !mixed.sameGender(side[0], side[1])) {
         repeated.push({ a: side[0], b: side[1], count });
       }
     }
@@ -249,6 +330,7 @@ function assertPartnerVariety(
       const unplayed = available.find(
         (entry) =>
           entry.id !== player &&
+          !mixed.sameGender(entry.id, player) &&
           joinedAtRound(entry) <= (arrival.get(partner) ?? 1) &&
           partnerCounts.count(entry.id, player) < count - 1,
       );

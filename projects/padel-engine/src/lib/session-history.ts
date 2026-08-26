@@ -21,17 +21,23 @@
  *     repeat against someone who arrived two rounds ago would condemn every pairing on the court,
  *     since one late arrival can absorb only one partnership a round.
  */
+import type { MixedPairing } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round } from './model';
 import { PairTally } from './pair-tally';
+import { everyone, seedAtFloor } from './queue-seed';
 import { isAvailableIn, joinedAtRound } from './roster-availability';
 
 export class SessionHistory {
   private readonly partners = new PairTally();
   private readonly opponents = new PairTally();
   private readonly bench = new Map<PlayerId, number>();
+  private readonly compromised = new Map<PlayerId, number>();
   private readonly joinedAt: ReadonlyMap<PlayerId, number>;
 
-  constructor(private readonly roster: readonly RosterEntry[]) {
+  constructor(
+    private readonly roster: readonly RosterEntry[],
+    private readonly mixed: MixedPairing,
+  ) {
     this.joinedAt = new Map(roster.map((entry) => [entry.id, joinedAtRound(entry)]));
   }
 
@@ -45,6 +51,11 @@ export class SessionHistory {
     for (const match of round.matches) {
       for (const side of [match.sideA, match.sideB]) {
         this.partners.increment(side[0], side[1]);
+        if (this.mixed.sameGender(side[0], side[1])) {
+          for (const id of side) {
+            this.compromised.set(id, this.sameGenderCount(id) + 1);
+          }
+        }
       }
       for (const a of match.sideA) {
         for (const b of match.sideB) {
@@ -65,6 +76,53 @@ export class SessionHistory {
 
   benchCount(id: PlayerId): number {
     return this.bench.get(id) ?? 0;
+  }
+
+  /**
+   * How often this player has been the one put in a same-gender pair.
+   *
+   * Hybrid fill compromises somebody every round an unequal roster plays, and this is the count
+   * that stops it being the same somebody all evening (decision #7). It is a burden rather than
+   * an achievement, so the planner spends it the way it spends the bench: on whoever carries
+   * least of it.
+   */
+  sameGenderCount(id: PlayerId): number {
+    return this.compromised.get(id) ?? 0;
+  }
+
+  /**
+   * Each player's place in the queue to be compromised, within their own gender: 0 for whoever
+   * has been in fewest same-gender pairs, ties by position in `order`.
+   *
+   * A rank rather than the count itself, for two reasons. It is bounded by the roster size, so
+   * the planner's rotation term can never grow into the cost band above it however long the
+   * evening runs. And it makes ties explicit — two players level on count are separated by roster
+   * position, so the plan stays a function of the roster and the history alone (decision #6).
+   *
+   * Empty for a mode that does not pair across gender, which has no queue to be in.
+   */
+  compromiseRanks(order: readonly PlayerId[]): ReadonlyMap<PlayerId, number> {
+    const ranks = new Map<PlayerId, number>();
+    if (!this.mixed.mixes) {
+      return ranks;
+    }
+
+    order.forEach((id, index) => {
+      const carried = this.sameGenderCount(id);
+      const ahead = order.filter((other, position) => {
+        const theirs = this.sameGenderCount(other);
+
+        return (
+          position !== index &&
+          this.mixed.sameGender(id, other) &&
+          (theirs < carried || (theirs === carried && position < index))
+        );
+      });
+
+      ranks.set(id, ahead.length);
+    });
+
+    return ranks;
   }
 
   partnerCount(a: PlayerId, b: PlayerId): number {
@@ -89,7 +147,12 @@ export class SessionHistory {
    * that partner did has had fewer rounds to be paired with, so their empty column is a fact
    * about when they turned up rather than evidence of an unfair pairing.
    */
-  starvesAPartner(a: PlayerId, b: PlayerId, available: readonly PlayerId[]): boolean {
+  starvesAPartner(
+    a: PlayerId,
+    b: PlayerId,
+    available: readonly PlayerId[],
+    eligible: (player: PlayerId, other: PlayerId) => boolean,
+  ): boolean {
     const played = this.partnerCount(a, b);
     if (played === 0) {
       return false;
@@ -102,6 +165,7 @@ export class SessionHistory {
       available.some(
         (other) =>
           other !== player &&
+          eligible(player, other) &&
           this.joinedBy(other, partner) &&
           this.partnerCount(other, player) < played,
       ),
@@ -121,16 +185,13 @@ export class SessionHistory {
    * handing them a debt the schedule would have to pay off.
    */
   private admit(available: readonly RosterEntry[]): void {
-    const counts = available
-      .filter((entry) => this.bench.has(entry.id))
-      .map((entry) => this.benchCount(entry.id));
-    const floor = counts.length > 0 ? Math.min(...counts) : 0;
+    seedAtFloor(this.bench, available, everyone);
 
-    for (const entry of available) {
-      if (!this.bench.has(entry.id)) {
-        this.bench.set(entry.id, floor);
-      }
-    }
+    // The same seeding, one gender at a time: a woman arriving into a roster whose women have
+    // each been compromised twice is not owed two compromises, nor is she first in line for the
+    // next one. Comparing her only against the players she could be compromised *with* is what
+    // keeps the two genders' counts from being read as one queue.
+    seedAtFloor(this.compromised, available, (a, b) => this.mixed.sameGender(a, b));
   }
 }
 

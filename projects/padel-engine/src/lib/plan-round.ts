@@ -20,6 +20,7 @@
  * Every tie is broken by enumeration order, so the plan is a function of the roster order and the
  * history alone. No clock, no random source (decision #6).
  */
+import type { MixedPairing } from './mixed-pairing';
 import type { PlayerId } from './model';
 import type { SessionHistory } from './session-history';
 import { PLAYERS_PER_COURT } from './session-shape';
@@ -32,12 +33,25 @@ export interface PlannedMatch {
   readonly sideB: Pair;
 }
 
-/**
- * The cost of a partnership that would leave someone without a partner they have never had.
- * Far above any total a round of ordinary repeats could reach, so the search only ever chooses
- * one when no alternative exists at all.
+/*
+ * The cost function, in priority order.
+ *
+ * These are not weights to be tuned against each other — the gaps between them are wide enough
+ * that each term is only ever a tie-break among plans equal on every term above it. That is what
+ * lets the referee assert them one at a time: a round never buys a cheaper repeat with an extra
+ * same-gender pair, because no number of repeats reaches the price of one.
+ *
+ *   1. `SAME_GENDER_PAIR` — Mixicano forms one only when the arithmetic on court forces it
+ *      (decision #7), so the search minimises their count before it considers anything else.
+ *   2. `STARVING_REPEAT` — a repeat that leaves someone without a partner they have never had.
+ *   3. `UNROTATED` — how far the players being compromised are from the least-compromised ones.
+ *      A rank, not a raw count, so its total is bounded by the roster size rather than by how
+ *      long the evening has run, and cannot creep up into the band above it.
+ *   4. Ordinary partner repeats, at face value.
  */
-const STARVING_REPEAT = 1_000_000;
+const SAME_GENDER_PAIR = 10_000_000_000;
+const STARVING_REPEAT = 10_000_000;
+const UNROTATED = 10_000;
 
 /**
  * How many search steps a round may spend before it settles for the best plan found so far.
@@ -58,19 +72,21 @@ export function planRound(
   order: readonly PlayerId[],
   courtCount: number,
   history: SessionHistory,
+  mixed: MixedPairing,
 ): PlannedMatch[] {
   const benchSize = order.length - courtCount * PLAYERS_PER_COURT;
   const budget: Budget = { spent: 0 };
+  const rotation = history.compromiseRanks(order);
   let best: { pairs: Pair[]; cost: number } | undefined;
 
   for (const benched of benchSets(order, history, benchSize)) {
     const playing = order.filter((id) => !benched.has(id));
-    const candidate = choosePairs(playing, order, history, budget);
+    const candidate = choosePairs(playing, order, history, { mixed, rotation }, budget);
 
     if (!best || candidate.cost < best.cost) {
       best = candidate;
     }
-    // A repeat-free round is as good as a round can be, so there is nothing left to look for.
+    // A repeat-free, fully mixed round is as good as a round can be — nothing left to look for.
     if (best.cost === 0 || budget.spent > SEARCH_BUDGET) {
       break;
     }
@@ -152,9 +168,14 @@ function choosePairs(
   playing: readonly PlayerId[],
   available: readonly PlayerId[],
   history: SessionHistory,
+  mixing: Mixing,
   budget: Budget,
 ): { pairs: Pair[]; cost: number } {
-  const found = cheapestPairing(partnerCosts(playing, available, history), mostConstrained, budget);
+  const found = cheapestPairing(
+    partnerCosts(playing, available, history, mixing),
+    mostConstrained,
+    budget,
+  );
 
   return {
     pairs: found.pairs.map(([a, b]) => [playing[a], playing[b]] as Pair),
@@ -228,15 +249,41 @@ function partnerCosts(
   playing: readonly PlayerId[],
   available: readonly PlayerId[],
   history: SessionHistory,
+  { mixed, rotation }: Mixing,
 ): number[][] {
+  // In Mixicano a player's partners come from the other gender, so that is who a repeat is
+  // judged against. Counting the empty column under a partner they can only be paired with when
+  // the roster forces it would condemn every ordinary mixed pairing from the first rotation on.
+  const eligible = (player: PlayerId, other: PlayerId): boolean => !mixed.sameGender(player, other);
+
   return playing.map((a) =>
-    playing.map((b) =>
-      a === b
-        ? 0
-        : history.partnerCount(a, b) +
-          (history.starvesAPartner(a, b, available) ? STARVING_REPEAT : 0),
-    ),
+    playing.map((b) => {
+      if (a === b) {
+        return 0;
+      }
+      if (mixed.sameGender(a, b)) {
+        // A same-gender pair is the compromise, so it is priced as one: the cost of making it at
+        // all, plus how far down the rotation the two players carrying it are. Partner repeats
+        // still count, so the surplus does not fall to the same two people twice over.
+        return (
+          SAME_GENDER_PAIR +
+          UNROTATED * ((rotation.get(a) ?? 0) + (rotation.get(b) ?? 0)) +
+          history.partnerCount(a, b)
+        );
+      }
+
+      return (
+        history.partnerCount(a, b) +
+        (history.starvesAPartner(a, b, available, eligible) ? STARVING_REPEAT : 0)
+      );
+    }),
   );
+}
+
+/** The gender rule for this session, and this round's rotation order for carrying its compromise. */
+interface Mixing {
+  readonly mixed: MixedPairing;
+  readonly rotation: ReadonlyMap<PlayerId, number>;
 }
 
 /** The unpaired player with fewest free partners they have never played with; ties by order. */

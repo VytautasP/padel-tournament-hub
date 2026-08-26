@@ -7,8 +7,8 @@ next partner. Installable as a PWA, so it behaves like an app without ever touch
 
 ## Status
 
-**Engine, fair scheduling.** `padel-engine` schedules Americano for any roster of four or more on
-any number of courts — through `createSession`, `generateRemaining` and the referee that ships with
+**Engine, fair scheduling.** `padel-engine` schedules Americano and Mixicano for any roster of
+four or more on any number of courts — through `createSession`, `generateRemaining` and the referee that ships with
 them, `assertSessionValid`. Players who do not fit onto a court are benched, and the bench rotates:
 bench counts never differ by more than one, after every round rather than only at the end, because
 an evening that stops early has to be as fair as one that runs its course. Eleven players on two
@@ -28,8 +28,17 @@ sitting out never costs or gains position, and derived on every call rather than
 corrected score recomputes for free. Ties break by total points and then by a head-to-head
 mini-league among the tied players; a tie that survives all three tiers is returned as a declared
 joint position rather than ordered arbitrarily. See
-[ADR-0008](docs/adr/0008-standings-are-derived-and-ties-stop-at-the-evidence.md). Roster mutation,
-Mixicano and Team Americano are still to come. No application code exists yet.
+[ADR-0008](docs/adr/0008-standings-are-derived-and-ties-stop-at-the-evidence.md).
+
+**Mixicano** is the same scheduling machinery with one more term in its cost function: pairs
+should be mixed-gender. Real rosters do not split evenly, so seven women and three men fill the
+courts with mixed pairs and let the surplus play same-gender — never more such pairs than the
+players on court force, and rotated so the same two people are not the ones compromised every
+round. Same-gender pairs are marked in the schedule, derived from the roster rather than stored,
+so the organizer can explain a pairing rather than appear to have invented it. Bench spread,
+partner variety and prefix fairness hold unchanged throughout; see
+[ADR-0010](docs/adr/0010-mixicano-is-one-cost-term-and-a-derived-mark.md). Team Americano is
+still to come. No application code exists yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —
 live in **[docs/DECISIONS.md](docs/DECISIONS.md)**. That file is the source of truth. If code and
@@ -57,6 +66,14 @@ Requires Node 22.22.3+, 24.15+ or 26+ (Angular 22's floor — see
 npm install
 npm run verify         # format, lint, engine boundary check, build, tests
 npm run print:schedule # build, then print a few schedules to read
+```
+
+`print:schedule` takes players, courts and rounds — and a fourth number, how many of those
+players are women, which prints the session as Mixicano instead:
+
+```bash
+npm run print:schedule -- 10 2 12     # 10 players, 2 courts, 12 rounds of Americano
+npm run print:schedule -- 10 2 12 7   # ...as Mixicano, seven women and three men
 ```
 
 The workspace currently holds one project: `projects/padel-engine`, the pure TypeScript rules

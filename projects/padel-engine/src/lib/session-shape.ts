@@ -7,7 +7,7 @@
  * refuses to build is described in exactly the same words as a session that has drifted into
  * the same state.
  */
-import type { RosterEntry, Session } from './model';
+import type { RosterEntry, Session, SessionMode } from './model';
 import { availableIn, joinedAtRound, leftAfterRound } from './roster-availability';
 
 /** Players per match — two per side, four per court. */
@@ -35,7 +35,7 @@ export function assertSessionShape(session: Session): void {
   if (session.id.trim() === '') {
     throw new Error('A session needs an id.');
   }
-  if (session.mode !== 'americano') {
+  if (session.mode !== 'americano' && session.mode !== 'mixicano') {
     throw new Error(`Unknown session mode "${String(session.mode)}".`);
   }
   if (session.status !== 'in-progress' && session.status !== 'finished') {
@@ -64,13 +64,14 @@ export function assertSessionShape(session: Session): void {
     }
     seenPlayerIds.add(entry.id);
     assertWindowSound(entry);
+    assertGenderSound(entry, session.mode);
   }
 
   // Four players fill one court; below that there is no match to schedule. Above it any roster
   // is schedulable — whoever does not fit onto a court is benched, and the bench rotates.
   if (session.roster.length < PLAYERS_PER_COURT) {
     throw new Error(
-      `Americano needs at least ${PLAYERS_PER_COURT} players — ` +
+      `A session needs at least ${PLAYERS_PER_COURT} players — ` +
         `the roster has ${session.roster.length}.`,
     );
   }
@@ -124,9 +125,24 @@ function assertEveryRoundStaffable(session: Session): void {
     if (available < PLAYERS_PER_COURT) {
       throw new Error(
         `Round ${round.number} has ${available} player(s) available — ` +
-          `Americano needs at least ${PLAYERS_PER_COURT}.`,
+          `a session needs at least ${PLAYERS_PER_COURT} players.`,
       );
     }
+  }
+}
+
+/**
+ * Mixicano pairs across gender, so it needs one on every entry — and it needs it at the moment
+ * the session is built rather than at the moment the generator trips over a player it cannot
+ * classify. Americano has no use for the field and does not insist on it, but will not take a
+ * value it does not understand either: a typo in a stored document is a defect in both modes.
+ */
+function assertGenderSound(entry: RosterEntry, mode: SessionMode): void {
+  if (entry.gender !== undefined && entry.gender !== 'woman' && entry.gender !== 'man') {
+    throw new Error(`Roster entry "${entry.id}" has an unknown gender "${String(entry.gender)}".`);
+  }
+  if (mode === 'mixicano' && entry.gender === undefined) {
+    throw new Error(`Mixicano needs a gender on every roster entry — "${entry.id}" has none.`);
   }
 }
 

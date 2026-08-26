@@ -8,6 +8,7 @@
  * read — is private and free to be rewritten.
  */
 export type {
+  Gender,
   Match,
   MatchId,
   MatchScore,
@@ -33,4 +34,5 @@ export { finishSession } from './lib/finish-session';
 export { recordScore } from './lib/record-score';
 export { assertSessionValid } from './lib/assert-session-valid';
 export { formatSchedule } from './lib/format-schedule';
+export { sameGenderSides } from './lib/mixed-pairing';
 export { computeStandings } from './lib/standings';

@@ -19,10 +19,20 @@ export type RoundId = string;
 export type MatchId = string;
 
 /**
- * The format being played. Mixicano and Team Americano land in later tickets and widen
- * this union then — a mode the engine cannot yet schedule has no business being nameable.
+ * The format being played. Team Americano lands in a later ticket and widens this union then —
+ * a mode the engine cannot yet schedule has no business being nameable.
  */
-export type SessionMode = 'americano';
+export type SessionMode = 'americano' | 'mixicano';
+
+/**
+ * A player's gender, as Mixicano uses it: the one axis that format pairs across (decision #2).
+ *
+ * Two values, because the thing being modelled is the pairing rule rather than the person — a
+ * Mixicano pair is mixed or it is not, and the schedule has nothing else to say about it. It is
+ * required only for Mixicano; an Americano roster carries none, and a session stored before
+ * Mixicano existed reads back unchanged.
+ */
+export type Gender = 'woman' | 'man';
 
 /**
  * A player as this session knows them: a name with an id of its own (decision #9), and the
@@ -37,6 +47,8 @@ export type SessionMode = 'americano';
 export interface RosterEntry {
   readonly id: PlayerId;
   readonly name: string;
+  /** Required by Mixicano and by nothing else; absent on an Americano roster. */
+  readonly gender?: Gender;
   /** First round this player may be scheduled into. Absent means round 1. */
   readonly joinedAtRound?: number;
   /** Last round this player may be scheduled into. Absent means they have not left. */
