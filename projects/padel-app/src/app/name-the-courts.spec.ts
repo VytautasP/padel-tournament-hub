@@ -51,6 +51,29 @@ describe('naming the courts', () => {
       expect(app.textIn('Court 2 name')).toBe('Far end');
     });
 
+    it('gives a court back the name it had when it comes back into play', async () => {
+      // Dropping a court is not a decision about what the far end of the club is called.
+      const app = await atReview();
+      await app.setNumber('Courts', 2);
+      await app.typeInto('Court 2 name', 'Far end');
+
+      await app.setNumber('Courts', 1);
+      await app.setNumber('Courts', 2);
+
+      expect(app.textIn('Court 2 name')).toBe('Far end');
+    });
+
+    it('leaves the courts nobody has named holding their numbers', async () => {
+      // Naming court 3 says nothing about courts 1 and 2, which are still called what they were.
+      const app = await atReview();
+      await app.setNumber('Courts', 3);
+      await app.typeInto('Court 3 name', 'Centre');
+
+      expect(app.textIn('Court 1 name')).toBe('Court 1');
+      expect(app.textIn('Court 2 name')).toBe('Court 2');
+      expect(app.textIn('Court 3 name')).toBe('Centre');
+    });
+
     it('is still holding what was typed after a trip back to the roster', async () => {
       const app = await atReview();
       await app.typeInto('Court 1 name', 'Court 7');
@@ -129,8 +152,16 @@ describe('naming the courts', () => {
 
     it('offers no way to rename a court mid-session', async () => {
       // You name courts when you book them (ADR-0017 §6).
-      const app = await atReview();
-      await app.tap('Create session');
+      const created = await atReview();
+      await created.tap('Create session');
+
+      expect(created.hasField('Court 1 name')).toBe(false);
+      expect(created.shows('Court names')).toBe(false);
+
+      // Nor after the app has been closed and the evening resumed, which is the other way back
+      // into a session and the one where a creation screen could plausibly reappear.
+      const app = await created.reload();
+      await app.tap('Resume');
 
       expect(app.hasField('Court 1 name')).toBe(false);
       expect(app.shows('Court names')).toBe(false);

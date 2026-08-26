@@ -51,8 +51,9 @@ export class SessionStore {
   /**
    * What the organizer calls each court of the active session (ADR-0017 §6).
    *
-   * Empty where there is no session, and empty too for a record written before courts could be
-   * named — both of which `courtNameFor` reads as "nobody named this one".
+   * Empty where there is no session, which `courtNameFor` reads as "nobody named this one" and
+   * renders as `Court N`. A stored record always carries the names: one written before courts
+   * could be named is a version the repository refuses.
    */
   readonly courtNames = computed<readonly string[]>(() => this.record()?.courtNames ?? []);
 

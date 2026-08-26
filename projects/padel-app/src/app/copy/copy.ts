@@ -85,7 +85,10 @@ export const copy = {
   round: {
     heading: (roundNumber: number, roundCount: number): string =>
       `Round ${roundNumber} of ${roundCount}`,
-    /** What a court is called when the organizer did not call it anything (ADR-0017 §6). */
+    /**
+     * A court named by its number: what Review pre-fills a name field with, and what a court
+     * whose field was left blank is called on the schedule (ADR-0017 §6).
+     */
     courtName: (courtNumber: number): string => `Court ${courtNumber}`,
     side: (names: readonly string[]): string => names.join(' & '),
     versus: 'v',

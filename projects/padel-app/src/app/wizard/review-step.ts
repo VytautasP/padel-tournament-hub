@@ -16,13 +16,12 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { copy, modeNames } from '../copy/copy';
 import { NumberField } from './number-field';
+import { TextField } from './text-field';
 import { WizardDraft } from './wizard-draft';
-
-let nextStepId = 1;
 
 @Component({
   selector: 'app-review-step',
-  imports: [NumberField],
+  imports: [NumberField, TextField],
   templateUrl: './review-step.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,27 +32,14 @@ export class ReviewStep {
   protected readonly copy = copy;
   protected readonly modeNames = modeNames;
 
-  private readonly stepId = nextStepId++;
-
-  /**
-   * One row per court in play: its number, the words beside the field, the id tying the two
-   * together, and what the field is holding.
-   *
-   * The id is generated rather than taken from the court number alone because two wizards in one
-   * document — a test rendering the app twice — would otherwise label each other's fields.
-   */
+  /** One row per court in play: its number, the words beside its field, and what it is called. */
   protected readonly courts = computed(() =>
     this.draft()
       .courtNames()
       .map((name, index) => ({
         number: index + 1,
         label: copy.wizard.review.courtName(index + 1),
-        fieldId: `court-name-${this.stepId}-${index + 1}`,
         name,
       })),
   );
-
-  protected onCourtName(courtNumber: number, event: Event): void {
-    this.draft().setCourtName(courtNumber, (event.target as HTMLInputElement).value);
-  }
 }

@@ -51,7 +51,8 @@ pair goes home the team keeps its slot and its points and the other half is flag
 [ADR-0012](docs/adr/0012-an-orphaned-team-keeps-its-slot-and-the-fixture-ledger-restarts-with-the-field.md).
 **The app runs an Americano evening, scored, with a live table.** `padel-app` opens on a landing
 page, walks a three-step wizard — mode, names, then a review screen already holding a target of 24,
-one court and a complete rotation capped at 12 — and generates the schedule. The session is a
+one court, a complete rotation capped at 12 and a name per court, pre-filled `Court 1…N` for the
+club that books courts 7 and 8 (ADR-0017 §6) — and generates the schedule. The session is a
 three-tab shell (ADR-0016): the Round tab renders the round the evening is on — every court, both
 sides, whoever is sitting out — and tapping a court opens the score sheet, two views of one number
 bounded by the session's target, which refuses anything larger rather than quietly clamping it

@@ -154,7 +154,14 @@ export class WizardDraft {
    */
   setCourtName(courtNumber: number, name: string): void {
     this.typedCourtNames.update((names) => {
-      const next = [...names];
+      // Padded rather than assigned into, so naming court 3 before court 2 leaves court 2 holding
+      // the default it was showing anyway rather than a hole. A sparse array reads the same
+      // through `[]` but does not survive being iterated or serialised, and this one is read both
+      // ways. Padding with the default is what keeps an untouched field distinct from a cleared
+      // one — a cleared field holds the empty string, which is a different answer.
+      const next = Array.from({ length: Math.max(names.length, courtNumber) }, (_, index) =>
+        index < names.length ? names[index] : copy.round.courtName(index + 1),
+      );
       next[courtNumber - 1] = name;
 
       return next;

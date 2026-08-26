@@ -34,17 +34,11 @@
       {{ copy.wizard.review.courtNames }}
     </h2>
     @for (court of courts(); track court.number) {
-      <div class="flex items-center justify-between gap-4">
-        <label class="text-base text-ink" [attr.for]="court.fieldId">{{ court.label }}</label>
-        <input
-          type="text"
-          autocomplete="off"
-          class="w-40 rounded-xl border border-line bg-surface-raised px-3 py-2 text-right text-base text-ink"
-          [id]="court.fieldId"
-          [value]="court.name"
-          (input)="onCourtName(court.number, $event)"
-        />
-      </div>
+      <app-text-field
+        [label]="court.label"
+        [value]="court.name"
+        (changed)="draft().setCourtName(court.number, $event)"
+      />
     }
   </div>
 

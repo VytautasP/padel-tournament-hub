@@ -20,7 +20,15 @@ import type { SessionRepository } from './session-repository';
 
 /** Where the active session lives. Exported so a test can put a bad document there on purpose. */
 export const STORAGE_KEY = 'padel-tournament-hub:active-session';
-const FORMAT_VERSION = 1;
+/**
+ * 2 since courts could be named (ADR-0017 §6).
+ *
+ * A version-1 document has no `courtNames`, so reading one back would hand the app a record that
+ * does not have the shape its own type promises. Refusing it is what the version is for: the
+ * alternative is a required field that is quietly absent at runtime, and a type nobody can trust
+ * is worse than an evening that has to be started again.
+ */
+const FORMAT_VERSION = 2;
 
 interface StoredDocument {
   readonly version: number;
