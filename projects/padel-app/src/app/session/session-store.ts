@@ -1,9 +1,10 @@
 /*
  * The active session, and the only thing in the app that calls the engine (decision #17).
  *
- * Screens read signals off this store and call methods on it; none of them imports
- * `padel-engine`. That is what keeps the engine's surface reviewable — every rule the app
+ * Screens read signals off this store and call methods on it; none of them calls an engine
+ * operation of its own. That is what keeps the engine's surface reviewable — every rule the app
  * exercises passes through this one file — and what makes a screen testable by rendering it.
+ * Reading the engine's *types* is not a call, and happens wherever a session is rendered.
  *
  * The store also owns the fact that reading a session is asynchronous. `restore()` runs once at
  * startup; until it settles, `ready()` is false and the app renders nothing rather than flashing

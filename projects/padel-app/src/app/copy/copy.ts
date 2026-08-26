@@ -74,7 +74,6 @@ export const copy = {
     courtName: (courtNumber: number): string => `Court ${courtNumber}`,
     side: (names: readonly string[]): string => names.join(' & '),
     versus: 'v',
-    score: (sideA: number, sideB: number): string => `${sideA} - ${sideB}`,
     noScore: 'No score yet',
     bench: (names: readonly string[]): string => `Sitting out: ${names.join(', ')}`,
   },

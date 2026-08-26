@@ -81,6 +81,26 @@ describe('creating an Americano session', () => {
       expect(app.shows('Dov')).toBe(false);
     });
 
+    it('leaves a player alone when a correction is blanked', async () => {
+      // Clearing the field is on the way to retyping a name, not a hidden way to delete one.
+      const app = await atPlayers();
+      await enterRoster(app, ['Ana', 'Ben']);
+
+      await app.tap('Edit Ana');
+      await app.type(NAME_FIELD, '');
+      await app.tap('Save');
+
+      expect(app.shows('Ana')).toBe(true);
+      expect(app.shows('Ben')).toBe(true);
+    });
+
+    it('says nothing about the minimum before anybody has typed a name', async () => {
+      const app = await atPlayers();
+
+      expect(app.shows('A session needs at least 4 players.')).toBe(false);
+      expect(app.canTap('Next')).toBe(false);
+    });
+
     it('blocks a roster of three and says why, on the screen where it is fixable', async () => {
       const app = await atPlayers();
       await enterRoster(app, ['Ana', 'Ben', 'Cara']);
@@ -118,6 +138,14 @@ describe('creating an Americano session', () => {
       expect(stored?.session.targetScore).toBe(32);
       expect(stored?.session.rounds).toHaveLength(3);
       app.expectStoredSessionValid();
+    });
+
+    it('shows the nearest number an evening can be run with rather than accepting a zero', async () => {
+      const app = await atReview(ROSTER);
+
+      await app.setNumber('Courts', 0);
+
+      expect(app.numberIn('Courts')).toBe(1);
     });
 
     it('keeps everything typed when Back is used to go and check', async () => {
@@ -159,6 +187,7 @@ describe('creating an Americano session', () => {
         expect(app.shows(name)).toBe(true);
       }
       expect(app.shows('Sitting out:')).toBe(true);
+      app.expectStoredSessionValid();
     });
 
     it('names every court a two-court evening puts in play', async () => {
@@ -181,6 +210,7 @@ describe('creating an Americano session', () => {
       expect(app.isOnScreen('New session')).toBe(false);
       expect(app.canTap('Resume')).toBe(true);
       expect(app.shows('Americano · 5 players · round 1')).toBe(true);
+      app.expectStoredSessionValid();
     });
 
     it('puts the organizer back in the same round of the same session', async () => {

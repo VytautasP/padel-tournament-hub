@@ -10,10 +10,12 @@
  */
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { copy, modeNames } from '../copy/copy';
+import { NumberField } from './number-field';
 import { WizardDraft } from './wizard-draft';
 
 @Component({
   selector: 'app-review-step',
+  imports: [NumberField],
   templateUrl: './review-step.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -23,20 +25,4 @@ export class ReviewStep {
 
   protected readonly copy = copy;
   protected readonly modeNames = modeNames;
-
-  protected setTargetScore(event: Event): void {
-    this.draft().setTargetScore(numberIn(event));
-  }
-
-  protected setCourtCount(event: Event): void {
-    this.draft().setCourtCount(numberIn(event));
-  }
-
-  protected setRoundCount(event: Event): void {
-    this.draft().setRoundCount(numberIn(event));
-  }
-}
-
-function numberIn(event: Event): number {
-  return Number.parseInt((event.target as HTMLInputElement).value, 10);
 }

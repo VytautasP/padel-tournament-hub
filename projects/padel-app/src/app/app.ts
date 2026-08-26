@@ -9,7 +9,7 @@
  * Without that, "stable" would mean "the first paint happened", and every test would be racing a
  * promise it could not see.
  */
-import { Component, inject, PendingTasks, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, PendingTasks, signal } from '@angular/core';
 import { CreateWizard } from './wizard/create-wizard';
 import { Landing } from './landing/landing';
 import { RoundTab } from './round/round-tab';
@@ -21,6 +21,7 @@ type Screen = 'landing' | 'wizard' | 'session';
   selector: 'app-root',
   imports: [CreateWizard, Landing, RoundTab],
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   private readonly store = inject(SessionStore);

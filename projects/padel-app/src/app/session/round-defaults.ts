@@ -18,6 +18,12 @@ export const DEFAULT_COURT_COUNT = 1;
  */
 export const MAX_SUGGESTED_ROUND_COUNT = 12;
 
+/**
+ * The smallest any of Review's three numbers can be. An evening with no courts, no rounds or a
+ * target of nothing is not an evening, and the engine's shape check refuses all three.
+ */
+export const MINIMUM_SESSION_NUMBER = 1;
+
 /** Four players fill one court, and below that there is nothing to schedule (decision #4). */
 export const MINIMUM_PLAYERS = 4;
 

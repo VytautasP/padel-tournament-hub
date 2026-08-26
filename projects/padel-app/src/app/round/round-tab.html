@@ -13,13 +13,7 @@
           <p class="text-lg text-ink">{{ copy.round.side(court.sideA) }}</p>
           <p class="text-xs tracking-wide text-ink-muted uppercase">{{ copy.round.versus }}</p>
           <p class="text-lg text-ink">{{ copy.round.side(court.sideB) }}</p>
-          @if (court.score; as score) {
-            <p class="text-lg font-semibold text-ink">
-              {{ copy.round.score(score.sideA, score.sideB) }}
-            </p>
-          } @else {
-            <p class="text-sm text-ink-muted">{{ copy.round.noScore }}</p>
-          }
+          <p class="text-sm text-ink-muted">{{ copy.round.noScore }}</p>
         </li>
       }
     </ul>

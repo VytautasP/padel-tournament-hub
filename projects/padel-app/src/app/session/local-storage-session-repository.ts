@@ -18,7 +18,8 @@ import { Injectable } from '@angular/core';
 import type { SessionRecord } from './session-record';
 import type { SessionRepository } from './session-repository';
 
-const STORAGE_KEY = 'padel-tournament-hub:active-session';
+/** Where the active session lives. Exported so a test can put a bad document there on purpose. */
+export const STORAGE_KEY = 'padel-tournament-hub:active-session';
 const FORMAT_VERSION = 1;
 
 interface StoredDocument {

@@ -12,50 +12,21 @@
   </dl>
 
   <div class="space-y-3">
-    <div class="flex items-center justify-between gap-4">
-      <label class="text-base text-ink" for="target-score">
-        {{ copy.wizard.review.targetScore }}
-      </label>
-      <input
-        id="target-score"
-        type="number"
-        inputmode="numeric"
-        min="1"
-        class="w-24 rounded-xl border border-line bg-surface-raised px-3 py-2 text-right text-base text-ink"
-        [value]="draft().targetScore()"
-        (input)="setTargetScore($event)"
-      />
-    </div>
-
-    <div class="flex items-center justify-between gap-4">
-      <label class="text-base text-ink" for="court-count">
-        {{ copy.wizard.review.courtCount }}
-      </label>
-      <input
-        id="court-count"
-        type="number"
-        inputmode="numeric"
-        min="1"
-        class="w-24 rounded-xl border border-line bg-surface-raised px-3 py-2 text-right text-base text-ink"
-        [value]="draft().courtCount()"
-        (input)="setCourtCount($event)"
-      />
-    </div>
-
-    <div class="flex items-center justify-between gap-4">
-      <label class="text-base text-ink" for="round-count">
-        {{ copy.wizard.review.roundCount }}
-      </label>
-      <input
-        id="round-count"
-        type="number"
-        inputmode="numeric"
-        min="1"
-        class="w-24 rounded-xl border border-line bg-surface-raised px-3 py-2 text-right text-base text-ink"
-        [value]="draft().roundCount()"
-        (input)="setRoundCount($event)"
-      />
-    </div>
+    <app-number-field
+      [label]="copy.wizard.review.targetScore"
+      [value]="draft().targetScore()"
+      (changed)="draft().setTargetScore($event)"
+    />
+    <app-number-field
+      [label]="copy.wizard.review.courtCount"
+      [value]="draft().courtCount()"
+      (changed)="draft().setCourtCount($event)"
+    />
+    <app-number-field
+      [label]="copy.wizard.review.roundCount"
+      [value]="draft().roundCount()"
+      (changed)="draft().setRoundCount($event)"
+    />
   </div>
 
   <button

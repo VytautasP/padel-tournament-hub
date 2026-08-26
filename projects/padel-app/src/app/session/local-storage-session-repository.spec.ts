@@ -1,8 +1,6 @@
 import { createSession, generateRemaining } from 'padel-engine';
-import { LocalStorageSessionRepository } from './local-storage-session-repository';
+import { LocalStorageSessionRepository, STORAGE_KEY } from './local-storage-session-repository';
 import type { SessionRecord } from './session-record';
-
-const STORAGE_KEY = 'padel-tournament-hub:active-session';
 
 describe('the localStorage session repository', () => {
   beforeEach(() => localStorage.clear());

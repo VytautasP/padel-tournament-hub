@@ -17,6 +17,7 @@ import {
   DEFAULT_COURT_COUNT,
   DEFAULT_TARGET_SCORE,
   MINIMUM_PLAYERS,
+  MINIMUM_SESSION_NUMBER,
 } from '../session/round-defaults';
 import type { SessionDraft } from '../session/session-store';
 
@@ -55,18 +56,24 @@ export class WizardDraft {
 
   readonly roundCount = computed(() => this.chosenRoundCount() ?? this.suggestedRoundCount());
 
+  /** Whether the roster is one the engine could schedule (decision #4). */
+  readonly canLeavePlayers = computed(() => this.entries().length >= MINIMUM_PLAYERS);
+
   /**
-   * Why the roster cannot go on to Review, as a code rather than a sentence.
+   * Why the roster cannot go on to Review, as a code rather than a sentence — and only once
+   * there is a roster to have a problem with.
+   *
+   * An empty list is not a mistake anybody has made yet. Telling someone who has opened the
+   * screen and typed nothing that they need four players is nagging, and it means the sentence is
+   * already on screen when the moment it exists for — a third name, and no fourth — arrives.
    *
    * The draft names the problem; the step looks the wording up in the copy dictionary
    * (decision #20). Returning the sentence itself would put English in here, which is the one
    * place outside a template where it would be just as hard to find later.
    */
   readonly playersProblem = computed<PlayersProblem | null>(() =>
-    this.entries().length < MINIMUM_PLAYERS ? 'too-few' : null,
+    this.entries().length > 0 && !this.canLeavePlayers() ? 'too-few' : null,
   );
-
-  readonly canLeavePlayers = computed(() => this.playersProblem() === null);
 
   addPlayer(name: string): void {
     const trimmed = name.trim();
@@ -77,11 +84,16 @@ export class WizardDraft {
     this.entries.update((players) => [...players, { id: `d${this.nextId++}`, name: trimmed }]);
   }
 
+  /**
+   * Correct a name that is already on the list.
+   *
+   * A blank correction leaves the player alone rather than removing them. Deleting somebody by
+   * clearing a field would be a destructive gesture with no visible affordance and no way back —
+   * and removing is already one tap on the row itself.
+   */
   renamePlayer(id: string, name: string): void {
     const trimmed = name.trim();
     if (trimmed === '') {
-      this.removePlayer(id);
-
       return;
     }
 
@@ -95,15 +107,15 @@ export class WizardDraft {
   }
 
   setTargetScore(value: number): void {
-    this.targetScore.set(atLeast(1, value, DEFAULT_TARGET_SCORE));
+    this.targetScore.set(wholeNumber(value, this.targetScore()));
   }
 
   setCourtCount(value: number): void {
-    this.courtCount.set(atLeast(1, value, DEFAULT_COURT_COUNT));
+    this.courtCount.set(wholeNumber(value, this.courtCount()));
   }
 
   setRoundCount(value: number): void {
-    this.chosenRoundCount.set(atLeast(1, value, this.suggestedRoundCount()));
+    this.chosenRoundCount.set(wholeNumber(value, this.roundCount()));
   }
 
   toSessionDraft(): SessionDraft {
@@ -118,12 +130,18 @@ export class WizardDraft {
 }
 
 /**
- * A number field the organizer is halfway through retyping is empty, not zero.
+ * What a number field is worth after a keystroke.
  *
- * Clearing a field to type a different number would otherwise be a moment where the draft holds
- * a session that cannot exist, and the engine's shape check would refuse whatever the next
- * keystroke produced. Falling back keeps the draft always creatable.
+ * `NumberField` has already refused anything below the minimum, so this is the draft defending
+ * its own state rather than a second opinion about the same keystroke: a value that never came
+ * from a field — a stored draft, a future caller — cannot put the evening into a shape the engine
+ * would refuse. A field the organizer has emptied on the way to typing something else holds no
+ * number at all, and the draft keeps what it had.
  */
-function atLeast(minimum: number, value: number, fallback: number): number {
-  return Number.isInteger(value) && value >= minimum ? value : fallback;
+function wholeNumber(value: number, current: number): number {
+  if (!Number.isFinite(value)) {
+    return current;
+  }
+
+  return Math.max(MINIMUM_SESSION_NUMBER, Math.floor(value));
 }

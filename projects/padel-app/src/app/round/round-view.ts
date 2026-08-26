@@ -10,14 +10,12 @@
  * does not name is sitting out. Deriving it is what keeps it honest when a roster changes under
  * an already-generated round.
  */
-import type { PlayerId, Session } from 'padel-engine';
+import type { PlayerId, RosterEntry, Session } from 'padel-engine';
 
 export interface CourtView {
   readonly courtNumber: number;
   readonly sideA: readonly string[];
   readonly sideB: readonly string[];
-  /** Absent while the court is still playing, or its result has not reached the organizer. */
-  readonly score?: { readonly sideA: number; readonly sideB: number };
 }
 
 export interface RoundView {
@@ -27,6 +25,7 @@ export interface RoundView {
   readonly bench: readonly string[];
 }
 
+/** The round as the Round tab renders it, or `null` if it has not been generated yet. */
 export function roundView(session: Session, roundNumber: number): RoundView | null {
   const round = session.rounds.find((candidate) => candidate.number === roundNumber);
   if (round === undefined || round.matches.length === 0) {
@@ -36,8 +35,8 @@ export function roundView(session: Session, roundNumber: number): RoundView | nu
   const nameOf = (id: PlayerId): string =>
     session.roster.find((entry) => entry.id === id)?.name ?? id;
 
-  const playing = new Set(
-    round.matches.flatMap((match) => [...match.sideA, ...match.sideB]) as PlayerId[],
+  const playing = new Set<PlayerId>(
+    round.matches.flatMap((match) => [...match.sideA, ...match.sideB]),
   );
 
   return {
@@ -46,26 +45,22 @@ export function roundView(session: Session, roundNumber: number): RoundView | nu
       courtNumber: match.courtNumber,
       sideA: match.sideA.map(nameOf),
       sideB: match.sideB.map(nameOf),
-      ...(match.score ? { score: match.score } : {}),
     })),
     bench: session.roster
-      .filter((entry) => !playing.has(entry.id))
-      .filter((entry) =>
-        isPlayingThisEvening(entry.leftAfterRound, entry.joinedAtRound, roundNumber),
-      )
+      .filter((entry) => !playing.has(entry.id) && isHereForRound(entry, roundNumber))
       .map((entry) => entry.name),
   };
 }
 
 /**
- * Whether a roster entry counts as benched in this round rather than simply not here yet, or
- * gone home. Someone who left after round 3 is not "sitting out" round 5 — they are at home, and
- * naming them on the bench strip would send somebody looking for them.
+ * Whether this round is one the player is present for — as opposed to one before they arrived or
+ * after they went home (decision #5).
+ *
+ * Somebody who left after round 3 is not "sitting out" round 5; they are at home, and naming them
+ * on the bench strip would send one of the other nine looking for them.
  */
-function isPlayingThisEvening(
-  leftAfterRound: number | undefined,
-  joinedAtRound: number | undefined,
-  roundNumber: number,
-): boolean {
-  return (joinedAtRound ?? 1) <= roundNumber && roundNumber <= (leftAfterRound ?? Infinity);
+function isHereForRound(entry: RosterEntry, roundNumber: number): boolean {
+  return (
+    (entry.joinedAtRound ?? 1) <= roundNumber && roundNumber <= (entry.leftAfterRound ?? Infinity)
+  );
 }

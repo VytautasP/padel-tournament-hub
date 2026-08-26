@@ -42,6 +42,19 @@ evening in progress.
 near-misses, because a convention checker nobody has seen reject anything is indistinguishable
 from one that always passes.
 
+## Not decided here: court names
+
+ADR-0017 §6 says courts are named by the organizer on Review, and that the court-number-to-name
+mapping "has to live in the session document" as "the first app-owned field on a document the
+engine otherwise owns entirely". `SessionRecord` is that document and it carries only `createdAt`,
+because issue #17 scoped the first slice to exactly that field and listed only target score, court
+count and round count on Review.
+
+So ADR-0017 §6 is **deferred, not overturned**. The Round tab renders `Court N` from the copy
+dictionary today, and the naming fields and the record's `courtNames` belong to whichever slice
+next touches Review. Anyone reading this file after that slice lands should expect the mapping to
+be there; if it is not, this paragraph is the bug report.
+
 ## Consequences
 
 - A deep link into a running session is not available and is not a regression when the spectator
