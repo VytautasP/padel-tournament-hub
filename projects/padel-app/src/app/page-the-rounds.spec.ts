@@ -2,19 +2,20 @@
  * Reaching the whole evening from the Round tab: paging, the bench, and one more round.
  *
  * The Round tab shows one round at a time (ADR-0016 §2), so everything the organizer is asked
- * between rounds — "who am I with in round 6?", "who is sitting out?", "have we got time for
- * another?" — has to be reachable by paging rather than by scrolling a whole schedule. These
- * tests page the way a thumb pages and read the way an eye reads: labels and rendered text,
- * never a component or a signal.
+ * between rounds — "who am I with in round 6?", "who is sitting out?", "have we time for another?"
+ * — has to be reachable by paging rather than by scrolling a whole schedule. These tests page the
+ * way a thumb pages and read the way an eye reads: labels and rendered text, never a component or
+ * a signal.
  *
  * Two of them are about the screen refusing to move. A score landing must not advance the round
  * (ADR-0016 §3), and paging away and back must not disturb what has been entered. Both are the
  * kind of thing that holds until somebody makes the shown round a computed of the current round,
  * which is exactly why they are written down.
  */
-import { removePlayer } from 'padel-engine';
-import type { Match, Round, Session } from 'padel-engine';
-import { AppHarness } from './testing/app-harness';
+import { addPlayer, removePlayer } from 'padel-engine';
+import type { Round, Session } from 'padel-engine';
+import type { AppHarness } from './testing/app-harness';
+import { createSession, score, storedSession } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 const SIX = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin', 'Finn'];
@@ -95,9 +96,10 @@ describe('paging the rounds', () => {
   describe('the bench strip', () => {
     it('names everyone the round leaves off a court', async () => {
       const app = await createSession(SIX);
+      const benched = offTheCourtsIn(app, 1);
 
-      expect(app.shows(`Sitting out: ${benchedIn(app, 1).join(', ')}`)).toBe(true);
-      expect(benchedIn(app, 1).length).toBe(2);
+      expect(benched.length).toBe(2);
+      expect(app.shows(`Sitting out: ${benched.join(', ')}`)).toBe(true);
     });
 
     it('is absent entirely where the roster fits the courts exactly', async () => {
@@ -106,24 +108,49 @@ describe('paging the rounds', () => {
       expect(app.shows('Sitting out')).toBe(false);
     });
 
-    it('reflects who was available in that round, not who is available now', async () => {
-      // Somebody who went home after round 1 is not sitting out round 2; they are at home, and
-      // naming them on the strip would send one of the other five looking for them (decision #5).
-      const played = await createSession(SIX);
-      await score(played, 17);
-      await sendHome(played, 'Finn');
+    it('does not name somebody who has gone home', async () => {
+      // They are not sitting out round 2; they are at home, and naming them on the strip would
+      // send one of the other five looking for them (decision #5).
+      const played = await sixWithRoundOnePlayed();
+      await amendRoster(played, (session) => removePlayer(session, idOf(played, 'Finn')));
 
       const app = await played.reload();
       await app.tap('Resume');
 
       expect(app.shows('Round 2 of 8')).toBe(true);
       expect(app.shows('Finn')).toBe(false);
-      expect(app.shows(`Sitting out: ${benchedIn(app, 2).join(', ')}`)).toBe(true);
+      expect(app.shows(`Sitting out: ${without(offTheCourtsIn(app, 2), 'Finn').join(', ')}`)).toBe(
+        true,
+      );
+    });
 
+    it('names them again on the round they were still here for', async () => {
+      const played = await sixWithRoundOnePlayed();
+      await amendRoster(played, (session) => removePlayer(session, idOf(played, 'Finn')));
+
+      const app = await played.reload();
+      await app.tap('Resume');
       await app.tap('Previous round');
 
       expect(app.shows('Round 1 of 8')).toBe(true);
-      expect(app.shows(`Sitting out: ${benchedIn(app, 1).join(', ')}`)).toBe(true);
+      expect(app.shows(`Sitting out: ${offTheCourtsIn(app, 1).join(', ')}`)).toBe(true);
+    });
+
+    it('does not name somebody who had not arrived yet', async () => {
+      const played = await sixWithRoundOnePlayed();
+      await amendRoster(played, (session) =>
+        addPlayer(session, { id: `${session.id}:late`, name: 'Gita' }),
+      );
+
+      const app = await played.reload();
+      await app.tap('Resume');
+      await app.tap('Previous round');
+
+      expect(app.shows('Round 1 of 8')).toBe(true);
+      expect(app.shows('Gita')).toBe(false);
+      expect(app.shows(`Sitting out: ${without(offTheCourtsIn(app, 1), 'Gita').join(', ')}`)).toBe(
+        true,
+      );
     });
   });
 
@@ -218,7 +245,15 @@ describe('paging the rounds', () => {
   });
 });
 
-/** Page next until the control runs out — the Add round card is what is past the last round. */
+/** Six players on one court, round one played out — an evening a roster can move under. */
+async function sixWithRoundOnePlayed(): Promise<AppHarness> {
+  const app = await createSession(SIX);
+  await score(app, 17);
+
+  return app;
+}
+
+/** Page next until the control runs out — what is past the last round is the Add round card. */
 async function pageToTheEnd(app: AppHarness): Promise<void> {
   while (app.canTap('Next round')) {
     await app.tap('Next round');
@@ -230,101 +265,54 @@ function roundsOf(app: AppHarness): readonly Round[] {
   return storedSession(app).rounds;
 }
 
-/** Who this round leaves off a court, in roster order — what the strip should be saying. */
-function benchedIn(app: AppHarness, roundNumber: number): readonly string[] {
+/**
+ * Who this round puts on no court, in roster order.
+ *
+ * Deliberately *not* the availability rule the screen uses: this is the whole roster minus the
+ * people standing on a court, and each test says for itself who it expects to be missing on top
+ * of that. A helper that reimplemented `isHereForRound` would agree with a broken screen for
+ * exactly the reason the screen was broken.
+ */
+function offTheCourtsIn(app: AppHarness, roundNumber: number): readonly string[] {
   const session = storedSession(app);
   const round = session.rounds.find((candidate) => candidate.number === roundNumber);
   const playing = new Set(
     (round?.matches ?? []).flatMap((match) => [...match.sideA, ...match.sideB]),
   );
 
-  return session.roster
-    .filter(
-      (entry) =>
-        !playing.has(entry.id) &&
-        (entry.joinedAtRound ?? 1) <= roundNumber &&
-        roundNumber <= (entry.leftAfterRound ?? Infinity),
-    )
-    .map((entry) => entry.name);
+  return session.roster.filter((entry) => !playing.has(entry.id)).map((entry) => entry.name);
+}
+
+function without(names: readonly string[], name: string): readonly string[] {
+  return names.filter((candidate) => candidate !== name);
+}
+
+function idOf(app: AppHarness, name: string): string {
+  const entry = storedSession(app).roster.find((candidate) => candidate.name === name);
+  if (entry === undefined) {
+    throw new Error(`Nobody called ${name} is on the roster.`);
+  }
+
+  return entry.id;
 }
 
 /**
- * Send a player home in the stored session.
+ * Change the roster of the stored session.
  *
  * The Players tab belongs to a later slice, so no screen does this yet — but the round screen has
  * to read a roster that has moved under it from the day it ships, and storage is where a session
  * that has moved comes back from.
  */
-async function sendHome(app: AppHarness, name: string): Promise<void> {
+async function amendRoster(app: AppHarness, amend: (session: Session) => Session): Promise<void> {
   const record = app.repository.activeRecord();
   if (record === null) {
     throw new Error('The repository holds no session.');
   }
 
-  const leaving = record.session.roster.find((entry) => entry.name === name);
-  if (leaving === undefined) {
-    throw new Error(`Nobody called ${name} is on the roster.`);
-  }
-
-  await app.repository.saveActive({
-    ...record,
-    session: removePlayer(record.session, leaving.id),
-  });
+  await app.repository.saveActive({ ...record, session: amend(record.session) });
 }
 
 /** What is on screen with the header taken out, so two rounds can be compared as slates. */
 function courtText(app: AppHarness): string {
   return app.text().replace(/Round \d+ of \d+/, '');
-}
-
-/** Score one court of the round on screen, entering `points` for the side the engine put first. */
-async function score(app: AppHarness, points: number, courtNumber = 1): Promise<void> {
-  const sides = sidesOn(app, courtNumber);
-
-  await app.tap(`Enter score for Court ${courtNumber}`);
-  await app.setNumber(sides.a, points);
-  await app.tap('Save');
-}
-
-/** Who is on each side of a court of the round on screen, as the sheet's labels spell them. */
-function sidesOn(app: AppHarness, courtNumber: number): { readonly a: string } {
-  const session = storedSession(app);
-  const roundNumber = Number(/Round (\d+) of/.exec(app.text())?.[1] ?? 1);
-  const round = session.rounds.find((candidate) => candidate.number === roundNumber);
-  const match: Match | undefined = round?.matches.find(
-    (candidate) => candidate.courtNumber === courtNumber,
-  );
-  if (match === undefined) {
-    throw new Error(`Round ${roundNumber} has no court ${courtNumber}.`);
-  }
-
-  const nameOf = (id: string): string =>
-    session.roster.find((entry) => entry.id === id)?.name ?? id;
-
-  return { a: match.sideA.map(nameOf).join(' & ') };
-}
-
-function storedSession(app: AppHarness): Session {
-  const record = app.repository.activeRecord();
-  if (record === null) {
-    throw new Error('No session has been created.');
-  }
-
-  return record.session;
-}
-
-async function createSession(names: readonly string[]): Promise<AppHarness> {
-  const app = await AppHarness.launch();
-  await app.tap('New session');
-  await app.tap('Americano');
-
-  for (const name of names) {
-    await app.type('Name', name);
-    await app.tap('Add');
-  }
-
-  await app.tap('Next');
-  await app.tap('Create session');
-
-  return app;
 }

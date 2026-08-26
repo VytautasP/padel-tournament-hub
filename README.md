@@ -61,8 +61,10 @@ per match, a tap for the detail behind a row, and a dash rather than a column of
 anybody has played. The evening lives in `localStorage` behind a `SessionRepository`
 (decision #19), so closing the app and reopening it offers Resume rather than New session — and
 reopens on the current round, which is worked out from the unscored matches every time and stored
-nowhere. Round paging, the Players tab, ending a session and the other two modes are the slices
-after this one.
+nowhere. Prev and next reach every generated round with one control back to the current one, and
+one page past the last round is where a round gets added — which is where "have we time for
+another?" is actually asked (ADR-0016 §4). The Players tab, ending a session and the other two
+modes are the slices after this one.
 
 Every string the organizer reads comes from one typed dictionary and every colour from one token
 file with a light and a dark value (ADR-0018); `npm run verify:conventions` proves no template has

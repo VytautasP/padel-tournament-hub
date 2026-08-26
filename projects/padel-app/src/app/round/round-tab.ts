@@ -44,7 +44,7 @@ export class RoundTab {
    * The page the tab is showing: a round number, or one past the last round for the Add round
    * card. Set when the tab opens, moved only by the organizer, and never by a score landing.
    */
-  private readonly showing = signal(this.store.currentRoundNumber() ?? FIRST_ROUND);
+  protected readonly showing = signal(this.store.currentRoundNumber() ?? FIRST_ROUND);
 
   protected readonly copy = copy;
 
@@ -56,12 +56,21 @@ export class RoundTab {
     return session === null ? null : roundView(session, this.showing(), this.store.courtNames());
   });
 
+  /**
+   * The page the Add round card is on: one past the last round generated (ADR-0016 §4).
+   *
+   * It is the far end of the paging range as well as the card's address, which is why it is one
+   * expression rather than two — a range that stopped at the last round would put the card
+   * somewhere the organizer cannot page to.
+   */
+  private readonly addRoundPage = computed(() => this.roundCount() + 1);
+
   /** Whether the page on screen is the Add round card rather than a round. */
-  protected readonly pastTheLastRound = computed(() => this.showing() > this.roundCount());
+  protected readonly pastTheLastRound = computed(() => this.showing() >= this.addRoundPage());
 
   protected readonly canPage = computed(() => ({
     back: this.showing() > FIRST_ROUND,
-    forward: this.showing() <= this.roundCount(),
+    forward: this.showing() < this.addRoundPage(),
   }));
 
   /** Whether the round on screen is the one the evening is on, which is when there is no way back. */
@@ -84,16 +93,27 @@ export class RoundTab {
     return finished && this.showing() < this.roundCount() ? this.showing() + 1 : null;
   });
 
-  protected page(by: number): void {
-    this.showing.update((page) => page + by);
+  protected previous(): void {
+    this.show(this.showing() - 1);
   }
 
-  protected show(roundNumber: number): void {
-    this.showing.set(roundNumber);
+  protected next(): void {
+    this.show(this.showing() + 1);
+  }
+
+  /**
+   * Show one page, held inside the range there is something to show.
+   *
+   * The controls are disabled at both ends, so nothing in the app asks for a page outside it. The
+   * clamp is here anyway because the range is this component's invariant and not the template's:
+   * a round count that shrank under a stale page would otherwise render nothing at all.
+   */
+  protected show(page: number): void {
+    this.showing.set(Math.min(Math.max(page, FIRST_ROUND), this.addRoundPage()));
   }
 
   protected backToCurrentRound(): void {
-    this.showing.set(this.store.currentRoundNumber() ?? FIRST_ROUND);
+    this.show(this.store.currentRoundNumber() ?? FIRST_ROUND);
   }
 
   /**
@@ -124,5 +144,5 @@ export class RoundTab {
   }
 }
 
-/** Rounds are numbered from one, so a session with nothing derivable yet shows the first. */
+/** Rounds are numbered from one, which is where the paging range starts. */
 const FIRST_ROUND = 1;

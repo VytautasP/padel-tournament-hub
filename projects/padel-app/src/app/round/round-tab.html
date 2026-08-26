@@ -5,16 +5,16 @@
       class="rounded-full border border-line px-3 py-2 text-ink-muted disabled:opacity-30"
       [attr.aria-label]="copy.round.previous"
       [disabled]="!canPage().back"
-      (click)="page(-1)"
+      (click)="previous()"
     >
       {{ copy.round.previousGlyph }}
     </button>
 
     <h1 class="text-center text-xl font-semibold tracking-tight text-ink">
-      @if (round(); as view) {
-        {{ copy.round.heading(view.number, roundCount()) }}
-      } @else {
+      @if (pastTheLastRound()) {
         {{ copy.round.addRound.heading }}
+      } @else {
+        {{ copy.round.heading(showing(), roundCount()) }}
       }
     </h1>
 
@@ -23,7 +23,7 @@
       class="rounded-full border border-line px-3 py-2 text-ink-muted disabled:opacity-30"
       [attr.aria-label]="copy.round.next"
       [disabled]="!canPage().forward"
-      (click)="page(1)"
+      (click)="next()"
     >
       {{ copy.round.nextGlyph }}
     </button>
