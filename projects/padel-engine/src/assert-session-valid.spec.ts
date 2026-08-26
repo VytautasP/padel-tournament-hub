@@ -2,10 +2,17 @@ import { assertSessionValid, createSession, finishSession, generateRemaining } f
 import type { Session } from './public-api';
 import { damaged } from './test-support/damaged-session';
 import type { MutableSession } from './test-support/damaged-session';
-import { americanoConfig } from './test-support/session-fixtures';
+import { americanoConfig, roster } from './test-support/session-fixtures';
 
 function valid(): Session {
   return generateRemaining(createSession(americanoConfig({ courtCount: 2, roundCount: 6 })));
+}
+
+/** Nine players on two courts: one sits out each round, so eight of nine still staff both. */
+function benched(): Session {
+  return generateRemaining(
+    createSession(americanoConfig({ players: roster(9), courtCount: 2, roundCount: 6 })),
+  );
 }
 
 /** Clone a valid session, break it in one specific way, and hand it back for validation. */
@@ -125,6 +132,52 @@ describe('assertSessionValid', () => {
     });
 
     expect(() => assertSessionValid(session)).toThrow(/fills 2 of 1 court/);
+
+    assertSessionValid(valid());
+  });
+
+  it('rejects a match scheduling someone who had not arrived yet', () => {
+    // Nine players on two courts, so closing one player's window still leaves both courts
+    // staffed: the round is the right size, and the only thing wrong with it is who is on it.
+    const session = damaged(benched(), (copy) => {
+      copy.roster[0].joinedAtRound = 3;
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/not in the session for round [12]/);
+
+    assertSessionValid(benched());
+  });
+
+  it('rejects a match scheduling someone who had already left', () => {
+    const session = damaged(benched(), (copy) => {
+      copy.roster[0].leftAfterRound = 2;
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/not in the session for round 3/);
+
+    assertSessionValid(benched());
+  });
+
+  it('rejects an availability window that closes before it opens', () => {
+    const session = broken((copy) => {
+      copy.roster[0].joinedAtRound = 4;
+      copy.roster[0].leftAfterRound = 2;
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/leaves before it joins/);
+
+    assertSessionValid(valid());
+  });
+
+  it('rejects a round left without the players to fill a court', () => {
+    // Five of the eight go home after round 2, so round 3 has nobody to schedule.
+    const session = broken((copy) => {
+      for (const entry of copy.roster.slice(0, 5)) {
+        entry.leftAfterRound = 2;
+      }
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/Round 3 has 3 player\(s\) available/);
 
     assertSessionValid(valid());
   });

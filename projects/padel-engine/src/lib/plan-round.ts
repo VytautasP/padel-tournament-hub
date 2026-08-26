@@ -65,7 +65,7 @@ export function planRound(
 
   for (const benched of benchSets(order, history, benchSize)) {
     const playing = order.filter((id) => !benched.has(id));
-    const candidate = choosePairs(playing, history, budget);
+    const candidate = choosePairs(playing, order, history, budget);
 
     if (!best || candidate.cost < best.cost) {
       best = candidate;
@@ -150,10 +150,11 @@ function* combinations<T>(
  */
 function choosePairs(
   playing: readonly PlayerId[],
+  available: readonly PlayerId[],
   history: SessionHistory,
   budget: Budget,
 ): { pairs: Pair[]; cost: number } {
-  const found = cheapestPairing(partnerCosts(playing, history), mostConstrained, budget);
+  const found = cheapestPairing(partnerCosts(playing, available, history), mostConstrained, budget);
 
   return {
     pairs: found.pairs.map(([a, b]) => [playing[a], playing[b]] as Pair),
@@ -216,13 +217,24 @@ function cheapestPairing(
   return { pairs: best, cost: bestCost };
 }
 
-/** What pairing each two players would cost, worked out once per candidate round. */
-function partnerCosts(playing: readonly PlayerId[], history: SessionHistory): number[][] {
+/**
+ * What pairing each two players would cost, worked out once per candidate round.
+ *
+ * `available` is everyone the round could have scheduled, benched players included: whether a
+ * partnership starves someone is a question about who is still in the session to be partnered,
+ * not about who happens to be on court this round.
+ */
+function partnerCosts(
+  playing: readonly PlayerId[],
+  available: readonly PlayerId[],
+  history: SessionHistory,
+): number[][] {
   return playing.map((a) =>
     playing.map((b) =>
       a === b
         ? 0
-        : history.partnerCount(a, b) + (history.starvesAPartner(a, b) ? STARVING_REPEAT : 0),
+        : history.partnerCount(a, b) +
+          (history.starvesAPartner(a, b, available) ? STARVING_REPEAT : 0),
     ),
   );
 }

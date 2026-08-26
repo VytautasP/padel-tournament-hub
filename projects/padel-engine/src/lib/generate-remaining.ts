@@ -11,6 +11,10 @@
  *   - **History is read, not assumed.** Rounds this engine did not generate — a session mid-edit,
  *     a session back from storage — count exactly as much as ones it did. This is what ADR-0004
  *     deferred until bench rotation arrived, and it arrives here.
+ *   - **The roster is read per round, not per session** (decision #5). Who is available and how
+ *     many courts that staffs are asked at each round rather than once at the top, because people
+ *     arrive late and go home early. It is this walk, carrying history across a roster that moves
+ *     under it, that lets `addPlayer` and `removePlayer` own no scheduling of their own.
  *
  * `planRound` decides who sits out and who partners whom; this file is the walk, the ids and the
  * copying. The rotation is seeded from the session id, so two sessions do not open with the same
@@ -22,6 +26,7 @@ import { matchId } from './create-session';
 import { deepFreeze } from './freeze';
 import type { Match, PlayerId, Round, Session } from './model';
 import { planRound } from './plan-round';
+import { availableOf } from './roster-availability';
 import { copyRound, copySession } from './session-copy';
 import { SessionHistory } from './session-history';
 import { assertSessionShape, courtsInPlay } from './session-shape';
@@ -32,8 +37,7 @@ export function generateRemaining(session: Session): Session {
   assertSessionOpen(session, 'generating rounds');
 
   const order = seededOrder(session);
-  const history = new SessionHistory(order);
-  const courtCount = courtsInPlay(session);
+  const history = new SessionHistory(session.roster);
   const rounds: Round[] = [];
 
   for (const round of session.rounds) {
@@ -42,7 +46,7 @@ export function generateRemaining(session: Session): Session {
     const filled: Round =
       round.matches.length > 0
         ? copyRound(round)
-        : { ...round, matches: buildMatches(session, order, round.number, courtCount, history) };
+        : { ...round, matches: buildMatches(session, order, round, history) };
 
     history.record(filled);
     rounds.push(filled);
@@ -64,19 +68,29 @@ function seededOrder(session: Session): PlayerId[] {
   return [...ids.slice(offset), ...ids.slice(0, offset)];
 }
 
+/**
+ * Plan one empty round, against the players the session holds *at that round*.
+ *
+ * Both the roster the planner sees and the number of courts it fills are read per round rather
+ * than once for the session: a player who has left is not on court after they left, and the
+ * courts an evening staffs change with them (decision #5).
+ */
 function buildMatches(
   session: Session,
   order: readonly PlayerId[],
-  roundNumber: number,
-  courtCount: number,
+  round: Round,
   history: SessionHistory,
 ): Match[] {
-  return planRound(order, courtCount, history).map((planned, index) => ({
-    id: matchId(session.id, roundNumber, index + 1),
-    courtNumber: index + 1,
-    sideA: planned.sideA,
-    sideB: planned.sideB,
-  }));
+  const available = availableOf(order, session.roster, round.number);
+
+  return planRound(available, courtsInPlay(session, round.number), history).map(
+    (planned, index) => ({
+      id: matchId(session.id, round.number, index + 1),
+      courtNumber: index + 1,
+      sideA: planned.sideA,
+      sideB: planned.sideB,
+    }),
+  );
 }
 
 /** FNV-1a: a small, stable string hash. Same string in, same number out, on every run. */

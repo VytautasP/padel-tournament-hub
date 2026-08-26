@@ -27,6 +27,7 @@ export type { Standing } from './lib/standings';
 
 export { createSession } from './lib/create-session';
 export { addRound } from './lib/add-round';
+export { addPlayer, removePlayer } from './lib/change-roster';
 export { generateRemaining } from './lib/generate-remaining';
 export { finishSession } from './lib/finish-session';
 export { recordScore } from './lib/record-score';

@@ -17,7 +17,8 @@
  *
  * It stays inside the engine boundary: a pure `Session -> string`, no I/O, no clock.
  */
-import type { Match, PlayerId, Round, Session } from './model';
+import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
+import { hasLeft, isAvailableIn, joinedAtRound, leftAfterRound } from './roster-availability';
 import { courtsInPlay } from './session-shape';
 
 /** A session as readable text: a block per round, then a block per player. */
@@ -75,8 +76,9 @@ function renderer(session: Session): {
 
     // Courts booked and courts staffed are different numbers once a roster benches, and the
     // reader needs to see both — an evening on "two courts" that only ever fills one is exactly
-    // the sort of surprise a printout exists to surface.
-    const inPlay = courtsInPlay(session);
+    // the sort of surprise a printout exists to surface. Read off the last round, because that is
+    // the roster the session has now: people arrive and leave while it runs.
+    const inPlay = courtsInPlay(session, session.rounds.length);
     const courts =
       inPlay === session.courtCount
         ? `${session.courtCount} court(s)`
@@ -125,12 +127,18 @@ function renderer(session: Session): {
   const players = (): string => {
     const blocks = session.roster.map((entry) => {
       const played = stats.get(entry.id) ?? emptyTally();
+      // Only players whose evening overlapped this one: someone who left before this player
+      // arrived was never a partner they could have had.
       const missing = session.roster
-        .filter((other) => other.id !== entry.id && !played.partners.has(other.id))
+        .filter(
+          (other) =>
+            other.id !== entry.id && !played.partners.has(other.id) && overlaps(entry, other),
+        )
         .map((other) => nameOf(other.id));
 
       const lines = [
-        `${nameOf(entry.id)} — played ${played.matches}, benched ${played.benched}`,
+        `${nameOf(entry.id)}${windowNote(entry)} — played ${played.matches}, ` +
+          `benched ${played.benched}`,
         `  partners:  ${namesByCount(played.partners)}`,
         `  opponents: ${namesByCount(played.opponents)}`,
       ];
@@ -193,10 +201,31 @@ function tallies(session: Session): ReadonlyMap<PlayerId, PlayerTally> {
   return byPlayer;
 }
 
+/**
+ * Who sat this round out: on the roster, in the session for that round, and off court. Someone
+ * who had not arrived yet, or had already gone home, is not on the bench — they are not here.
+ */
 function benchedIn(round: Round, session: Session): PlayerId[] {
   const playing = new Set(round.matches.flatMap(playersOf));
 
-  return session.roster.map((entry) => entry.id).filter((id) => !playing.has(id));
+  return session.roster
+    .filter((entry) => isAvailableIn(entry, round.number) && !playing.has(entry.id))
+    .map((entry) => entry.id);
+}
+
+/** How a player who did not have the whole evening is labelled: `(from round 4)`, `(left after 6)`. */
+function windowNote(entry: RosterEntry): string {
+  const notes = [
+    ...(joinedAtRound(entry) > 1 ? [`from round ${joinedAtRound(entry)}`] : []),
+    ...(hasLeft(entry) ? [`left after round ${entry.leftAfterRound}`] : []),
+  ];
+
+  return notes.length > 0 ? ` (${notes.join(', ')})` : '';
+}
+
+/** Were these two ever in the session at the same time, and so ever able to be partners? */
+function overlaps(a: RosterEntry, b: RosterEntry): boolean {
+  return joinedAtRound(a) <= leftAfterRound(b) && joinedAtRound(b) <= leftAfterRound(a);
 }
 
 /**

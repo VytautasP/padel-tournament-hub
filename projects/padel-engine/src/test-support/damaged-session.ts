@@ -28,7 +28,7 @@ export interface MutableSession extends Omit<Session, 'id' | 'status' | 'roster'
   id: string;
   /** Widened to `string`, so a test can damage a session with a status the engine never sets. */
   status: string;
-  roster: { id: string; name: string }[];
+  roster: { id: string; name: string; joinedAtRound?: number; leftAfterRound?: number }[];
   rounds: { id: string; number: number; matches: MutableMatch[] }[];
 }
 

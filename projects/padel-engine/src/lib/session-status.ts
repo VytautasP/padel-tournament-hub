@@ -7,10 +7,11 @@
  * phone, a tab left open on the bar's laptop, a queued write that arrives late. None of them may
  * reopen a night the organizer closed, and a screen cannot be trusted to know that it is stale.
  *
- * So every operation that returns a changed session asks `assertSessionOpen` first, and any
- * operation added later — the roster edits of the ticket after this one included — must do the
- * same. Reading is free: `assertSessionValid`, `computeStandings` and `formatSchedule` work on a
- * finished session exactly as they did a minute before it was finished.
+ * So every operation that returns a changed session asks `assertSessionOpen` first — `recordScore`,
+ * `generateRemaining`, `addRound`, `addPlayer`, `removePlayer` and `finishSession` itself — and any
+ * operation added later must do the same. Reading is free: `assertSessionValid`, `computeStandings`
+ * and `formatSchedule` work on a finished session exactly as they did a minute before it was
+ * finished.
  *
  * The rule lives here rather than beside the operation that sets the status, the way
  * `score-rules.ts` sits beside `record-score.ts`: it is asked by four operations and owned by

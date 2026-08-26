@@ -24,10 +24,23 @@ export type MatchId = string;
  */
 export type SessionMode = 'americano';
 
-/** A player as this session knows them: a name with an id of its own (decision #9). */
+/**
+ * A player as this session knows them: a name with an id of its own (decision #9), and the
+ * stretch of the evening they are here for.
+ *
+ * The roster moves mid-session (decision #5), and a player who leaves is not deleted — their
+ * played matches still need a name on them and still count in the standings. So departure is a
+ * closed window rather than a missing entry, and arrival is a window that opens late. Both fields
+ * are absent for a player who was here from the first round and still is, which is what lets a
+ * session stored before roster changes existed read back unchanged.
+ */
 export interface RosterEntry {
   readonly id: PlayerId;
   readonly name: string;
+  /** First round this player may be scheduled into. Absent means round 1. */
+  readonly joinedAtRound?: number;
+  /** Last round this player may be scheduled into. Absent means they have not left. */
+  readonly leftAfterRound?: number;
 }
 
 /**

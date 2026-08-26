@@ -11,6 +11,7 @@ describe('padel-engine public API', () => {
       .sort();
 
     expect(exported).toEqual([
+      'addPlayer',
       'addRound',
       'assertSessionValid',
       'computeStandings',
@@ -19,6 +20,7 @@ describe('padel-engine public API', () => {
       'formatSchedule',
       'generateRemaining',
       'recordScore',
+      'removePlayer',
     ]);
 
     const session = generateRemaining(createSession(americanoConfig()));
