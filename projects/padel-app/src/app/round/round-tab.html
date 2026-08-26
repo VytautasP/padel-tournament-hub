@@ -1,0 +1,25 @@
+@if (round(); as view) {
+  <main class="mx-auto flex min-h-screen max-w-md flex-col gap-5 px-4 py-6">
+    <h1 class="text-2xl font-semibold tracking-tight text-ink">
+      {{ copy.round.heading(view.number, roundCount()) }}
+    </h1>
+
+    <ul class="space-y-3">
+      @for (court of view.courts; track court.courtNumber) {
+        <li class="space-y-2 rounded-2xl border border-line bg-surface-raised p-4">
+          <h2 class="text-xs font-medium tracking-wide text-ink-muted uppercase">
+            {{ copy.round.courtName(court.courtNumber) }}
+          </h2>
+          <p class="text-lg text-ink">{{ copy.round.side(court.sideA) }}</p>
+          <p class="text-xs tracking-wide text-ink-muted uppercase">{{ copy.round.versus }}</p>
+          <p class="text-lg text-ink">{{ copy.round.side(court.sideB) }}</p>
+          <p class="text-sm text-ink-muted">{{ copy.round.noScore }}</p>
+        </li>
+      }
+    </ul>
+
+    @if (view.bench.length > 0) {
+      <p class="text-sm text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
+    }
+  </main>
+}

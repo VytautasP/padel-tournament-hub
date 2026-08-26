@@ -1,0 +1,34 @@
+<section class="space-y-5">
+  <header class="space-y-1">
+    <h1 class="text-2xl font-semibold tracking-tight text-ink">{{ copy.wizard.mode.heading }}</h1>
+    <p class="text-sm text-ink-muted">{{ copy.wizard.mode.lead }}</p>
+  </header>
+
+  <ul class="space-y-3">
+    @for (choice of choices; track choice.mode) {
+      <li>
+        <button
+          type="button"
+          class="w-full rounded-2xl border border-line bg-surface-raised p-4 text-left disabled:opacity-50"
+          [disabled]="!choice.available"
+          [attr.aria-label]="copy.wizard.mode.name(choice.mode)"
+          (click)="choose(choice.mode)"
+        >
+          <span class="flex items-baseline justify-between gap-3">
+            <span class="text-lg font-semibold text-ink">
+              {{ copy.wizard.mode.name(choice.mode) }}
+            </span>
+            @if (!choice.available) {
+              <span class="text-xs font-medium tracking-wide text-ink-muted uppercase">
+                {{ copy.wizard.mode.notYet }}
+              </span>
+            }
+          </span>
+          <span class="mt-1 block text-sm text-ink-muted">
+            {{ copy.wizard.mode.blurb(choice.mode) }}
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+</section>

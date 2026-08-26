@@ -1,0 +1,39 @@
+<section class="space-y-5">
+  <header class="space-y-1">
+    <h1 class="text-2xl font-semibold tracking-tight text-ink">{{ copy.wizard.review.heading }}</h1>
+    <p class="text-sm text-ink-muted">{{ copy.wizard.review.lead }}</p>
+  </header>
+
+  <dl class="grid grid-cols-2 gap-3 rounded-2xl border border-line bg-surface-raised p-4">
+    <dt class="text-sm text-ink-muted">{{ copy.wizard.review.mode }}</dt>
+    <dd class="text-right text-sm font-medium text-ink">{{ modeNames[draft().mode()] }}</dd>
+    <dt class="text-sm text-ink-muted">{{ copy.wizard.review.players }}</dt>
+    <dd class="text-right text-sm font-medium text-ink">{{ draft().players().length }}</dd>
+  </dl>
+
+  <div class="space-y-3">
+    <app-number-field
+      [label]="copy.wizard.review.targetScore"
+      [value]="draft().targetScore()"
+      (changed)="draft().setTargetScore($event)"
+    />
+    <app-number-field
+      [label]="copy.wizard.review.courtCount"
+      [value]="draft().courtCount()"
+      (changed)="draft().setCourtCount($event)"
+    />
+    <app-number-field
+      [label]="copy.wizard.review.roundCount"
+      [value]="draft().roundCount()"
+      (changed)="draft().setRoundCount($event)"
+    />
+  </div>
+
+  <button
+    type="button"
+    class="w-full rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+    (click)="create.emit()"
+  >
+    {{ copy.wizard.review.create }}
+  </button>
+</section>
