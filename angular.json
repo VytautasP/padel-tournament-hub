@@ -41,6 +41,76 @@
           }
         }
       }
+    },
+    "padel-app": {
+      "projectType": "application",
+      "root": "projects/padel-app",
+      "sourceRoot": "projects/padel-app/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/padel-app/src/main.ts",
+            "tsConfig": "projects/padel-app/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/padel-app/public"
+              }
+            ],
+            "styles": ["projects/padel-app/src/styles.css"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "padel-app:build:production"
+            },
+            "development": {
+              "buildTarget": "padel-app:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/padel-app/tsconfig.spec.json"
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["projects/padel-app/**/*.ts", "projects/padel-app/**/*.html"],
+            "eslintConfig": "projects/padel-app/eslint.config.js"
+          }
+        }
+      }
     }
   }
 }

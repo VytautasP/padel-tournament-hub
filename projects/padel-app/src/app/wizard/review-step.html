@@ -1,0 +1,68 @@
+<section class="space-y-5">
+  <header class="space-y-1">
+    <h1 class="text-2xl font-semibold tracking-tight text-ink">{{ copy.wizard.review.heading }}</h1>
+    <p class="text-sm text-ink-muted">{{ copy.wizard.review.lead }}</p>
+  </header>
+
+  <dl class="grid grid-cols-2 gap-3 rounded-2xl border border-line bg-surface-raised p-4">
+    <dt class="text-sm text-ink-muted">{{ copy.wizard.review.mode }}</dt>
+    <dd class="text-right text-sm font-medium text-ink">{{ modeNames[draft().mode()] }}</dd>
+    <dt class="text-sm text-ink-muted">{{ copy.wizard.review.players }}</dt>
+    <dd class="text-right text-sm font-medium text-ink">{{ draft().players().length }}</dd>
+  </dl>
+
+  <div class="space-y-3">
+    <div class="flex items-center justify-between gap-4">
+      <label class="text-base text-ink" for="target-score">
+        {{ copy.wizard.review.targetScore }}
+      </label>
+      <input
+        id="target-score"
+        type="number"
+        inputmode="numeric"
+        min="1"
+        class="w-24 rounded-xl border border-line bg-surface-raised px-3 py-2 text-right text-base text-ink"
+        [value]="draft().targetScore()"
+        (input)="setTargetScore($event)"
+      />
+    </div>
+
+    <div class="flex items-center justify-between gap-4">
+      <label class="text-base text-ink" for="court-count">
+        {{ copy.wizard.review.courtCount }}
+      </label>
+      <input
+        id="court-count"
+        type="number"
+        inputmode="numeric"
+        min="1"
+        class="w-24 rounded-xl border border-line bg-surface-raised px-3 py-2 text-right text-base text-ink"
+        [value]="draft().courtCount()"
+        (input)="setCourtCount($event)"
+      />
+    </div>
+
+    <div class="flex items-center justify-between gap-4">
+      <label class="text-base text-ink" for="round-count">
+        {{ copy.wizard.review.roundCount }}
+      </label>
+      <input
+        id="round-count"
+        type="number"
+        inputmode="numeric"
+        min="1"
+        class="w-24 rounded-xl border border-line bg-surface-raised px-3 py-2 text-right text-base text-ink"
+        [value]="draft().roundCount()"
+        (input)="setRoundCount($event)"
+      />
+    </div>
+  </div>
+
+  <button
+    type="button"
+    class="w-full rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+    (click)="create.emit()"
+  >
+    {{ copy.wizard.review.create }}
+  </button>
+</section>

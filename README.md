@@ -49,13 +49,24 @@ tiers mean exactly what they already meant. See
 pair goes home the team keeps its slot and its points and the other half is flagged
 `needs partner`, until a replacement repairs the team or the stranded player leaves too; see
 [ADR-0012](docs/adr/0012-an-orphaned-team-keeps-its-slot-and-the-fixture-ledger-restarts-with-the-field.md).
-No application code exists yet.
+**The app runs an Americano evening as far as its first round.** `padel-app` opens on a landing
+page, walks a three-step wizard — mode, names, then a review screen already holding a target of 24,
+one court and a complete rotation capped at 12 — and generates the schedule. The Round tab renders
+round one: every court, both sides, whoever is sitting out, and no score yet. The evening lives in
+`localStorage` behind a `SessionRepository` (decision #19), so closing the app and reopening it
+offers Resume rather than New session. Scoring, standings, the roster tab and the other two modes
+are the slices after this one.
+
+Every string the organizer reads comes from one typed dictionary and every colour from one token
+file with a light and a dark value (ADR-0018); `npm run verify:conventions` proves no template has
+grown a literal of either kind. The screens are tested by rendering the whole app and driving it
+by typing and tapping — never by reaching for a component or a signal.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —
 live in **[docs/DECISIONS.md](docs/DECISIONS.md)**. That file is the source of truth. If code and
 decisions ever disagree, one of them is a bug.
 
-## Planned stack
+## Stack
 
 | Layer | Choice |
 |---|---|
@@ -75,7 +86,7 @@ Requires Node 22.22.3+, 24.15+ or 26+ (Angular 22's floor — see
 
 ```bash
 npm install
-npm run verify         # format, lint, engine boundary check, build, tests
+npm run verify         # format, lint, engine boundary, app conventions, build, tests
 npm run print:schedule # build, then print a few schedules to read
 ```
 
@@ -87,15 +98,20 @@ npm run print:schedule -- 10 2 12     # 10 players, 2 courts, 12 rounds of Ameri
 npm run print:schedule -- 10 2 12 7   # ...as Mixicano, seven women and three men
 ```
 
-The workspace currently holds one project: `projects/padel-engine`, the pure TypeScript rules
-library. The Angular app arrives with build-order step 2. The engine may not import Angular or
-Firebase, and that is enforced by lint rather than by convention — see
+```bash
+npm start              # serve padel-app
+```
+
+The workspace holds two projects: `projects/padel-engine`, the pure TypeScript rules library, and
+`projects/padel-app`, the Angular application that consumes it. The engine may not import Angular
+or Firebase, and the app may only reach it through its published entry point; both are enforced by
+lint rather than by convention — see
 [ADR-0001](docs/adr/0001-enforce-the-engine-boundary-with-eslint.md).
 
 ## Build order
 
-1. **`padel-engine` + tests** — no UI. Print schedules, eyeball fairness on awkward rosters. ← *current*
-2. **Angular app, `localStorage` only** — create → generate → score → standings → finish. Usable at a real session.
+1. **`padel-engine` + tests** — no UI. Print schedules, eyeball fairness on awkward rosters.
+2. **Angular app, `localStorage` only** — create → generate → score → standings → finish. Usable at a real session. ← *current*
 3. **Firebase** — repository implementation, anonymous auth, security rules, share code, QR, spectator view.
 4. **PWA polish**, Google account linking, session delete.
 

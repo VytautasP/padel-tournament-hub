@@ -1,0 +1,71 @@
+/*
+ * The app's colour, in one file (ADR-0018).
+ *
+ * Two layers, deliberately. The raw palette below is a neutral scale plus a single brand hue,
+ * declared twice — once for light and once for dark — and it is the only place in the app a
+ * colour value is written down. The `@theme inline` block underneath turns those into Tailwind
+ * utilities (`bg-surface`, `text-ink`, `border-line`), which is all a component is ever allowed
+ * to name. Re-skinning the app is editing the top half of this file.
+ *
+ * The values themselves are provisional: ADR-0018 defers the visual identity until after the
+ * first real padel night, and settles only that both themes exist from the first component.
+ * `prefers-color-scheme` switches them, and there is no in-app toggle.
+ *
+ * `tools/verify-app-conventions.mjs` proves no component names a colour of its own.
+ */
+@import 'tailwindcss';
+
+:root {
+  --palette-surface: #f7f8fa;
+  --palette-surface-raised: #ffffff;
+  --palette-surface-sunken: #eceef2;
+  --palette-line: #d5d9e0;
+  --palette-ink: #16191f;
+  --palette-ink-muted: #5b6472;
+  --palette-brand: #1f7a5a;
+  --palette-brand-strong: #176046;
+  --palette-brand-ink: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --palette-surface: #0e1116;
+    --palette-surface-raised: #171b22;
+    --palette-surface-sunken: #090b0f;
+    --palette-line: #2b313b;
+    --palette-ink: #e9ecf1;
+    --palette-ink-muted: #98a2b3;
+    --palette-brand: #3fae86;
+    --palette-brand-strong: #58c39c;
+    --palette-brand-ink: #07120d;
+  }
+}
+
+@theme inline {
+  --color-surface: var(--palette-surface);
+  --color-surface-raised: var(--palette-surface-raised);
+  --color-surface-sunken: var(--palette-surface-sunken);
+  --color-line: var(--palette-line);
+  --color-ink: var(--palette-ink);
+  --color-ink-muted: var(--palette-ink-muted);
+  --color-brand: var(--palette-brand);
+  --color-brand-strong: var(--palette-brand-strong);
+  --color-brand-ink: var(--palette-brand-ink);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
