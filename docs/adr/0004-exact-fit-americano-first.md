@@ -1,8 +1,13 @@
 # 4. Exact-fit Americano first, and `generateRemaining` takes the session
 
-- **Status:** Accepted
+- **Status:** Partly superseded by [ADR-0006](0006-fairness-is-a-cost-function.md) (2026-08-26)
 - **Date:** 2026-08-25
 - **Amends:** decisions #4 and #5 in [docs/DECISIONS.md](../DECISIONS.md)
+
+> Decision 1 below — exact-fit rosters only — was staging, and ADR-0006 lifts it: any roster of
+> four or more schedules, and the exact-fit check is gone from the session-shape rules and from
+> the referee. Decisions 2 (`generateRemaining` takes the session) and 3 (`SessionMode` names only
+> `'americano'`) still stand.
 
 ## Context
 

@@ -7,12 +7,16 @@ next partner. Installable as a PWA, so it behaves like an app without ever touch
 
 ## Status
 
-**Engine, first slice.** `padel-engine` schedules Americano for an exact-fit roster — 4 players on
-1 court, 8 on 2, 12 on 3 — through `createSession`, `generateRemaining` and the referee that ships
-with them, `assertSessionValid`. `formatSchedule` renders a session as readable text, so fairness
-can be eyeballed and not only asserted — `npm run print:schedule`. Bench rotation for any roster
->= 4, scoring, standings, roster mutation, Mixicano and Team Americano are still to come; see
-[ADR-0004](docs/adr/0004-exact-fit-americano-first.md). No application code exists yet.
+**Engine, fair scheduling.** `padel-engine` schedules Americano for any roster of four or more on
+any number of courts — through `createSession`, `generateRemaining` and the referee that ships with
+them, `assertSessionValid`. Players who do not fit onto a court are benched, and the bench rotates:
+bench counts never differ by more than one, after every round rather than only at the end, because
+an evening that stops early has to be as fair as one that runs its course. Eleven players on two
+courts — the case the build order names by name — schedules cleanly; see
+[ADR-0006](docs/adr/0006-fairness-is-a-cost-function.md) for why fairness is a cost function rather
+than a constraint set. `formatSchedule` renders a session as readable text, so fairness can be
+eyeballed and not only asserted — `npm run print:schedule`. Scoring, standings, roster mutation,
+Mixicano and Team Americano are still to come. No application code exists yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —
 live in **[docs/DECISIONS.md](docs/DECISIONS.md)**. That file is the source of truth. If code and

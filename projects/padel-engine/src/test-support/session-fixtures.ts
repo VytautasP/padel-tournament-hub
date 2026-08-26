@@ -35,8 +35,9 @@ export function roster(count: number): RosterEntry[] {
 }
 
 /**
- * An exact-fit Americano session config: `courts * 4` players, so nobody is ever benched.
- * Defaults to 8 players on 2 courts over 5 rounds; override any field.
+ * An Americano session config that fills its courts exactly — `courts * 4` players, so nobody is
+ * benched. Defaults to 8 players on 2 courts over 5 rounds; override any field, and overriding
+ * `players` on its own is how a test asks for a roster that has to bench.
  */
 export function americanoConfig(overrides: Partial<SessionConfig> = {}): SessionConfig {
   const courtCount = overrides.courtCount ?? 2;

@@ -4,8 +4,8 @@
  * This file is the library's only entry point: everything the app is allowed to touch is
  * re-exported from here, and the tests consume the engine through this file and nowhere deeper.
  *
- * The scheduling itself — the circle-method rotation, the court-assignment search and the
- * histories they read — is private and free to be rewritten.
+ * The scheduling itself — the bench rotation, the partner and court searches and the history they
+ * read — is private and free to be rewritten.
  */
 export type {
   Match,
