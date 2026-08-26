@@ -56,5 +56,10 @@ ordinary path (ADR-0007), so it uses the ordinary control and is reached the ord
   consequence column is superseded. Nothing in `recordScore` changes.
 - The sheet needs the target score in its header, because "17" means nothing without "of 24" —
   and a session played to 32 must not look like a mistake.
+
+  *Built (issue #18) with the target beside each field rather than only in the header: the two
+  numbers are read one at a time, and `17 of 24` next to the number it qualifies is what that
+  consequence was asking for. The header carries the court. This is a placement, not a change of
+  decision.*
 - A slider may still be the right control for a *target score* in the wizard, where approximate is
   fine and the range is small. This ADR is about match scores only.

@@ -12,11 +12,15 @@
  */
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
+  computeStandings,
   createSession,
   generateRemaining,
+  recordScore,
   type RosterEntry,
+  type ScoreEntry,
   type Session,
   type SessionMode,
+  type Standing,
 } from 'padel-engine';
 import type { SessionRecord } from './session-record';
 import { SESSION_REPOSITORY } from './session-repository';
@@ -60,6 +64,18 @@ export class SessionStore {
     return (unfinished ?? session.rounds[session.rounds.length - 1]).number;
   });
 
+  /**
+   * The table, recomputed on every read and stored nowhere (decision #17).
+   *
+   * There is no invalidation here and nothing to keep in step: a corrected score changes the
+   * session, the session is a signal, and the table is whatever the engine says about it now.
+   */
+  readonly standings = computed<readonly Standing[]>(() => {
+    const session = this.activeSession();
+
+    return session === null ? [] : computeStandings(session);
+  });
+
   async restore(): Promise<void> {
     this.record.set(await this.repository.loadActive());
     this.restored.set(true);
@@ -88,6 +104,24 @@ export class SessionStore {
     const record: SessionRecord = { session, createdAt: new Date().toISOString() };
     await this.repository.saveActive(record);
     this.record.set(record);
+  }
+
+  /**
+   * Record one side's points for one match, replacing whatever was there.
+   *
+   * One number crosses this line and the engine derives the other (decision #3, ADR-0014), which
+   * is why there is nothing to validate here: a scoreline that does not sum to the target is not
+   * something this method could be asked for.
+   */
+  async score(entry: ScoreEntry): Promise<void> {
+    const current = this.record();
+    if (current === null) {
+      throw new Error('There is no active session to score.');
+    }
+
+    const updated: SessionRecord = { ...current, session: recordScore(current.session, entry) };
+    await this.repository.saveActive(updated);
+    this.record.set(updated);
   }
 }
 

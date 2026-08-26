@@ -68,6 +68,12 @@ export const copy = {
     },
   },
 
+  session: {
+    round: 'Round',
+    standings: 'Standings',
+    players: 'Players',
+  },
+
   round: {
     heading: (roundNumber: number, roundCount: number): string =>
       `Round ${roundNumber} of ${roundCount}`,
@@ -76,6 +82,34 @@ export const copy = {
     versus: 'v',
     noScore: 'No score yet',
     bench: (names: readonly string[]): string => `Sitting out: ${names.join(', ')}`,
+    /** The result on the court card. An en dash, because it is a scoreline and not a subtraction. */
+    score: (sideA: number, sideB: number): string => `${sideA} – ${sideB}`,
+    /**
+     * What tapping a court does. One wording whether or not the court has a score already:
+     * correcting a typo is the ordinary path (ADR-0007), not a second, differently-named action.
+     */
+    enterScore: (courtNumber: number): string => `Enter score for court ${courtNumber}`,
+  },
+
+  score: {
+    /** Beside each field, because `17` means nothing without `of 24` (ADR-0014). */
+    outOf: (targetScore: number): string => `of ${targetScore}`,
+    tooHigh: (targetScore: number): string => `A score cannot be more than ${targetScore}.`,
+    save: 'Save',
+    cancel: 'Cancel',
+  },
+
+  standings: {
+    /**
+     * Points per match, or a dash for somebody who has not been on a scored court yet.
+     *
+     * A zero would be a claim about how they are playing. A dash says the evening has not
+     * answered the question, which before the first score is the truth about everybody.
+     */
+    rate: (pointsPerMatch: number, matchesPlayed: number): string =>
+      matchesPlayed === 0 ? '–' : pointsPerMatch.toFixed(1),
+    matchesPlayed: 'Matches played',
+    totalPoints: 'Total points',
   },
 } as const;
 

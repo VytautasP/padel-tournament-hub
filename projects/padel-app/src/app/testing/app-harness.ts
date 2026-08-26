@@ -10,6 +10,12 @@
  * Tapping and typing are by visible label, for the same reason: a selector on a class name would
  * pin the markup, and the label is the thing a person actually looks for.
  *
+ * "On screen" is taken literally in two directions. A CDK overlay — the score sheet — is attached
+ * outside the app's own element, and it is plainly on screen, so the overlay container is searched
+ * alongside the app. A tab panel kept in the DOM with `hidden` so it can be returned to unchanged
+ * is plainly *not* on screen, so it is skipped. Neither distinction is one an organizer holding a
+ * phone could make, which is why the harness has to make both.
+ *
  * The repository is the in-memory one (decision #19), and `reload()` is the whole reason it is
  * addressable — closing and reopening the app is a fresh injector reading the same storage.
  */
@@ -50,9 +56,7 @@ export class AppHarness {
 
   /** Everything the organizer can read on screen right now, whitespace-normalised. */
   text(): string {
-    return (
-      (this.fixture.nativeElement as HTMLElement).textContent?.replace(/\s+/g, ' ').trim() ?? ''
-    );
+    return this.roots().map(visibleText).join(' ').replace(/\s+/g, ' ').trim();
   }
 
   shows(fragment: string): boolean {
@@ -88,21 +92,37 @@ export class AppHarness {
 
   /** Set the number field belonging to this visible label. */
   async setNumber(label: string, value: number): Promise<void> {
-    const field = this.field(`#${labelledFieldId(this.root(), label)}`);
-    field.value = String(value);
+    await this.typeInto(label, String(value));
+  }
+
+  /**
+   * Type into the field belonging to this visible label — anything at all, digits or not.
+   *
+   * `setNumber` cannot express what a thumb does to a numeric field on a phone keyboard that also
+   * carries a minus sign, and a field that says it takes digits only has to be shown refusing
+   * something that is not one.
+   */
+  async typeInto(label: string, value: string): Promise<void> {
+    const field = this.field(`#${this.labelledFieldId(label)}`);
+    field.value = value;
     field.dispatchEvent(new Event('input'));
     await this.settle();
   }
 
   /** The value the organizer can see in the number field belonging to this label. */
   numberIn(label: string): number {
-    return Number(this.field(`#${labelledFieldId(this.root(), label)}`).value);
+    return Number(this.textIn(label));
+  }
+
+  /** The characters standing in the field belonging to this label, exactly as they are. */
+  textIn(label: string): string {
+    return this.field(`#${this.labelledFieldId(label)}`).value;
   }
 
   /** Whether the field the organizer types names into is the one the browser would type into. */
   fieldHasFocus(placeholder: string): boolean {
     return (
-      this.root().ownerDocument.activeElement ===
+      this.appRoot().ownerDocument.activeElement ===
       this.field(`[placeholder="${cssEscape(placeholder)}"]`)
     );
   }
@@ -127,12 +147,23 @@ export class AppHarness {
     assertSessionValid(record.session);
   }
 
-  private root(): HTMLElement {
+  private appRoot(): HTMLElement {
     return this.fixture.nativeElement as HTMLElement;
   }
 
+  /** Everywhere the app has put something on screen: its own element, and any CDK overlay. */
+  private roots(): HTMLElement[] {
+    const overlays = [
+      ...this.appRoot().ownerDocument.querySelectorAll<HTMLElement>('.cdk-overlay-container'),
+    ];
+
+    return [this.appRoot(), ...overlays];
+  }
+
   private controls(): HTMLButtonElement[] {
-    return [...this.root().querySelectorAll('button')];
+    return this.roots()
+      .flatMap((root) => [...root.querySelectorAll('button')])
+      .filter((control) => !isHidden(control));
   }
 
   private control(label: string): HTMLButtonElement {
@@ -150,12 +181,25 @@ export class AppHarness {
   }
 
   private field(selector: string): HTMLInputElement {
-    const field = this.root().querySelector<HTMLInputElement>(selector);
-    if (field === null) {
-      throw new Error(`No field matching ${selector} is on screen.`);
+    for (const root of this.roots()) {
+      const field = root.querySelector<HTMLInputElement>(selector);
+      if (field !== null && !isHidden(field)) {
+        return field;
+      }
     }
 
-    return field;
+    throw new Error(`No field matching ${selector} is on screen.`);
+  }
+
+  private labelledFieldId(label: string): string {
+    const found = this.roots()
+      .flatMap((root) => [...root.querySelectorAll('label')])
+      .find((element) => element.textContent?.trim() === label && !isHidden(element));
+    if (found === undefined) {
+      throw new Error(`No field is labelled "${label}".`);
+    }
+
+    return found.htmlFor;
   }
 
   private async settle(): Promise<void> {
@@ -175,18 +219,38 @@ export class AppHarness {
 function labelOf(control: HTMLButtonElement): string {
   const labelled = control.getAttribute('aria-label');
 
-  return labelled ?? control.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+  return labelled ?? visibleText(control).replace(/\s+/g, ' ').trim();
 }
 
-function labelledFieldId(root: HTMLElement, label: string): string {
-  const found = [...root.querySelectorAll('label')].find(
-    (element) => element.textContent?.trim() === label,
-  );
-  if (found === undefined) {
-    throw new Error(`No field is labelled "${label}".`);
+/** Whether this element sits inside something the app has taken off the screen. */
+function isHidden(element: Element): boolean {
+  return element.closest('[hidden]') !== null;
+}
+
+/**
+ * The text of everything under `element` that is not inside a hidden subtree, with each element's
+ * words separated from its siblings'.
+ *
+ * The separator is not decoration. Angular strips whitespace-only text nodes out of a template, so
+ * three spans holding a position, a name and a rate concatenate to `1Ana17.0` in the DOM while
+ * rendering as three columns with a gap between them. Reading them back without a separator would
+ * make every test assert a string nobody can see.
+ */
+function visibleText(element: Element): string {
+  if (isHidden(element)) {
+    return '';
   }
 
-  return found.htmlFor;
+  let text = '';
+  for (const child of element.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      text += child.textContent ?? '';
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      text += ` ${visibleText(child as Element)} `;
+    }
+  }
+
+  return text;
 }
 
 function cssEscape(value: string): string {

@@ -10,12 +10,16 @@
  * does not name is sitting out. Deriving it is what keeps it honest when a roster changes under
  * an already-generated round.
  */
-import type { PlayerId, RosterEntry, Session } from 'padel-engine';
+import type { MatchId, MatchScore, PlayerId, RosterEntry, Session } from 'padel-engine';
 
 export interface CourtView {
+  /** What a score is addressed to. Courts are scored by id and never by position (ADR-0007). */
+  readonly matchId: MatchId;
   readonly courtNumber: number;
   readonly sideA: readonly string[];
   readonly sideB: readonly string[];
+  /** The result, or `undefined` while the court is still playing. */
+  readonly score?: MatchScore;
 }
 
 export interface RoundView {
@@ -42,9 +46,11 @@ export function roundView(session: Session, roundNumber: number): RoundView | nu
   return {
     number: round.number,
     courts: round.matches.map((match) => ({
+      matchId: match.id,
       courtNumber: match.courtNumber,
       sideA: match.sideA.map(nameOf),
       sideB: match.sideB.map(nameOf),
+      score: match.score,
     })),
     bench: session.roster
       .filter((entry) => !playing.has(entry.id) && isHereForRound(entry, roundNumber))
