@@ -15,7 +15,13 @@ an evening that stops early has to be as fair as one that runs its course. Eleve
 courts — the case the build order names by name — schedules cleanly; see
 [ADR-0006](docs/adr/0006-fairness-is-a-cost-function.md) for why fairness is a cost function rather
 than a constraint set. `formatSchedule` renders a session as readable text, so fairness can be
-eyeballed and not only asserted — `npm run print:schedule`. Scoring, standings, roster mutation,
+eyeballed and not only asserted — `npm run print:schedule`.
+
+`recordScore` records results: the organizer enters one side's points and the engine derives the
+other from the session target, so an invalid scoreline cannot be constructed rather than merely
+rejected. Courts are scored in whatever order they finish, across rounds, and re-recording replaces
+a score outright — which is what makes correcting a typo at the side of a court safe. See
+[ADR-0007](docs/adr/0007-scores-are-a-derived-pair-on-the-match.md). Standings, roster mutation,
 Mixicano and Team Americano are still to come. No application code exists yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —

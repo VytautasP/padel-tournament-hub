@@ -1,30 +1,16 @@
 import { assertSessionValid, createSession, generateRemaining } from './public-api';
-import type { PlayerId, Session } from './public-api';
+import type { Session } from './public-api';
+import { damaged } from './test-support/damaged-session';
+import type { MutableSession } from './test-support/damaged-session';
 import { americanoConfig } from './test-support/session-fixtures';
-
-/** A structural copy of a session that tests are free to damage. */
-interface MutableMatch {
-  id: string;
-  courtNumber: number;
-  sideA: [PlayerId, PlayerId];
-  sideB: [PlayerId, PlayerId];
-}
-
-interface MutableSession extends Omit<Session, 'id' | 'roster' | 'rounds'> {
-  id: string;
-  roster: { id: string; name: string }[];
-  rounds: { id: string; number: number; matches: MutableMatch[] }[];
-}
 
 function valid(): Session {
   return generateRemaining(createSession(americanoConfig({ courtCount: 2, roundCount: 6 })));
 }
 
 /** Clone a valid session, break it in one specific way, and hand it back for validation. */
-function broken(damage: (session: MutableSession) => void): Session {
-  const copy = structuredClone(valid()) as unknown as MutableSession;
-  damage(copy);
-  return copy as unknown as Session;
+function broken(damage: (copy: MutableSession) => void): Session {
+  return damaged(valid(), damage);
 }
 
 describe('assertSessionValid', () => {
@@ -92,12 +78,12 @@ describe('assertSessionValid', () => {
     assertSessionValid(valid());
   });
 
-  it('rejects a generated round that follows an unplayed one', () => {
+  it('rejects a generated round that follows an ungenerated one', () => {
     const session = broken((copy) => {
       copy.rounds[0].matches = [];
     });
 
-    expect(() => assertSessionValid(session)).toThrow(/unplayed/i);
+    expect(() => assertSessionValid(session)).toThrow(/ungenerated/i);
 
     assertSessionValid(valid());
   });

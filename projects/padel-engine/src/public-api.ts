@@ -10,16 +10,20 @@
 export type {
   Match,
   MatchId,
+  MatchScore,
   PlayerId,
   RosterEntry,
   Round,
   RoundId,
+  ScoreEntry,
   Session,
   SessionConfig,
   SessionMode,
+  Side,
 } from './lib/model';
 
 export { createSession } from './lib/create-session';
 export { generateRemaining } from './lib/generate-remaining';
+export { recordScore } from './lib/record-score';
 export { assertSessionValid } from './lib/assert-session-valid';
 export { formatSchedule } from './lib/format-schedule';

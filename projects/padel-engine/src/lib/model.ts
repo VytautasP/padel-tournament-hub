@@ -30,6 +30,21 @@ export interface RosterEntry {
   readonly name: string;
 }
 
+/** Which side of a match a number belongs to. */
+export type Side = 'A' | 'B';
+
+/**
+ * A finished match's points, always summing to the session target (decision #3).
+ *
+ * Both numbers are stored even though the organizer enters one, because a stored pair is what
+ * every later reader — standings, the printout, a spectator — actually wants. The pair is
+ * derived on the way in by `recordScore`, so the two halves cannot disagree.
+ */
+export interface MatchScore {
+  readonly sideA: number;
+  readonly sideB: number;
+}
+
 /** One court's worth of play in a round: two sides of two players. */
 export interface Match {
   readonly id: MatchId;
@@ -37,14 +52,28 @@ export interface Match {
   readonly courtNumber: number;
   readonly sideA: readonly [PlayerId, PlayerId];
   readonly sideB: readonly [PlayerId, PlayerId];
+  /**
+   * The result, once someone has entered it. Absent means **not yet scored** — a court still
+   * playing, or one whose result has not reached the organizer. Rounds finish in whatever order
+   * the courts do, so an unscored match may sit between two scored ones.
+   */
+  readonly score?: MatchScore;
+}
+
+/** One side's result for one match: the single number the organizer types (decision #3). */
+export interface ScoreEntry {
+  readonly matchId: MatchId;
+  readonly side: Side;
+  /** That side's points. The other side's are `targetScore - points`. */
+  readonly points: number;
 }
 
 /**
  * One round of simultaneous matches, one per court.
  *
- * A round with no matches is **unplayed**: the slot exists because the organizer asked for that
- * many rounds, but `generateRemaining` has not filled it yet. Scoring lands in a later ticket,
- * so for now "generated" and "played" are the same thing.
+ * A round with no matches is **ungenerated**: the slot exists because the organizer asked for
+ * that many rounds, but `generateRemaining` has not filled it yet. Generated is not the same as
+ * played — whether a round has been played is read off its matches' scores, not off the round.
  */
 export interface Round {
   readonly id: RoundId;

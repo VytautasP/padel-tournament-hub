@@ -23,7 +23,7 @@ describe('formatSchedule', () => {
     expect(renders(session)).toBe(true);
   });
 
-  it('renders a session whose rounds are still unplayed', () => {
+  it('renders a session whose rounds are still ungenerated', () => {
     expect(renders(createSession(americanoConfig()))).toBe(true);
   });
 

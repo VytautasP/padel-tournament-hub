@@ -5,15 +5,18 @@
  * code, not as a test helper (decision #21): the app can hand it any session — one it built, one
  * it loaded from storage — and find out whether it is playable.
  *
- * Every check runs at **every round prefix**, not only over the finished session, because a
- * session that is fair only after its last round is unfair to the evening that stops early
- * (decision #6). The prefix walk is what actually tests that.
+ * Every *fairness* check runs at **every round prefix**, not only over the finished session,
+ * because a session that is fair only after its last round is unfair to the evening that stops
+ * early (decision #6). The prefix walk is what actually tests that. The structural checks —
+ * unique ids, ordering, scores — are properties of the document rather than of a prefix, and run
+ * once over the whole of it.
  *
  * It throws on the first violation with a message naming the round and the players involved,
  * because a fairness bug is only useful if you can see what it did.
  */
 import type { Match, PlayerId, Round, Session } from './model';
 import { PairTally } from './pair-tally';
+import { assertScorePairValid } from './score-rules';
 import { assertSessionShape, courtsInPlay, PLAYERS_PER_COURT } from './session-shape';
 
 export function assertSessionValid(session: Session): void {
@@ -24,6 +27,7 @@ export function assertSessionValid(session: Session): void {
 
   assertMatchIdsUnique(session);
   assertGeneratedRoundsComeFirst(session);
+  assertScoresSumToTarget(session);
 
   const partnerCounts = new PairTally();
   const benchCounts = new Map<PlayerId, number>(session.roster.map((entry) => [entry.id, 0]));
@@ -55,20 +59,41 @@ function assertMatchIdsUnique(session: Session): void {
   }
 }
 
-/** An unplayed round is a slot still to be filled, so nothing may be scheduled after one. */
+/** An ungenerated round is a slot still to be filled, so nothing may be scheduled after one. */
 function assertGeneratedRoundsComeFirst(session: Session): void {
-  const firstUnplayed = session.rounds.findIndex((round) => round.matches.length === 0);
-  if (firstUnplayed === -1) {
+  const firstUngenerated = session.rounds.findIndex((round) => round.matches.length === 0);
+  if (firstUngenerated === -1) {
     return;
   }
 
   const laterGenerated = session.rounds
-    .slice(firstUnplayed + 1)
+    .slice(firstUngenerated + 1)
     .find((round) => round.matches.length > 0);
   if (laterGenerated) {
     throw new Error(
-      `Round ${laterGenerated.number} is scheduled while round ${firstUnplayed + 1} is unplayed.`,
+      `Round ${laterGenerated.number} is scheduled while round ${firstUngenerated + 1} is ungenerated.`,
     );
+  }
+}
+
+/**
+ * Every recorded score pair sums to the session target.
+ *
+ * Unlike the fairness checks this is not a prefix property — a score is right or wrong on its
+ * own — so it walks every match once, unscored ones included and skipped. A match with no score
+ * is a court that has not finished, which is a normal state for a session to be in all evening.
+ */
+function assertScoresSumToTarget(session: Session): void {
+  for (const round of session.rounds) {
+    for (const match of round.matches) {
+      if (match.score) {
+        assertScorePairValid(
+          match.score,
+          session.targetScore,
+          `Round ${round.number} court ${match.courtNumber}`,
+        );
+      }
+    }
   }
 }
 

@@ -15,6 +15,7 @@ describe('padel-engine public API', () => {
       'createSession',
       'formatSchedule',
       'generateRemaining',
+      'recordScore',
     ]);
 
     const session = generateRemaining(createSession(americanoConfig()));

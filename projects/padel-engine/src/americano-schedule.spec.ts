@@ -25,7 +25,7 @@ describe('generateRemaining — exact-fit Americano', () => {
     { courtCount: 1, players: 4 },
     { courtCount: 2, players: 8 },
     { courtCount: 3, players: 12 },
-  ])('fills every unplayed round for $players players on $courtCount courts', ({ courtCount }) => {
+  ])('fills every ungenerated round for $players on $courtCount courts', ({ courtCount }) => {
     const session = scheduled(americanoConfig({ courtCount, roundCount: 5 }));
 
     expect(session.rounds).toHaveLength(5);
@@ -134,7 +134,7 @@ describe('generateRemaining — exact-fit Americano', () => {
     assertSessionValid(session);
   });
 
-  it('fills the unplayed rounds of a part-generated session and leaves the played ones alone', () => {
+  it('fills the ungenerated rounds of a part-generated session and leaves the rest alone', () => {
     const played = scheduled(americanoConfig({ courtCount: 2, roundCount: 6 }));
     // A session as it comes back from storage mid-evening: two rounds played, four still to fill.
     const partGenerated = {

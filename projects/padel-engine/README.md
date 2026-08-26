@@ -3,22 +3,37 @@
 The rules engine for padel sessions: scheduling, scoring and standings for Americano, Mixicano and
 Team Americano. It is the only part of the system that knows what padel is.
 
-So far it schedules **Americano for an exact-fit roster** — 4 players on 1 court, 8 on 2, 12 on 3,
-so that nobody is ever benched. Bench rotation, scoring, standings, roster mutation, Mixicano and
-Team Americano land in later tickets.
+So far it schedules **Americano for any roster of four or more** on any number of courts, with the
+bench rotating evenly, and records the results. Standings, roster mutation, Mixicano and Team
+Americano land in later tickets.
 
 ```ts
 createSession(config);       // an organizer's configuration -> a session with empty rounds
-generateRemaining(session);  // fill every unplayed round -> a new session
+generateRemaining(session);  // fill every ungenerated round -> a new session
+recordScore(session, entry); // one side's points for one match -> a new session
 assertSessionValid(session); // throw unless every invariant holds, at every round prefix
 formatSchedule(session);     // the session as text a human can read
 ```
 
-Partners come from the circle method — fix one player, rotate the rest — so over a roster of n
-players every partnership is played exactly once in n-1 rounds, and a partnership only repeats
-once nobody has an unplayed partner left. Which pair faces which is a small deterministic search
-that minimises opponent repeats. Nothing reads a clock or a random source: the player rotation is
-seeded from the session id, so the same input always yields the same schedule.
+Who sits out and who partners whom is decided round by round against the history of the rounds
+before it, so the evening is as fair after round seven as after round twelve. Bench counts are held
+within one by construction; partner and opponent repeats are costs a bounded search minimises
+(ADR-0006). Nothing reads a clock or a random source: the player rotation is seeded from the
+session id, so the same input always yields the same schedule.
+
+## Recording scores
+
+The organizer enters one side's points and the engine derives the other from the session target
+(decision #3), so an invalid scoreline cannot be constructed:
+
+```ts
+recordScore(session, { matchId: 'session-1:r1:c1', side: 'A', points: 15 });
+// -> that match is now scored 15-9 against a target of 24
+```
+
+Matches are addressed by id, so courts are scored in whatever order they finish, across rounds.
+Re-recording replaces a score outright — nothing accumulates — which is what makes correcting a
+typo at the side of a court safe (ADR-0007).
 
 Every operation returns a new session and mutates nothing; returned sessions are deep-frozen, so
 an accidental write fails loudly instead of corrupting a session document.

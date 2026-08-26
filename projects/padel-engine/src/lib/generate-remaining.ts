@@ -22,6 +22,7 @@ import { matchId } from './create-session';
 import { deepFreeze } from './freeze';
 import type { Match, PlayerId, Round, Session } from './model';
 import { planRound } from './plan-round';
+import { copyRound, copySession } from './session-copy';
 import { SessionHistory } from './session-history';
 import { assertSessionShape, courtsInPlay } from './session-shape';
 
@@ -47,11 +48,7 @@ export function generateRemaining(session: Session): Session {
 
   // Copies all the way down, so freezing the session we return never reaches back and freezes
   // arrays the caller still owns.
-  return deepFreeze({
-    ...session,
-    roster: session.roster.map((entry) => ({ ...entry })),
-    rounds,
-  });
+  return deepFreeze(copySession(session, rounds));
 }
 
 /**
@@ -78,18 +75,6 @@ function buildMatches(
     sideA: planned.sideA,
     sideB: planned.sideB,
   }));
-}
-
-/** A round carried through untouched, copied so the returned session shares nothing with the input. */
-function copyRound(round: Round): Round {
-  return {
-    ...round,
-    matches: round.matches.map((match) => ({
-      ...match,
-      sideA: [match.sideA[0], match.sideA[1]] as const,
-      sideB: [match.sideB[0], match.sideB[1]] as const,
-    })),
-  };
 }
 
 /** FNV-1a: a small, stable string hash. Same string in, same number out, on every run. */

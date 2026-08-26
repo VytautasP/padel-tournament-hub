@@ -27,7 +27,7 @@ describe('createSession', () => {
     assertSessionValid(session);
   });
 
-  it('starts every round unplayed', () => {
+  it('starts every round ungenerated', () => {
     const session = createSession(americanoConfig({ roundCount: 3 }));
 
     expect(session.rounds.map((round) => round.matches)).toEqual([[], [], []]);
