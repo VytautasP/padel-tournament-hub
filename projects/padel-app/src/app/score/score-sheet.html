@@ -1,0 +1,47 @@
+<section class="space-y-5 rounded-t-3xl border border-line bg-surface-raised p-5">
+  <h2 class="text-xs font-medium tracking-wide text-ink-muted uppercase">
+    {{ copy.round.courtName(data.courtNumber) }}
+  </h2>
+
+  @for (entry of sides; track entry.side) {
+    <div class="flex items-center justify-between gap-4">
+      <label class="min-w-0 flex-1 truncate text-base text-ink" [attr.for]="fieldId(entry.side)">
+        {{ copy.round.side(entry.names) }}
+      </label>
+      <div class="flex items-baseline gap-2">
+        <input
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          class="w-20 rounded-xl border border-line bg-surface px-3 py-2 text-right text-lg text-ink"
+          [id]="fieldId(entry.side)"
+          [value]="valueFor(entry.side)"
+          (input)="onInput(entry.side, $event)"
+        />
+        <span class="text-sm text-ink-muted">{{ copy.score.outOf(data.targetScore) }}</span>
+      </div>
+    </div>
+  }
+
+  @if (tooHigh()) {
+    <p class="text-sm font-medium text-ink">{{ copy.score.tooHigh(data.targetScore) }}</p>
+  }
+
+  <div class="flex gap-3">
+    <button
+      type="button"
+      class="flex-1 rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
+      (click)="cancel()"
+    >
+      {{ copy.score.cancel }}
+    </button>
+    <button
+      type="button"
+      class="flex-1 rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink disabled:opacity-40"
+      [disabled]="!canSave()"
+      (click)="save()"
+    >
+      {{ copy.score.save }}
+    </button>
+  </div>
+</section>

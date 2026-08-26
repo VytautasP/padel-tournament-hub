@@ -1,0 +1,36 @@
+<div class="mx-auto flex min-h-screen max-w-md flex-col">
+  <div class="flex-1">
+    <app-round-tab [hidden]="current() !== 'round'" />
+    <app-standings-tab [hidden]="current() !== 'standings'" />
+  </div>
+
+  <nav class="sticky bottom-0 flex border-t border-line bg-surface-raised">
+    <button
+      type="button"
+      class="flex-1 py-3 text-sm font-medium"
+      [class.text-brand]="current() === 'round'"
+      [class.text-ink-muted]="current() !== 'round'"
+      [attr.aria-current]="current() === 'round' ? 'page' : null"
+      (click)="show('round')"
+    >
+      {{ copy.session.round }}
+    </button>
+    <button
+      type="button"
+      class="flex-1 py-3 text-sm font-medium"
+      [class.text-brand]="current() === 'standings'"
+      [class.text-ink-muted]="current() !== 'standings'"
+      [attr.aria-current]="current() === 'standings' ? 'page' : null"
+      (click)="show('standings')"
+    >
+      {{ copy.session.standings }}
+    </button>
+    <button
+      type="button"
+      class="flex-1 py-3 text-sm font-medium text-ink-muted opacity-40"
+      disabled
+    >
+      {{ copy.session.players }}
+    </button>
+  </nav>
+</div>

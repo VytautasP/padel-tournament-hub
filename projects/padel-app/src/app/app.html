@@ -4,7 +4,7 @@
       <app-create-wizard (created)="show('session')" (cancelled)="show('landing')" />
     }
     @case ('session') {
-      <app-round-tab />
+      <app-session-shell />
     }
     @default {
       <app-landing (started)="show('wizard')" (resumed)="show('session')" />

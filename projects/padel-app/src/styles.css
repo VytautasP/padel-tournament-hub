@@ -14,6 +14,7 @@
  * `tools/verify-app-conventions.mjs` proves no component names a colour of its own.
  */
 @import 'tailwindcss';
+@import '@angular/cdk/overlay-prebuilt.css';
 
 :root {
   --palette-surface: #f7f8fa;

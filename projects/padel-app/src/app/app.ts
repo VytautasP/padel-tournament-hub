@@ -12,14 +12,14 @@
 import { ChangeDetectionStrategy, Component, inject, PendingTasks, signal } from '@angular/core';
 import { CreateWizard } from './wizard/create-wizard';
 import { Landing } from './landing/landing';
-import { RoundTab } from './round/round-tab';
+import { SessionShell } from './session/session-shell';
 import { SessionStore } from './session/session-store';
 
 type Screen = 'landing' | 'wizard' | 'session';
 
 @Component({
   selector: 'app-root',
-  imports: [CreateWizard, Landing, RoundTab],
+  imports: [CreateWizard, Landing, SessionShell],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

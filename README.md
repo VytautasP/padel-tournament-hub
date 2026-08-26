@@ -49,13 +49,19 @@ tiers mean exactly what they already meant. See
 pair goes home the team keeps its slot and its points and the other half is flagged
 `needs partner`, until a replacement repairs the team or the stranded player leaves too; see
 [ADR-0012](docs/adr/0012-an-orphaned-team-keeps-its-slot-and-the-fixture-ledger-restarts-with-the-field.md).
-**The app runs an Americano evening as far as its first round.** `padel-app` opens on a landing
+**The app runs an Americano evening, scored, with a live table.** `padel-app` opens on a landing
 page, walks a three-step wizard — mode, names, then a review screen already holding a target of 24,
-one court and a complete rotation capped at 12 — and generates the schedule. The Round tab renders
-round one: every court, both sides, whoever is sitting out, and no score yet. The evening lives in
-`localStorage` behind a `SessionRepository` (decision #19), so closing the app and reopening it
-offers Resume rather than New session. Scoring, standings, the roster tab and the other two modes
-are the slices after this one.
+one court and a complete rotation capped at 12 — and generates the schedule. The session is a
+three-tab shell (ADR-0016): the Round tab renders the round the evening is on — every court, both
+sides, whoever is sitting out — and tapping a court opens the score sheet, two views of one number
+bounded by the session's target, which refuses anything larger rather than quietly clamping it
+(ADR-0014). The Standings tab is the same table the engine derives, live: position, name and points
+per match, a tap for the detail behind a row, and a dash rather than a column of zeroes before
+anybody has played. The evening lives in `localStorage` behind a `SessionRepository`
+(decision #19), so closing the app and reopening it offers Resume rather than New session — and
+reopens on the current round, which is worked out from the unscored matches every time and stored
+nowhere. Round paging, the Players tab, ending a session and the other two modes are the slices
+after this one.
 
 Every string the organizer reads comes from one typed dictionary and every colour from one token
 file with a light and a dark value (ADR-0018); `npm run verify:conventions` proves no template has

@@ -61,6 +61,13 @@ _Avoid_: Game, rotation, leg
 One court's play within a round: two sides of two players, and a score once someone enters it.
 _Avoid_: Game, fixture, tie
 
+**Score sheet**:
+The sheet a court opens into, holding that one match's two numbers. Either side can be typed into
+and the other is derived from the target score, so one number is entered and one number is
+recorded. A court that already has a score reopens it at that score — correcting a typo is the
+ordinary path, not a separate action.
+_Avoid_: Score dialog, score modal, score entry form, edit score
+
 **Court name**:
 What the organizer calls a court, so that four people walk to the right one — a club's court 7 is
 court 7, not court 1. A label only; the court's identity is its number within the round.
