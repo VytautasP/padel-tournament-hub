@@ -14,7 +14,7 @@
  */
 import type { Match, PlayerId, Round, Session } from './model';
 import { PairTally } from './pair-tally';
-import { assertSessionShape, PLAYERS_PER_COURT } from './session-shape';
+import { assertSessionShape, courtsInPlay, PLAYERS_PER_COURT } from './session-shape';
 
 export function assertSessionValid(session: Session): void {
   assertSessionShape(session);
@@ -77,15 +77,17 @@ function assertRoundStructure(
   session: Session,
   nameOf: (id: PlayerId) => string,
 ): void {
-  if (round.matches.length !== session.courtCount) {
+  // Courts in play, not courts booked: six players on two courts fill one court and bench two.
+  const inPlay = courtsInPlay(session);
+  if (round.matches.length !== inPlay) {
     throw new Error(
-      `Round ${round.number} fills ${round.matches.length} of ${session.courtCount} court(s) — ` +
-        'every court hosts a match.',
+      `Round ${round.number} fills ${round.matches.length} of ${inPlay} court(s) — ` +
+        'every court in play hosts a match.',
     );
   }
 
   const courtNumbers = round.matches.map((match) => match.courtNumber);
-  const expectedCourts = Array.from({ length: session.courtCount }, (_, index) => index + 1);
+  const expectedCourts = Array.from({ length: inPlay }, (_, index) => index + 1);
   if (courtNumbers.join(',') !== expectedCourts.join(',')) {
     throw new Error(
       `Round ${round.number} uses court numbers ${courtNumbers.join(', ')} — expected ` +

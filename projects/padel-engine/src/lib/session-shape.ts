@@ -1,7 +1,7 @@
 /*
  * The structural rules a session document must satisfy before anything can be scheduled on it:
  * a mode the engine knows, courts to play on, rounds to fill, and a roster of distinct,
- * identifiable players that fills every court exactly.
+ * identifiable players big enough to fill a court.
  *
  * `createSession` and `assertSessionValid` both run these checks, so a configuration the engine
  * refuses to build is described in exactly the same words as a session that has drifted into
@@ -11,6 +11,18 @@ import type { Session } from './model';
 
 /** Players per match — two per side, four per court. */
 export const PLAYERS_PER_COURT = 4;
+
+/**
+ * How many courts this session can actually fill.
+ *
+ * An organizer books courts before they know who turns up, so `courtCount` is an upper bound
+ * rather than a promise: six players on two courts play on one court and bench two. Every part
+ * of the engine that asks "how many matches does a round have?" asks this, so the scheduler and
+ * the referee can never disagree about it.
+ */
+export function courtsInPlay(session: Session): number {
+  return Math.min(session.courtCount, Math.floor(session.roster.length / PLAYERS_PER_COURT));
+}
 
 export function assertSessionShape(session: Session): void {
   if (session.id.trim() === '') {
@@ -43,12 +55,11 @@ export function assertSessionShape(session: Session): void {
     seenPlayerIds.add(entry.id);
   }
 
-  // This ticket schedules exact-fit rosters only: every court is filled and nobody is benched.
-  // Bench rotation for rosters that do not divide evenly lands in a later ticket.
-  const required = session.courtCount * PLAYERS_PER_COURT;
-  if (session.roster.length !== required) {
+  // Four players fill one court; below that there is no match to schedule. Above it any roster
+  // is schedulable — whoever does not fit onto a court is benched, and the bench rotates.
+  if (session.roster.length < PLAYERS_PER_COURT) {
     throw new Error(
-      `Americano on ${session.courtCount} court(s) needs exactly ${required} players — ` +
+      `Americano needs at least ${PLAYERS_PER_COURT} players — ` +
         `the roster has ${session.roster.length}.`,
     );
   }

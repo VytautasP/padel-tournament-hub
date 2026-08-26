@@ -73,8 +73,8 @@ describe('createSession', () => {
       assertSessionValid(createSession(americanoConfig()));
     };
 
-    it('when the roster does not fill every court exactly', () => {
-      rejects({ courtCount: 2, players: roster(7) }, /exactly 8 players/);
+    it('when the roster cannot fill a single court', () => {
+      rejects({ courtCount: 2, players: roster(3) }, /at least 4 players/);
     });
 
     it('when there are no courts', () => {

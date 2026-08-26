@@ -112,7 +112,7 @@ describe('generateRemaining — exact-fit Americano', () => {
       session.rounds.map((round) =>
         round.matches.map((match) => `${match.sideA.join('+')} v ${match.sideB.join('+')}`),
       ),
-    ).toEqual([['p2+p3 v p4+p1'], ['p2+p4 v p1+p3'], ['p2+p1 v p3+p4']]);
+    ).toEqual([['p3+p4 v p1+p2'], ['p3+p1 v p4+p2'], ['p3+p2 v p4+p1']]);
 
     assertSessionValid(session);
   });

@@ -102,12 +102,24 @@ describe('assertSessionValid', () => {
     assertSessionValid(valid());
   });
 
-  it('rejects a roster that no longer fills every court', () => {
+  it('rejects a roster too small to fill a single court', () => {
     const session = broken((copy) => {
-      copy.roster = copy.roster.slice(0, 7);
+      copy.roster = copy.roster.slice(0, 3);
     });
 
-    expect(() => assertSessionValid(session)).toThrow(/exactly 8 players/);
+    expect(() => assertSessionValid(session)).toThrow(/at least 4 players/);
+
+    assertSessionValid(valid());
+  });
+
+  it('rejects a round that fills more courts than the roster can staff', () => {
+    // Four players left of eight: one court is in play, so a second match is a player short
+    // however its ids are arranged.
+    const session = broken((copy) => {
+      copy.roster = copy.roster.slice(0, 4);
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/fills 2 of 1 court/);
 
     assertSessionValid(valid());
   });

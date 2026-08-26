@@ -18,6 +18,7 @@
  * It stays inside the engine boundary: a pure `Session -> string`, no I/O, no clock.
  */
 import type { Match, PlayerId, Round, Session } from './model';
+import { courtsInPlay } from './session-shape';
 
 /** A session as readable text: a block per round, then a block per player. */
 export function formatSchedule(session: Session): string {
@@ -72,11 +73,20 @@ function renderer(session: Session): {
   const header = (): string => {
     const generated = session.rounds.filter((round) => round.matches.length > 0).length;
 
+    // Courts booked and courts staffed are different numbers once a roster benches, and the
+    // reader needs to see both — an evening on "two courts" that only ever fills one is exactly
+    // the sort of surprise a printout exists to surface.
+    const inPlay = courtsInPlay(session);
+    const courts =
+      inPlay === session.courtCount
+        ? `${session.courtCount} court(s)`
+        : `${session.courtCount} court(s), ${inPlay} in play`;
+
     return [
       `${titleCase(session.mode)} — ${session.id}`,
       [
         `${session.roster.length} players`,
-        `${session.courtCount} court(s)`,
+        courts,
         `${generated}/${session.rounds.length} rounds generated`,
         `first to ${session.targetScore}`,
       ].join(' · '),
