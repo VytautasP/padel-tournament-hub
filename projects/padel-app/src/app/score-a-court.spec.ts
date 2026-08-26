@@ -10,6 +10,7 @@
  * session to find out who the engine put together. That is the one thing about a generated
  * schedule a test cannot spell out in advance.
  */
+import type { Match, MatchScore } from 'padel-engine';
 import { AppHarness } from './testing/app-harness';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
@@ -89,6 +90,9 @@ describe('scoring a court', () => {
       expect(app.shows('A score cannot be more than 24.')).toBe(true);
       expect(app.canTap('Save')).toBe(false);
       expect(app.numberIn(sides.a)).toBe(27);
+      // Nothing is derived from a number the match cannot hold: `24 - 27` is not a scoreline, and
+      // the last one that was is not this one. The refused number is the one still on screen.
+      expect(app.textIn(sides.b)).toBe('');
     });
 
     it('reads the bound off the session, so an evening played to 32 accepts 30', async () => {
@@ -248,8 +252,8 @@ interface Sides {
   readonly b: string;
 }
 
-/** Who the engine put on each side of a court, as the screen spells them. */
-function sidesOn(app: AppHarness, courtNumber: number): Sides {
+/** One court of round one, as the repository is holding it. */
+function matchOn(app: AppHarness, courtNumber: number): Match {
   const session = app.repository.activeRecord()?.session;
   if (session === undefined || session === null) {
     throw new Error('No session has been created.');
@@ -262,8 +266,14 @@ function sidesOn(app: AppHarness, courtNumber: number): Sides {
     throw new Error(`Round 1 has no court ${courtNumber}.`);
   }
 
-  const nameOf = (id: string): string =>
-    session.roster.find((entry) => entry.id === id)?.name ?? id;
+  return match;
+}
+
+/** Who the engine put on each side of a court, as the screen spells them. */
+function sidesOn(app: AppHarness, courtNumber: number): Sides {
+  const roster = app.repository.activeRecord()?.session.roster ?? [];
+  const match = matchOn(app, courtNumber);
+  const nameOf = (id: string): string => roster.find((entry) => entry.id === id)?.name ?? id;
 
   return {
     a: match.sideA.map(nameOf).join(' & '),
@@ -271,10 +281,8 @@ function sidesOn(app: AppHarness, courtNumber: number): Sides {
   };
 }
 
-function scoreOf(app: AppHarness, courtNumber = 1): unknown {
-  const session = app.repository.activeRecord()?.session;
-
-  return session?.rounds[0].matches.find((match) => match.courtNumber === courtNumber)?.score;
+function scoreOf(app: AppHarness, courtNumber = 1): MatchScore | undefined {
+  return matchOn(app, courtNumber).score;
 }
 
 async function openSheet(app: AppHarness, courtNumber = 1): Promise<Sides> {

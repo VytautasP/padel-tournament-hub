@@ -7,31 +7,33 @@
  * `recordScore` — while letting the organizer enter the result in whichever direction the four
  * people talking at them happened to say it.
  *
- * Two rules the sheet must not soften:
+ * Three rules the sheet must not soften:
  *
  *   - **Digits only.** `inputmode="numeric"` raises the right keypad, and the filter below is what
  *     actually holds, because a phone keypad is not the only way characters arrive in a field.
  *   - **Out of range is an error, never a clamp.** A number above the target refuses to save and
  *     stays on screen exactly as it was typed. Rewriting `27` to `24` produces a wrong score that
  *     looks deliberate, and nobody ever looks at it again.
+ *   - **The derived side is empty while the typed one is out of range.** `24 - 27` is not a
+ *     scoreline, and the last one that was is not this one. An empty field beside the error says
+ *     what is true: there is no pair here yet. Nothing typed is lost — the refused number is the
+ *     one still on screen.
  *
  * The bound is the session's target score, passed in. A validator that knew the number 24 would
  * silently break every evening played to anything else.
  */
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import type { MatchId, MatchScore, ScoreEntry, Side } from 'padel-engine';
+import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { Overlay } from '@angular/cdk/overlay';
+import { firstValueFrom } from 'rxjs';
+import type { ScoreEntry, Side } from 'padel-engine';
 import { copy } from '../copy/copy';
+import type { CourtView } from '../round/round-view';
 
-/** Everything the sheet needs about the court that was tapped. */
+/** The court that was tapped, and the total its two numbers have to add up to. */
 export interface ScoreSheetData {
-  readonly matchId: MatchId;
-  readonly courtNumber: number;
-  readonly sideA: readonly string[];
-  readonly sideB: readonly string[];
+  readonly court: CourtView;
   readonly targetScore: number;
-  /** The result already recorded, if this court is being corrected rather than scored. */
-  readonly score?: MatchScore;
 }
 
 let nextSheetId = 1;
@@ -44,7 +46,7 @@ let nextSheetId = 1;
 export class ScoreSheet {
   protected readonly data = inject<ScoreSheetData>(DIALOG_DATA);
 
-  private readonly dialogRef = inject<DialogRef<ScoreEntry | undefined>>(DialogRef);
+  private readonly sheetRef = inject<DialogRef<ScoreEntry | undefined>>(DialogRef);
 
   /**
    * The side that was typed into and what it holds, as characters rather than a number.
@@ -52,14 +54,14 @@ export class ScoreSheet {
    * Characters, because an empty field and a field holding `0` are different states and only one
    * of them can be saved — and because what is refused has to stay legible on screen.
    */
-  private readonly typed = signal(openingEntry(this.data));
+  private readonly typed = signal(openingField(this.data.court));
 
   protected readonly copy = copy;
 
   /** The two sides, so the template writes one field rather than two that have to stay alike. */
   protected readonly sides: readonly { side: Side; names: readonly string[] }[] = [
-    { side: 'A', names: this.data.sideA },
-    { side: 'B', names: this.data.sideB },
+    { side: 'A', names: this.data.court.sideA },
+    { side: 'B', names: this.data.court.sideB },
   ];
 
   private readonly sheetId = nextSheetId++;
@@ -120,12 +122,35 @@ export class ScoreSheet {
       return;
     }
 
-    this.dialogRef.close({ matchId: this.data.matchId, side: this.typed().side, points });
+    this.sheetRef.close({ matchId: this.data.court.matchId, side: this.typed().side, points });
   }
 
   protected cancel(): void {
-    this.dialogRef.close(undefined);
+    this.sheetRef.close(undefined);
   }
+}
+
+/**
+ * Open the sheet for one court and wait for the number, or for nothing.
+ *
+ * Opening it lives here rather than at the call site because *bottom* sheet is a fact about this
+ * component (ADR-0014 §1): it opens under the thumb that tapped the court, not in the middle of a
+ * screen the same thumb cannot reach. A caller that had to say so would be a caller that could
+ * forget to.
+ */
+export function openScoreSheet(
+  dialog: Dialog,
+  overlay: Overlay,
+  data: ScoreSheetData,
+): Promise<ScoreEntry | undefined> {
+  const sheet = dialog.open<ScoreEntry | undefined, ScoreSheetData>(ScoreSheet, {
+    data,
+    positionStrategy: overlay.position().global().bottom().centerHorizontally(),
+    width: '100%',
+    maxWidth: '28rem',
+  });
+
+  return firstValueFrom(sheet.closed);
 }
 
 /**
@@ -135,6 +160,6 @@ export class ScoreSheet {
  * A scored court reopens at its current value because correcting a typo is the ordinary path
  * (ADR-0007) — arriving at an empty sheet would make the correction a re-entry.
  */
-function openingEntry(data: ScoreSheetData): { side: Side; text: string } {
-  return { side: 'A', text: data.score === undefined ? '' : String(data.score.sideA) };
+function openingField(court: CourtView): { side: Side; text: string } {
+  return { side: 'A', text: court.score === undefined ? '' : String(court.score.sideA) };
 }

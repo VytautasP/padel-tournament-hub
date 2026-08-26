@@ -237,7 +237,7 @@ function isHidden(element: Element): boolean {
  * make every test assert a string nobody can see.
  */
 function visibleText(element: Element): string {
-  if (element.hasAttribute('hidden')) {
+  if (isHidden(element)) {
     return '';
   }
 

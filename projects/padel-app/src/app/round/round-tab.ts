@@ -14,13 +14,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Dialog } from '@angular/cdk/dialog';
 import { Overlay } from '@angular/cdk/overlay';
-import { firstValueFrom } from 'rxjs';
-import type { ScoreEntry } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { roundView } from './round-view';
 import type { CourtView } from './round-view';
-import { ScoreSheet } from '../score/score-sheet';
-import type { ScoreSheetData } from '../score/score-sheet';
+import { openScoreSheet } from '../score/score-sheet';
 import { SessionStore } from '../session/session-store';
 
 @Component({
@@ -54,25 +51,11 @@ export class RoundTab {
       return;
     }
 
-    const data: ScoreSheetData = {
-      matchId: court.matchId,
-      courtNumber: court.courtNumber,
-      sideA: court.sideA,
-      sideB: court.sideB,
+    const entry = await openScoreSheet(this.dialog, this.overlay, {
+      court,
       targetScore: session.targetScore,
-      score: court.score,
-    };
-
-    const sheet = this.dialog.open<ScoreEntry | undefined, ScoreSheetData>(ScoreSheet, {
-      data,
-      // A bottom sheet: it opens under the thumb that tapped the court, not in the middle of the
-      // screen where the same thumb cannot reach it.
-      positionStrategy: this.overlay.position().global().bottom().centerHorizontally(),
-      width: '100%',
-      maxWidth: '28rem',
     });
 
-    const entry = await firstValueFrom(sheet.closed);
     if (entry !== undefined) {
       await this.store.score(entry);
     }

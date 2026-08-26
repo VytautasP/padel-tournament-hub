@@ -1,36 +1,23 @@
-<div class="mx-auto flex min-h-screen max-w-md flex-col">
-  <div class="flex-1">
-    <app-round-tab [hidden]="current() !== 'round'" />
-    <app-standings-tab [hidden]="current() !== 'standings'" />
+<div class="mx-auto flex h-screen max-w-md flex-col">
+  <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'round'">
+    <app-round-tab />
+  </div>
+  <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'standings'">
+    <app-standings-tab />
   </div>
 
-  <nav class="sticky bottom-0 flex border-t border-line bg-surface-raised">
-    <button
-      type="button"
-      class="flex-1 py-3 text-sm font-medium"
-      [class.text-brand]="current() === 'round'"
-      [class.text-ink-muted]="current() !== 'round'"
-      [attr.aria-current]="current() === 'round' ? 'page' : null"
-      (click)="show('round')"
-    >
-      {{ copy.session.round }}
-    </button>
-    <button
-      type="button"
-      class="flex-1 py-3 text-sm font-medium"
-      [class.text-brand]="current() === 'standings'"
-      [class.text-ink-muted]="current() !== 'standings'"
-      [attr.aria-current]="current() === 'standings' ? 'page' : null"
-      (click)="show('standings')"
-    >
-      {{ copy.session.standings }}
-    </button>
-    <button
-      type="button"
-      class="flex-1 py-3 text-sm font-medium text-ink-muted opacity-40"
-      disabled
-    >
-      {{ copy.session.players }}
-    </button>
+  <nav class="flex border-t border-line bg-surface-raised">
+    @for (tab of tabs; track tab.id) {
+      <button
+        type="button"
+        class="flex-1 py-3 text-sm font-medium disabled:opacity-40"
+        [class]="current() === tab.id ? 'text-brand' : 'text-ink-muted'"
+        [attr.aria-current]="current() === tab.id ? 'page' : null"
+        [disabled]="!tab.ready"
+        (click)="show(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    }
   </nav>
 </div>

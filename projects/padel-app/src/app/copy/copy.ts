@@ -100,7 +100,6 @@ export const copy = {
   },
 
   standings: {
-    heading: 'Standings',
     /**
      * Points per match, or a dash for somebody who has not been on a scored court yet.
      *

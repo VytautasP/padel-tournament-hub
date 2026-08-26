@@ -10,10 +10,9 @@
           <button
             type="button"
             class="w-full space-y-2 rounded-2xl border p-4 text-left"
-            [class.border-line]="!court.score"
-            [class.bg-surface-raised]="!court.score"
-            [class.border-brand]="!!court.score"
-            [class.bg-surface-sunken]="!!court.score"
+            [class]="
+              court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
+            "
             [attr.aria-label]="copy.round.enterScore(court.courtNumber)"
             (click)="score(court)"
           >
