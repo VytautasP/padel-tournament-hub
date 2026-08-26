@@ -130,7 +130,7 @@ describe('scoring a court', () => {
       const app = await createSession(FOUR);
       const sides = await score(app, 17);
 
-      await app.tap('Enter score for court 1');
+      await app.tap('Enter score for Court 1');
       expect(app.numberIn(sides.a)).toBe(17);
       expect(app.numberIn(sides.b)).toBe(7);
 
@@ -209,7 +209,7 @@ describe('scoring a court', () => {
       expect(app.isOnScreen(`1 ${winner} 17.0`)).toBe(true);
 
       await app.tap('Round');
-      await app.tap('Enter score for court 1');
+      await app.tap('Enter score for Court 1');
       await app.setNumber(sides.a, 20);
       await app.tap('Save');
       await app.tap('Standings');
@@ -286,7 +286,7 @@ function scoreOf(app: AppHarness, courtNumber = 1): MatchScore | undefined {
 }
 
 async function openSheet(app: AppHarness, courtNumber = 1): Promise<Sides> {
-  await app.tap(`Enter score for court ${courtNumber}`);
+  await app.tap(`Enter score for Court ${courtNumber}`);
 
   return sidesOn(app, courtNumber);
 }

@@ -13,11 +13,11 @@
             [class]="
               court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
             "
-            [attr.aria-label]="copy.round.enterScore(court.courtNumber)"
+            [attr.aria-label]="copy.round.enterScore(court.name)"
             (click)="score(court)"
           >
             <span class="block text-xs font-medium tracking-wide text-ink-muted uppercase">
-              {{ copy.round.courtName(court.courtNumber) }}
+              {{ court.name }}
             </span>
             <span class="block text-lg text-ink">{{ copy.round.side(court.sideA) }}</span>
             <span class="block text-xs tracking-wide text-ink-muted uppercase">

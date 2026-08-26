@@ -41,7 +41,9 @@ export class RoundTab {
     const session = this.store.activeSession();
     const roundNumber = this.showing();
 
-    return session === null || roundNumber === null ? null : roundView(session, roundNumber);
+    return session === null || roundNumber === null
+      ? null
+      : roundView(session, roundNumber, this.store.courtNames());
   });
 
   /** Open the sheet for one court, and record whatever comes back out of it. */

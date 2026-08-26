@@ -52,5 +52,5 @@ function record(): SessionRecord {
     }),
   );
 
-  return { session, createdAt: '2026-08-26T18:00:00.000Z' };
+  return { session, createdAt: '2026-08-26T18:00:00.000Z', courtNames: ['Court 7'] };
 }

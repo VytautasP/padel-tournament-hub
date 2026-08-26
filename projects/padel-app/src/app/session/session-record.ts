@@ -17,4 +17,17 @@ export interface SessionRecord {
   readonly session: Session;
   /** When the organizer created the evening, as an ISO-8601 instant. */
   readonly createdAt: string;
+  /**
+   * What the organizer calls each court, in court-number order: entry `i` names court `i + 1`.
+   *
+   * This is the first app-owned field ADR-0017 predicted, and it is the reason the wrapper exists
+   * at all. The engine identifies a court by its `courtNumber` and always will; a name is a label
+   * the app renders over that number, so it cannot go on the engine's `Session` without making
+   * the engine hold a display concern it has no rule about.
+   *
+   * An entry may be blank — that is somebody skipping the question, and it renders as `Court N`
+   * (ADR-0017 §6). Two entries may be identical, because a club with two courts called "Centre"
+   * is not a session the app should refuse to create.
+   */
+  readonly courtNames: readonly string[];
 }

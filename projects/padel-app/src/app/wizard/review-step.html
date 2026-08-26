@@ -29,6 +29,19 @@
     />
   </div>
 
+  <div class="space-y-3">
+    <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+      {{ copy.wizard.review.courtNames }}
+    </h2>
+    @for (court of courts(); track court.number) {
+      <app-text-field
+        [label]="court.label"
+        [value]="court.name"
+        (changed)="draft().setCourtName(court.number, $event)"
+      />
+    }
+  </div>
+
   <button
     type="button"
     class="w-full rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
