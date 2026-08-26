@@ -45,9 +45,11 @@ team takes the bye when there are more teams than courts, team bench counts stay
 every prefix, and teams meet every other team before meeting any of them twice. The standings are
 the same ladder handed teams instead of players, so points per match played and the tie-break
 tiers mean exactly what they already meant. See
-[ADR-0011](docs/adr/0011-team-americano-is-the-same-engine-one-level-up.md). An orphaned partner —
-what happens when one half of a pair goes home — is the next ticket. No application code exists
-yet.
+[ADR-0011](docs/adr/0011-team-americano-is-the-same-engine-one-level-up.md). When one half of a
+pair goes home the team keeps its slot and its points and the other half is flagged
+`needs partner`, until a replacement repairs the team or the stranded player leaves too; see
+[ADR-0012](docs/adr/0012-an-orphaned-team-keeps-its-slot-and-the-fixture-ledger-restarts-with-the-field.md).
+No application code exists yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —
 live in **[docs/DECISIONS.md](docs/DECISIONS.md)**. That file is the source of truth. If code and

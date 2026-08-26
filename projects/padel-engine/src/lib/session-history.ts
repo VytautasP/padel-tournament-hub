@@ -26,10 +26,11 @@
  * the same pass rather than by a second walk, because a session has one history and the level a
  * reader asks about is their business rather than the walk's.
  */
+import { FixtureLedger } from './fixture-ledger';
 import type { MixedPairing } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round, TeamId } from './model';
 import { PairTally } from './pair-tally';
-import { everyone, seedAtFloor } from './queue-seed';
+import { everyone, forgetAbsent, seedAtFloor } from './queue-seed';
 import { isAvailableIn, joinedAtRound } from './roster-availability';
 import { teamsAvailableAmong } from './teams';
 import type { TeamPlay } from './teams';
@@ -40,7 +41,7 @@ export class SessionHistory {
   private readonly bench = new Map<PlayerId, number>();
   private readonly compromised = new Map<PlayerId, number>();
   private readonly teamBench = new Map<TeamId, number>();
-  private readonly meetings = new PairTally();
+  private readonly meetings = new FixtureLedger();
   private readonly joinedAt: ReadonlyMap<PlayerId, number>;
 
   constructor(
@@ -232,8 +233,12 @@ export class SessionHistory {
       return;
     }
 
+    // A team that cannot take the court is out of the bench queue entirely, and a repaired one
+    // rejoins it at the floor rather than on the count it was orphaned with (decision #2b).
     const available = teamsAvailableAmong(this.play.teams, this.roster, round.number);
+    forgetAbsent(this.teamBench, available);
     seedAtFloor(this.teamBench, available, everyone);
+    this.meetings.openRound(available);
 
     const playing = new Set<TeamId>();
     for (const match of round.matches) {

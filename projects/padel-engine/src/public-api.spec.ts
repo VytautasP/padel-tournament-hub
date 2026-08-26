@@ -14,6 +14,7 @@ describe('padel-engine public API', () => {
       'addPlayer',
       'addRound',
       'assertSessionValid',
+      'assignPartner',
       'computeStandings',
       'computeTeamStandings',
       'createSession',
@@ -23,6 +24,7 @@ describe('padel-engine public API', () => {
       'recordScore',
       'removePlayer',
       'sameGenderSides',
+      'teamsNeedingPartner',
     ]);
 
     const session = generateRemaining(createSession(americanoConfig()));

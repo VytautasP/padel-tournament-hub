@@ -56,9 +56,19 @@ export function rosterEntry(player: RosterEntry): RosterEntry {
     : { id: player.id, name: player.name, gender: player.gender };
 }
 
-/** A team as the session stores it: its id and its two players, and nothing else the caller held. */
+/**
+ * A team as the session stores it: its id, the pair it fields, the halves that have left it, and
+ * nothing else the caller held.
+ *
+ * The former members are absent rather than empty on a team that has never been repaired, so a
+ * session stored before decision #2b's repairs existed reads back as the document it was saved as.
+ */
 export function teamEntry(team: Team): Team {
-  return { id: team.id, playerIds: [team.playerIds[0], team.playerIds[1]] };
+  const stored: Team = { id: team.id, playerIds: [team.playerIds[0], team.playerIds[1]] };
+
+  return team.formerPlayerIds && team.formerPlayerIds.length > 0
+    ? { ...stored, formerPlayerIds: [...team.formerPlayerIds] }
+    : stored;
 }
 
 export function roundId(sessionId: string, roundNumber: number): string {

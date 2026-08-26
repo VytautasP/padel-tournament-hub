@@ -27,12 +27,15 @@ export type {
   TeamId,
 } from './lib/model';
 
+export type { OrphanedTeam } from './lib/teams';
 export type { Standing } from './lib/standings';
 export type { TeamStanding } from './lib/team-standings';
 
 export { createSession } from './lib/create-session';
 export { addRound } from './lib/add-round';
 export { addPlayer, removePlayer } from './lib/change-roster';
+export { assignPartner } from './lib/assign-partner';
+export { teamsNeedingPartner } from './lib/teams';
 export { generateRemaining } from './lib/generate-remaining';
 export { finishSession } from './lib/finish-session';
 export { recordScore } from './lib/record-score';

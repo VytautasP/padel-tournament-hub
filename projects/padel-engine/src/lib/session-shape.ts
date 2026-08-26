@@ -7,12 +7,9 @@
  * refuses to build is described in exactly the same words as a session that has drifted into
  * the same state.
  */
-import type { RosterEntry, Session, SessionMode } from './model';
-import { availableIn, joinedAtRound, leftAfterRound } from './roster-availability';
-import { teamPlayIn, teamsAvailableIn } from './teams';
-
-/** Players per team — the fixed partnership Team Americano schedules as one unit. */
-export const PLAYERS_PER_TEAM = 2;
+import type { RosterEntry, Session, SessionMode, Team } from './model';
+import { availableIn, hasLeft, joinedAtRound, leftAfterRound } from './roster-availability';
+import { membersOf, PLAYERS_PER_TEAM, teamLineupIn, teamPlayIn, teamsAvailableIn } from './teams';
 
 /** Teams per match — one on each side of the net, which is what makes a team the unit. */
 export const TEAMS_PER_COURT = 2;
@@ -138,6 +135,24 @@ function assertWindowSound(entry: RosterEntry): void {
  * honest moment to say so is when the organizer taps Remove, not when the generator runs.
  */
 function assertEveryRoundStaffable(session: Session): void {
+  // In Team Americano the unit is the team, and four players who are two orphaned halves of two
+  // different teams staff nothing. So the count that matters is the one the round schedules from
+  // (decision #2b) — which is also what makes removing the wrong player refuse itself rather than
+  // leave an evening with nobody able to take the court.
+  if (teamPlayIn(session).plays) {
+    for (const round of session.rounds) {
+      const teams = teamsAvailableIn(session, round.number).length;
+      if (teams < TEAMS_PER_COURT) {
+        throw new Error(
+          `Round ${round.number} has ${teams} team(s) available — ` +
+            `a round needs at least ${TEAMS_PER_COURT} teams with both their players.`,
+        );
+      }
+    }
+
+    return;
+  }
+
   for (const round of session.rounds) {
     const available = availableIn(session, round.number).length;
     if (available < PLAYERS_PER_COURT) {
@@ -174,8 +189,14 @@ function assertGenderSound(entry: RosterEntry, mode: SessionMode): void {
  * the document rather than of a prefix, so like every other rule in this file it is checked over
  * the whole roster at once.
  *
- * A player who has gone home keeps their team: their team's played matches still count for it,
- * and what a half-empty team does to the rounds still to come is decision #2b's business rather
+ * "Every player in exactly one team" is the whole of the rule, and it is what makes an odd roster
+ * refuse itself: the seventh of seven is in no team, and the error says so by name. The roster
+ * size is deliberately not checked on its own — a session that has lost a player and gained a
+ * replacement (decision #2b) carries both of them and is legitimately odd.
+ *
+ * A player who has gone home keeps their team, whether as the half still named on it or as a
+ * former member a repair replaced (decision #2b): their team's played matches still count for it,
+ * and what a half-empty team does to the rounds still to come is the scheduler's business rather
  * than this check's.
  */
 function assertTeamsSound(session: Session): void {
@@ -193,13 +214,8 @@ function assertTeamsSound(session: Session): void {
   if (session.teams === undefined || session.teams.length === 0) {
     throw new Error('Team Americano needs its players paired into teams.');
   }
-  if (session.roster.length % PLAYERS_PER_TEAM !== 0) {
-    throw new Error(
-      `Team Americano needs an even roster — ${session.roster.length} players cannot pair up.`,
-    );
-  }
 
-  const rosterIds = new Set(session.roster.map((entry) => entry.id));
+  const entries = new Map(session.roster.map((entry) => [entry.id, entry]));
   const teamsPerPlayer = new Map<string, number>();
   const seenTeamIds = new Set<string>();
 
@@ -215,12 +231,30 @@ function assertTeamsSound(session: Session): void {
     if (team.playerIds[0] === team.playerIds[1]) {
       throw new Error(`Team "${team.id}" needs two different players.`);
     }
-    for (const playerId of team.playerIds) {
-      if (!rosterIds.has(playerId)) {
+
+    const members = membersOf(team);
+    if (new Set(members).size !== members.length) {
+      throw new Error(`Team "${team.id}" names the same player twice.`);
+    }
+    for (const playerId of members) {
+      if (!entries.has(playerId)) {
         throw new Error(`Team "${team.id}" names "${playerId}", who is not on the roster.`);
       }
       teamsPerPlayer.set(playerId, (teamsPerPlayer.get(playerId) ?? 0) + 1);
     }
+
+    // A former member is by definition somebody who has gone home; one still in the session would
+    // be a third player the team could field, which is not a thing a pair can be.
+    for (const playerId of team.formerPlayerIds ?? []) {
+      const entry = entries.get(playerId);
+      if (entry && !hasLeft(entry)) {
+        throw new Error(
+          `Team "${team.id}" holds "${playerId}" as a former player, but they have not left.`,
+        );
+      }
+    }
+
+    assertLineupIsAPair(session, team);
   }
 
   for (const entry of session.roster) {
@@ -230,6 +264,26 @@ function assertTeamsSound(session: Session): void {
     }
     if (teams > 1) {
       throw new Error(`Player "${entry.id}" is in ${teams} teams — every player plays for one.`);
+    }
+  }
+}
+
+/**
+ * A team fields at most two players in any round it could play.
+ *
+ * The windows are what keep that true across a repair — the half who left closed theirs before
+ * the replacement opened one — so this is the check that the two never overlap. Fewer than two is
+ * not an error here: one is an orphaned team and none is a retired one, both of which are states
+ * decision #2b allows a session to be in.
+ */
+function assertLineupIsAPair(session: Session, team: Team): void {
+  for (const round of session.rounds) {
+    const lineup = teamLineupIn(team, session.roster, round.number);
+    if (lineup.length > PLAYERS_PER_TEAM) {
+      throw new Error(
+        `Team "${team.id}" fields ${lineup.length} players in round ${round.number} — ` +
+          `a team is ${PLAYERS_PER_TEAM} players.`,
+      );
     }
   }
 }

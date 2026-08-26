@@ -5,7 +5,6 @@ import {
   createSession,
   formatSchedule,
   generateRemaining,
-  removePlayer,
 } from './public-api';
 import type { PlayerId, Session, SessionConfig, TeamId } from './public-api';
 import { damaged } from './test-support/damaged-session';
@@ -79,7 +78,7 @@ describe('createSession — Team Americano', () => {
     const players = roster(7);
 
     expect(() => createSession(teamAmericanoConfig({ players, teams: teamsOf(players) }))).toThrow(
-      /even roster/i,
+      /"p7" is in no team/,
     );
   });
 
@@ -411,13 +410,11 @@ describe('the rest of the engine — Team Americano', () => {
     assertSessionValid(session);
   });
 
-  it('refuses a roster change until orphaned partners have somewhere to go', () => {
+  it('sends a player arriving on their own to the operation that pairs them', () => {
+    // Losing and replacing half a pair is decision #2b, and lives in `orphaned-partner.spec.ts`.
     const session = scheduled(teamAmericanoConfig({ teamCount: 4, roundCount: 3 }));
 
-    expect(() => removePlayer(session, 'p1')).toThrow(/cannot take a roster change yet/);
-    expect(() => addPlayer(session, { id: 'p99', name: 'Zoe' })).toThrow(
-      /cannot take a roster change yet/,
-    );
+    expect(() => addPlayer(session, { id: 'p99', name: 'Zoe' })).toThrow(/use assignPartner/);
   });
 
   it('prints a schedule a human can read', () => {

@@ -18,6 +18,9 @@
 import type { PlayerId, RosterEntry, Session, Team, TeamId } from './model';
 import { isAvailableIn } from './roster-availability';
 
+/** Players per team — the fixed partnership Team Americano schedules as one unit. */
+export const PLAYERS_PER_TEAM = 2;
+
 /** What this session's mode has to say about teams. Empty for the modes that rotate partners. */
 export interface TeamPlay {
   /** Does this mode schedule teams rather than players? */
@@ -60,11 +63,41 @@ export function teamPlayIn(session: Session): TeamPlay {
 }
 
 /**
- * The teams this round may schedule: the ones both of whose players are in the session for it.
+ * Everyone who has ever played for this team: the pair it fields now, and the halves that have
+ * gone home. Membership is the mutable part of a team (decision #2b) and this is the whole of it.
+ */
+export function membersOf(team: Team): PlayerId[] {
+  return [...team.playerIds, ...(team.formerPlayerIds ?? [])];
+}
+
+/**
+ * Who this team fields in a given round: its members who are in the session for it.
  *
- * Availability is a fact about players, and a team is only as available as its scarcer half —
- * which is the shape decision #2b's orphaned partner will slot into: a team missing a player is
- * a team that cannot take the court.
+ * Two while the pair is intact, one while it is orphaned, and none once it is retired — which is
+ * decision #2b's three states read off the roster rather than stored anywhere. It is asked per
+ * round rather than of the session because a repaired team's line-up in round three is not the
+ * one it fields in round seven, and the round three matches have to keep reading right.
+ */
+export function teamLineupIn(
+  team: Team,
+  roster: readonly RosterEntry[],
+  roundNumber: number,
+): PlayerId[] {
+  const entries = new Map(roster.map((entry) => [entry.id, entry]));
+
+  return membersOf(team).filter((id) => {
+    const entry = entries.get(id);
+
+    return entry !== undefined && isAvailableIn(entry, roundNumber);
+  });
+}
+
+/**
+ * The teams this round may schedule: the ones that field a full pair in it.
+ *
+ * Availability is a fact about players, and a team is only as available as its scarcer half. A
+ * team one player short is exactly decision #2b's orphaned team: it keeps its slot, its id and
+ * its points, and it takes no court until somebody repairs it.
  */
 export function teamsAvailableIn(session: Session, roundNumber: number): Team[] {
   return teamsAvailableAmong(session.teams ?? [], session.roster, roundNumber);
@@ -79,12 +112,33 @@ export function teamsAvailableAmong(
   roster: readonly RosterEntry[],
   roundNumber: number,
 ): Team[] {
-  const entries = new Map(roster.map((entry) => [entry.id, entry]));
-  const here = (id: PlayerId): boolean => {
-    const entry = entries.get(id);
+  return teams.filter(
+    (team) => teamLineupIn(team, roster, roundNumber).length === PLAYERS_PER_TEAM,
+  );
+}
 
-    return entry !== undefined && isAvailableIn(entry, roundNumber);
-  };
+/** A team left with one player, and the player the flag is on. */
+export interface OrphanedTeam {
+  readonly teamId: TeamId;
+  /** The half still in the session, flagged `needs partner` (decision #2b). */
+  readonly playerId: PlayerId;
+}
 
-  return teams.filter((team) => team.playerIds.every(here));
+/**
+ * The teams that are one player short as the session stands now — the `needs partner` flag, for
+ * whoever is looking at the session and has to decide what to do about it.
+ *
+ * Read at the last round rather than at the next unplayed one, because that is the state the
+ * document is in: a window closes going forwards and never reopens, so a team short a player at
+ * the end of the schedule is short one from here on.
+ */
+export function teamsNeedingPartner(session: Session): OrphanedTeam[] {
+  const play = teamPlayIn(session);
+  const roundNumber = session.rounds.length;
+
+  return play.teams.flatMap((team) => {
+    const lineup = teamLineupIn(team, session.roster, roundNumber);
+
+    return lineup.length === 1 ? [{ teamId: team.id, playerId: lineup[0] }] : [];
+  });
 }

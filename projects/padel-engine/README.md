@@ -49,8 +49,8 @@ schedule instead of leaving stale flags behind. `formatSchedule` stars those pai
 ## Team Americano
 
 `mode: 'team-americano'` fixes the partnerships for the whole evening. The organizer assigns them
-at creation and passes them as `teams` — an even roster, every player in exactly one team, checked
-on the way in so a bad pairing is refused at the pairing screen rather than three rounds later.
+at creation and passes them as `teams` — every player in exactly one team, checked on the way in
+so a bad pairing is refused at the pairing screen rather than three rounds later.
 
 From there it is the same engine with the team as its unit (decision #2c, ADR-0011). Five teams on
 two courts bench a whole team each round and rotate the bye; team bench counts stay within one at
@@ -63,8 +63,21 @@ computeTeamStandings(session); // -> [{ teamId: 't3', name: 'Elin & Finn', posit
 ```
 
 `computeStandings` still works, and reads a player's line as their team's evening under their own
-name. A roster change is refused for now: one arrival is half a team, and one departure leaves an
-orphaned partner, which is decision #2b's state and its own ticket.
+name.
+
+When one half of a pair goes home the team keeps its slot and its points, and the player left
+behind is flagged `needs partner` (decision #2b, ADR-0012). Their team takes no court until
+somebody replaces the half that left:
+
+```ts
+teamsNeedingPartner(session); // -> [{ teamId: 't1', playerId: 'p2' }]
+assignPartner(session, 't1', { id: 'p11', name: 'Kaja' });
+// -> t1 plays again from the next unplayed round, with every point it has already won
+```
+
+Removing the stranded player instead retires the team, which also keeps what it won. `addPlayer`
+is refused here — a player arriving alone is a player in no team — and a removal that would leave
+fewer than two teams able to take the court is refused at the moment it is asked for.
 
 ## Recording scores
 

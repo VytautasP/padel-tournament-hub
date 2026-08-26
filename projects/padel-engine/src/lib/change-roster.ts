@@ -8,6 +8,12 @@
  * hand the amended roster to the same rescheduling, and that rescheduling is what makes them
  * safe rather than any care taken in either one.
  *
+ * Team Americano takes both of these too, and the second one is where decision #2b lives: removing
+ * one half of a pair leaves the other flagged `needs partner`, their team skipped by the
+ * regeneration below until `assignPartner` repairs it. That flag is not stored anywhere — it is
+ * the team's line-up read off the roster — so nothing here has to know about it. What is refused
+ * is a lone *arrival*, which is half a team with no team to be half of.
+ *
  * Three things are worth saying about the shape.
  *
  *   - **A departing player is not deleted.** Their entry stays on the roster with a closed
@@ -25,7 +31,7 @@
  */
 import { rosterEntry } from './create-session';
 import { generateRemaining } from './generate-remaining';
-import type { PlayerId, RosterEntry, Session } from './model';
+import type { PlayerId, RosterEntry, Session, Team } from './model';
 import { hasLeft, joinedAtRound } from './roster-availability';
 import { copyRound, copySession } from './session-copy';
 import { assertSessionShape } from './session-shape';
@@ -39,7 +45,7 @@ import { teamPlayIn } from './teams';
 export function addPlayer(session: Session, player: RosterEntry): Session {
   assertSessionShape(session);
   assertSessionOpen(session, 'adding a player');
-  assertPairsCanStayIntact(session, 'adding a player');
+  assertNobodyArrivesUnpaired(session);
 
   if (session.roster.some((entry) => entry.id === player.id)) {
     throw new Error(`Player "${player.id}" is already on the roster.`);
@@ -63,7 +69,6 @@ export function addPlayer(session: Session, player: RosterEntry): Session {
 export function removePlayer(session: Session, playerId: PlayerId): Session {
   assertSessionShape(session);
   assertSessionOpen(session, 'removing a player');
-  assertPairsCanStayIntact(session, 'removing a player');
 
   const leaving = session.roster.find((entry) => entry.id === playerId);
   if (!leaving) {
@@ -84,43 +89,49 @@ export function removePlayer(session: Session, playerId: PlayerId): Session {
 }
 
 /**
- * Team Americano refuses a roster change, for now, and says so at the moment it is asked.
+ * In Team Americano a player does not arrive on their own, and the error says where they go.
  *
- * The two operations here are built on the roster being a flat list: a player arrives with an
- * open window, a player leaves with a closed one, and the generator reschedules around both. A
- * paired roster does not work that way. Removing one half of a pair leaves the other half a
- * player without a partner, and decision #2b has a whole state for them — flagged `needs partner`,
- * their team skipped in regenerated rounds until it is repaired, and its points kept. Adding a
- * player is the same problem from the other end: one arrival is half a team.
- *
- * That state is the next ticket, and until it exists the honest answer is this error rather than
- * a session quietly rescheduled around a team the engine no longer understands.
+ * Everywhere else on the roster a lone arrival is exactly what `addPlayer` is for. Here it would
+ * be a player in no team, which the shape check refuses one line later in words about the
+ * document rather than about what the organizer was trying to do. `assignPartner` is the one
+ * arrival this format has: somebody joining a team that is short a player.
  */
-function assertPairsCanStayIntact(session: Session, action: string): void {
+function assertNobodyArrivesUnpaired(session: Session): void {
   if (teamPlayIn(session).plays) {
     throw new Error(
-      `Team Americano cannot take a roster change yet — ${action} would leave a player ` +
-        'without their partner.',
+      'Team Americano has no place for a player on their own — use assignPartner to put them ' +
+        'on a team that needs one.',
     );
   }
 }
 
 /**
- * The session with a new roster: played rounds carried through untouched, everything after them
- * emptied and handed back to the generator.
+ * The session with a new roster — and, where a repair changed one, a new pairing: played rounds
+ * carried through untouched, everything after them emptied and handed back to the generator.
+ *
+ * Shared with `assignPartner`, which is the same operation seen from the other end and has no
+ * business owning a second copy of it.
  *
  * Emptying rather than amending is the point. There is no partial repair of a round planned for
  * a roster that no longer exists — the generator plans it again from the history in front of it,
  * which is the same code path that produced it the first time and holds it to the same fairness
  * at the same prefix.
  */
-function rescheduled(session: Session, roster: readonly RosterEntry[]): Session {
+export function rescheduled(
+  session: Session,
+  roster: readonly RosterEntry[],
+  teams: readonly Team[] | undefined = session.teams,
+): Session {
   const frozenThrough = firstUnplayedRound(session) - 1;
   const rounds = session.rounds.map((round) =>
     round.number <= frozenThrough ? copyRound(round) : { ...round, matches: [] },
   );
 
-  return generateRemaining({ ...copySession(session, rounds), roster });
+  return generateRemaining({
+    ...copySession(session, rounds),
+    roster,
+    ...(teams ? { teams } : {}),
+  });
 }
 
 /**
@@ -130,7 +141,7 @@ function rescheduled(session: Session, roster: readonly RosterEntry[]): Session 
  * finish in whatever order they finish: a round three whose second court is still playing is
  * still a round that has been played, and nothing in it may be redrawn.
  */
-function firstUnplayedRound(session: Session): number {
+export function firstUnplayedRound(session: Session): number {
   const played = session.rounds.filter((round) =>
     round.matches.some((match) => match.score !== undefined),
   );

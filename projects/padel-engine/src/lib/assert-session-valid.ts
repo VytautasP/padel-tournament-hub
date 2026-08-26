@@ -14,15 +14,16 @@
  * It throws on the first violation with a message naming the round and the players involved,
  * because a fairness bug is only useful if you can see what it did.
  */
+import { FixtureLedger } from './fixture-ledger';
 import { mixedPairingIn } from './mixed-pairing';
 import type { MixedPairing } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round, Session, Team, TeamId } from './model';
 import { PairTally } from './pair-tally';
-import { seedAtFloor } from './queue-seed';
+import { everyone, forgetAbsent, seedAtFloor } from './queue-seed';
 import { availableIn, joinedAtRound } from './roster-availability';
 import { assertScorePairValid } from './score-rules';
 import { assertSessionShape, courtsInPlay, PLAYERS_PER_COURT } from './session-shape';
-import { teamPlayIn, teamsAvailableIn } from './teams';
+import { teamLineupIn, teamPlayIn, teamsAvailableIn } from './teams';
 import type { TeamPlay } from './teams';
 
 export function assertSessionValid(session: Session): void {
@@ -38,7 +39,7 @@ export function assertSessionValid(session: Session): void {
   const mixed = mixedPairingIn(session);
   const play = teamPlayIn(session);
   const partnerCounts = new PairTally();
-  const meetings = new PairTally();
+  const meetings = new FixtureLedger();
   const benchCounts = new Map<PlayerId, number>();
   const teamBenchCounts = new Map<TeamId, number>();
   const sameGenderCounts = new Map<PlayerId, number>();
@@ -55,7 +56,19 @@ export function assertSessionValid(session: Session): void {
     const available = availableIn(session, round.number);
 
     assertRoundStructure(round, session, available, nameOf);
-    countBench(playersIn(round), available, benchCounts);
+
+    // The teams this round could have scheduled, and the players they would have fielded. Empty
+    // in the modes that rotate partners, which have neither.
+    const availableTeams = play.plays ? teamsAvailableIn(session, round.number) : [];
+    const onCall = new Set(
+      availableTeams.flatMap((team) => teamLineupIn(team, session.roster, round.number)),
+    );
+
+    // The players this round could have put on court. In every mode but Team Americano that is
+    // everyone available; there it is the players of the teams that can field a pair, because
+    // someone whose partner has gone home is not benched — they are flagged `needs partner`, and
+    // there is no court they were kept off (decision #2b).
+    const selectable = play.plays ? available.filter((entry) => onCall.has(entry.id)) : available;
 
     // Everything from here down is a prefix check: it holds after this round, given every
     // round before it, so a session truncated at any point is still valid.
@@ -64,15 +77,18 @@ export function assertSessionValid(session: Session): void {
     // (decision #2c): a bye falls on a team, and saying so is more use to whoever is reading the
     // error than naming one of the two players it also fell on.
     if (play.plays) {
-      const availableTeams = teamsAvailableIn(session, round.number);
-
-      assertTeamSides(round, play, nameOf);
+      // The `needs partner` check first: a stranded player on a court also makes the side wrong
+      // for its team, and saying which of the two problems it actually is helps more.
+      assertNobodyStrandedOnCourt(round, onCall, nameOf);
+      assertTeamSides(round, session.roster, play, nameOf);
+      meetings.openRound(availableTeams);
       countBench(teamsIn(round), availableTeams, teamBenchCounts);
       assertBenchSpread(round, availableTeams, teamBenchCounts, (id) => `team ${play.nameOf(id)}`);
       assertOpponentVariety(round, availableTeams, meetings, play);
     }
 
-    assertBenchSpread(round, available, benchCounts, nameOf);
+    countBench(playersIn(round), selectable, benchCounts);
+    assertBenchSpread(round, selectable, benchCounts, nameOf);
     assertMixedPairing(round, available, mixed, sameGenderCounts, nameOf);
 
     // Partner variety is asked of every mode but Team Americano, where the partnership is the
@@ -218,13 +234,13 @@ function countBench<Id extends string>(
   available: readonly Unit<Id>[],
   benchCounts: Map<Id, number>,
 ): void {
-  const known = available
-    .filter((unit) => benchCounts.has(unit.id))
-    .map((unit) => benchCounts.get(unit.id) ?? 0);
-  const floor = known.length > 0 ? Math.min(...known) : 0;
+  // Seeded by the same code the scheduler seeds with, so the two cannot disagree about what a
+  // newcomer — or a team back from being orphaned — starts on.
+  forgetAbsent(benchCounts, available);
+  seedAtFloor(benchCounts, available, everyone);
 
   for (const unit of available) {
-    const satOut = benchCounts.get(unit.id) ?? floor;
+    const satOut = benchCounts.get(unit.id) ?? 0;
     benchCounts.set(unit.id, playing.has(unit.id) ? satOut : satOut + 1);
   }
 }
@@ -401,14 +417,45 @@ interface Pairing {
 }
 
 /**
- * Every side is a team, and it is the team the match says it is.
+ * Nobody flagged `needs partner` is on a court.
+ *
+ * The scheduler cannot produce one — a team a player short is not in the list it schedules from —
+ * so this is here for the sessions the referee actually exists for: one edited by hand, one back
+ * from storage, one written by an app that thought a lone player could be dropped into a gap.
+ */
+function assertNobodyStrandedOnCourt(
+  round: Round,
+  onCall: ReadonlySet<PlayerId>,
+  nameOf: (id: PlayerId) => string,
+): void {
+  for (const match of round.matches) {
+    for (const id of playersOf(match)) {
+      if (!onCall.has(id)) {
+        throw new Error(`Match ${match.id} schedules ${nameOf(id)}, who needs a partner.`);
+      }
+    }
+  }
+}
+
+/**
+ * Every side is a team, and it is the team the match fielded in that round.
  *
  * Both halves matter. A side holding two players who are not a pair would be Americano wearing
  * Team Americano's name; and a side whose players are not the team named on the match would make
  * every count that reads `match.teams` — the standings, the bench queue, the fixture list — a
  * count of something that did not happen.
+ *
+ * The team is who it was in *that round*, not who it is now. A team repaired mid-session
+ * (decision #2b) keeps its id and its points, and the rounds it played before the repair are
+ * still the rounds its old pair played: holding them to the pair it fields today would call every
+ * one of them a forgery.
  */
-function assertTeamSides(round: Round, play: TeamPlay, nameOf: (id: PlayerId) => string): void {
+function assertTeamSides(
+  round: Round,
+  roster: readonly RosterEntry[],
+  play: TeamPlay,
+  nameOf: (id: PlayerId) => string,
+): void {
   for (const match of round.matches) {
     if (!match.teams) {
       throw new Error(`Match ${match.id} does not say which teams played it.`);
@@ -422,7 +469,8 @@ function assertTeamSides(round: Round, play: TeamPlay, nameOf: (id: PlayerId) =>
       }
 
       const played = [...match[side]].sort();
-      if (played.join('|') !== [...team.playerIds].sort().join('|')) {
+      const lineup = teamLineupIn(team, roster, round.number).sort();
+      if (played.join('|') !== lineup.join('|')) {
         throw new Error(
           `Match ${match.id} fields ${played.map(nameOf).join(' & ')} as team ` +
             `${play.nameOf(teamId)}, who are not that team.`,
@@ -438,12 +486,15 @@ function assertTeamSides(round: Round, play: TeamPlay, nameOf: (id: PlayerId) =>
  * teams to have met every other available team at least `n - 1` times.
  *
  * "Every other" is the teams this round could have scheduled. A team that can no longer take the
- * court will never be met again, so the empty column under its name is not a debt.
+ * court will never be met again, so the empty column under its name is not a debt. And the count
+ * itself runs from the last time the field changed rather than from round one, because a fixture
+ * list is a rotation over a field — see `fixture-ledger.ts`, which is where both this rule and the
+ * scheduler get the number from.
  */
 function assertOpponentVariety(
   round: Round,
   available: readonly Team[],
-  meetings: PairTally,
+  meetings: FixtureLedger,
   play: TeamPlay,
 ): void {
   const repeated: Meeting[] = [];

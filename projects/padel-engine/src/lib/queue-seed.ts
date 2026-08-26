@@ -43,6 +43,32 @@ export function seedAtFloor<Id extends string>(
   }
 }
 
+/**
+ * Take out of a queue everyone who is not in this round, so that a unit which comes back rejoins
+ * it at the floor rather than at the count it left on.
+ *
+ * Only Team Americano ever has a unit come back: a team orphaned in round two and repaired in
+ * round five (decision #2b) is away for the rounds in between, and the counts it left behind are
+ * a record of an evening that carried on without it. Resuming on them would put it two byes
+ * behind everybody and make the spread rule fail on a round nobody scheduled badly. So a return
+ * is seeded exactly as an arrival is, by the same argument and the same code — it is compensated
+ * for nothing and it owes nothing.
+ *
+ * A player who leaves never returns, so for the other modes this only ever forgets counts nobody
+ * reads again.
+ */
+export function forgetAbsent<Id extends string>(
+  counts: Map<Id, number>,
+  available: readonly { readonly id: Id }[],
+): void {
+  const here = new Set(available.map((unit) => unit.id));
+  for (const id of [...counts.keys()]) {
+    if (!here.has(id)) {
+      counts.delete(id);
+    }
+  }
+}
+
 /** Everyone counts against everyone — the bench queue, where nobody was ever ineligible. */
 export function everyone(): boolean {
   return true;

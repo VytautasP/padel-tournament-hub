@@ -41,7 +41,7 @@ export interface MutableSession extends Omit<
     joinedAtRound?: number;
     leftAfterRound?: number;
   }[];
-  teams?: { id: string; playerIds: [PlayerId, PlayerId] }[];
+  teams?: { id: string; playerIds: [PlayerId, PlayerId]; formerPlayerIds?: PlayerId[] }[];
   rounds: { id: string; number: number; matches: MutableMatch[] }[];
 }
 

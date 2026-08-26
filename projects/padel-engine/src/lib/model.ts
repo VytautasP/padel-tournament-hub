@@ -38,7 +38,19 @@ export type SessionMode = 'americano' | 'mixicano' | 'team-americano';
  */
 export interface Team {
   readonly id: TeamId;
+  /** The pair the team fields now. */
   readonly playerIds: readonly [PlayerId, PlayerId];
+  /**
+   * Players who have played for this team and gone home — the half a repair replaced
+   * (decision #2b). Absent on a team whose pairing has never changed, which is every team of a
+   * session stored before repairs existed.
+   *
+   * Kept rather than dropped because a match records the team a side played *as*, and the
+   * referee holds the two to each other: without this, a played round would field two players
+   * the team no longer names and read as a document that had drifted. They are members with a
+   * closed availability window, so a team's line-up in any given round is still exactly two.
+   */
+  readonly formerPlayerIds?: readonly PlayerId[];
 }
 
 /**

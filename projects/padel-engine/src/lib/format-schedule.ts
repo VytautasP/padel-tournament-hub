@@ -21,7 +21,7 @@ import { mixedPairingIn } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
 import { hasLeft, isAvailableIn, joinedAtRound, leftAfterRound } from './roster-availability';
 import { courtsInPlay } from './session-shape';
-import { teamPlayIn } from './teams';
+import { teamLineupIn, teamPlayIn, teamsAvailableIn, teamsNeedingPartner } from './teams';
 
 /** A session as readable text: a block per round, then a block per player. */
 export function formatSchedule(session: Session): string {
@@ -51,6 +51,9 @@ function renderer(session: Session): {
   const play = teamPlayIn(session);
   const rosterOrder = new Map(session.roster.map((entry, index) => [entry.id, index]));
   const stats = tallies(session);
+  // Who is flagged `needs partner` (decision #2b) — the one state a Team Americano session can be
+  // in that a reader cannot work out from the courts, because it shows up as an absence.
+  const stranded = new Set(teamsNeedingPartner(session).map((orphan) => orphan.playerId));
 
   // A same-gender pair is marked where it is read, so the organizer standing in front of the
   // player who asks why can point at the line rather than remember (decision #7). The mark is
@@ -161,7 +164,8 @@ function renderer(session: Session): {
             .map((other) => nameOf(other.id));
 
       const lines = [
-        `${nameOf(entry.id)}${genderNote(entry)}${windowNote(entry)} — played ${played.matches}, ` +
+        `${nameOf(entry.id)}${genderNote(entry)}${windowNote(entry)}` +
+          `${stranded.has(entry.id) ? ' (needs partner)' : ''} — played ${played.matches}, ` +
           `benched ${played.benched}`,
         `  partners:  ${namesByCount(played.partners)}`,
         `  opponents: ${namesByCount(played.opponents)}`,
@@ -226,14 +230,27 @@ function tallies(session: Session): ReadonlyMap<PlayerId, PlayerTally> {
 }
 
 /**
- * Who sat this round out: on the roster, in the session for that round, and off court. Someone
- * who had not arrived yet, or had already gone home, is not on the bench — they are not here.
+ * Who sat this round out: on the roster, in the session for that round, able to be scheduled into
+ * it, and off court. Someone who had not arrived yet, or had already gone home, is not on the
+ * bench — they are not here. Nor is somebody whose partner has gone home: no bye fell on them,
+ * there was simply no team for them to play in (decision #2b).
  */
 function benchedIn(round: Round, session: Session): PlayerId[] {
   const playing = new Set(round.matches.flatMap(playersOf));
+  const play = teamPlayIn(session);
+  const onCall = new Set(
+    teamsAvailableIn(session, round.number).flatMap((team) =>
+      teamLineupIn(team, session.roster, round.number),
+    ),
+  );
 
   return session.roster
-    .filter((entry) => isAvailableIn(entry, round.number) && !playing.has(entry.id))
+    .filter(
+      (entry) =>
+        isAvailableIn(entry, round.number) &&
+        !playing.has(entry.id) &&
+        (!play.plays || onCall.has(entry.id)),
+    )
     .map((entry) => entry.id);
 }
 
