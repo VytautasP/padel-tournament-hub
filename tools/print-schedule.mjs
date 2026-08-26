@@ -46,6 +46,30 @@ const roster = (count, women) =>
     ...(women === undefined ? {} : { gender: index < women ? 'woman' : 'man' }),
   }));
 
+/** The roster paired up in the order it was given — the organizer's pairing screen, in one line. */
+const teamsOf = (players) =>
+  Array.from({ length: Math.floor(players.length / 2) }, (_, index) => ({
+    id: `t${index + 1}`,
+    playerIds: [players[index * 2].id, players[index * 2 + 1].id],
+  }));
+
+/** A Team Americano session: fixed pairs, so the unit that rotates is a whole team. */
+const teamSchedule = (id, playerCount, courtCount, roundCount) => {
+  const players = roster(playerCount);
+
+  return generateRemaining(
+    createSession({
+      id,
+      mode: 'team-americano',
+      players,
+      teams: teamsOf(players),
+      courtCount,
+      targetScore: 24,
+      roundCount,
+    }),
+  );
+};
+
 const schedule = (id, players, courtCount, roundCount, women) =>
   generateRemaining(
     createSession({
@@ -113,6 +137,20 @@ function main(argv) {
     {
       session: schedule('mixicano-10p-skew', 10, 2, 10, 9),
       note: 'Mixicano with one man among nine women: the degenerate end of hybrid fill.',
+    },
+    {
+      session: teamSchedule('team-8p', 8, 2, 7),
+      note: [
+        'Team Americano, four teams on two courts: six fixtures exist, so rounds 1-3 use each',
+        'once and the rest repeat them in order. Nobody sits out.',
+      ].join('\n'),
+    },
+    {
+      session: teamSchedule('team-10p', 10, 2, 10),
+      note: [
+        'Team Americano with five teams on two courts — the bye case (decision #2c). A whole team',
+        'sits out each round; read the bench lines down the page, two names at a time.',
+      ].join('\n'),
     },
   ];
 }

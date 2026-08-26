@@ -12,6 +12,7 @@ export type {
   Match,
   MatchId,
   MatchScore,
+  MatchTeams,
   PlayerId,
   RosterEntry,
   Round,
@@ -22,9 +23,12 @@ export type {
   SessionMode,
   SessionStatus,
   Side,
+  Team,
+  TeamId,
 } from './lib/model';
 
 export type { Standing } from './lib/standings';
+export type { TeamStanding } from './lib/team-standings';
 
 export { createSession } from './lib/create-session';
 export { addRound } from './lib/add-round';
@@ -36,3 +40,4 @@ export { assertSessionValid } from './lib/assert-session-valid';
 export { formatSchedule } from './lib/format-schedule';
 export { sameGenderSides } from './lib/mixed-pairing';
 export { computeStandings } from './lib/standings';
+export { computeTeamStandings } from './lib/team-standings';

@@ -3,9 +3,8 @@
 The rules engine for padel sessions: scheduling, scoring and standings for Americano, Mixicano and
 Team Americano. It is the only part of the system that knows what padel is.
 
-So far it schedules **Americano and Mixicano for any roster of four or more** on any number of
-courts, with the bench rotating evenly, records the results and ranks them. Team Americano lands
-in a later ticket.
+It schedules **all three modes for any roster of four or more** on any number of courts, with the
+bench rotating evenly, records the results and ranks them.
 
 ```ts
 createSession(config);          // an organizer's configuration -> a session with empty rounds
@@ -15,6 +14,7 @@ addPlayer(session, entry);      // someone arrives late -> a new session, resche
 removePlayer(session, id);      // someone goes home -> a new session, rescheduled
 recordScore(session, entry);    // one side's points for one match -> a new session
 computeStandings(session);      // the leaderboard, derived on every call
+computeTeamStandings(session);  // the same ladder, for the teams of a Team Americano session
 finishSession(session);         // the organizer closes the evening
 assertSessionValid(session);    // throw unless every invariant holds, at every round prefix
 formatSchedule(session);        // the session as text a human can read
@@ -45,6 +45,26 @@ sameGenderSides(session, match); // -> ['A'] — side A had nobody left to mix w
 
 The mark is derived from the roster rather than stored, so correcting a gender re-marks the whole
 schedule instead of leaving stale flags behind. `formatSchedule` stars those pairs.
+
+## Team Americano
+
+`mode: 'team-americano'` fixes the partnerships for the whole evening. The organizer assigns them
+at creation and passes them as `teams` — an even roster, every player in exactly one team, checked
+on the way in so a bad pairing is refused at the pairing screen rather than three rounds later.
+
+From there it is the same engine with the team as its unit (decision #2c, ADR-0011). Five teams on
+two courts bench a whole team each round and rotate the bye; team bench counts stay within one at
+every prefix; teams meet every other team before meeting any of them twice. Each match records the
+teams that played it, so a team's points follow the team rather than the two names that happened
+to be on court:
+
+```ts
+computeTeamStandings(session); // -> [{ teamId: 't3', name: 'Elin & Finn', position: 1, ... }]
+```
+
+`computeStandings` still works, and reads a player's line as their team's evening under their own
+name. A roster change is refused for now: one arrival is half a team, and one departure leaves an
+orphaned partner, which is decision #2b's state and its own ticket.
 
 ## Recording scores
 

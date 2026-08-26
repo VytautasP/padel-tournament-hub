@@ -9,6 +9,13 @@
  */
 import type { RosterEntry, Session, SessionMode } from './model';
 import { availableIn, joinedAtRound, leftAfterRound } from './roster-availability';
+import { teamPlayIn, teamsAvailableIn } from './teams';
+
+/** Players per team — the fixed partnership Team Americano schedules as one unit. */
+export const PLAYERS_PER_TEAM = 2;
+
+/** Teams per match — one on each side of the net, which is what makes a team the unit. */
+export const TEAMS_PER_COURT = 2;
 
 /** Players per match — two per side, four per court. */
 export const PLAYERS_PER_COURT = 4;
@@ -26,6 +33,15 @@ export const PLAYERS_PER_COURT = 4;
  * one — from the round they left onwards, and not in the rounds they played.
  */
 export function courtsInPlay(session: Session, roundNumber: number): number {
+  // In Team Americano the unit is the team, and a team needs both its players to take the court.
+  // Asking the same question of the teams rather than of the roster is what makes the answer
+  // right when one half of a pair has gone home (decision #2b).
+  if (teamPlayIn(session).plays) {
+    const teams = teamsAvailableIn(session, roundNumber).length;
+
+    return Math.min(session.courtCount, Math.floor(teams / TEAMS_PER_COURT));
+  }
+
   const available = availableIn(session, roundNumber).length;
 
   return Math.min(session.courtCount, Math.floor(available / PLAYERS_PER_COURT));
@@ -35,7 +51,7 @@ export function assertSessionShape(session: Session): void {
   if (session.id.trim() === '') {
     throw new Error('A session needs an id.');
   }
-  if (session.mode !== 'americano' && session.mode !== 'mixicano') {
+  if (!MODES.includes(session.mode)) {
     throw new Error(`Unknown session mode "${String(session.mode)}".`);
   }
   if (session.status !== 'in-progress' && session.status !== 'finished') {
@@ -75,6 +91,8 @@ export function assertSessionShape(session: Session): void {
         `the roster has ${session.roster.length}.`,
     );
   }
+
+  assertTeamsSound(session);
 
   session.rounds.forEach((round, index) => {
     if (round.number !== index + 1) {
@@ -145,6 +163,78 @@ function assertGenderSound(entry: RosterEntry, mode: SessionMode): void {
     throw new Error(`Mixicano needs a gender on every roster entry — "${entry.id}" has none.`);
   }
 }
+
+/**
+ * The pairing Team Americano schedules from: every player in exactly one team, and no team in
+ * the modes that have none.
+ *
+ * Checked here rather than in the scheduler because the organizer pairs the roster on a screen at
+ * creation (decision #2a), and the honest moment to say that seven people cannot pair up is while
+ * they are still standing at that screen — not three rounds into the evening. It is a property of
+ * the document rather than of a prefix, so like every other rule in this file it is checked over
+ * the whole roster at once.
+ *
+ * A player who has gone home keeps their team: their team's played matches still count for it,
+ * and what a half-empty team does to the rounds still to come is decision #2b's business rather
+ * than this check's.
+ */
+function assertTeamsSound(session: Session): void {
+  // The one place that reads the mode itself rather than asking `teamPlayIn`: this check is what
+  // decides whether a document *is* a team session, so it cannot be built on an answer derived
+  // from the document being sound already.
+  if (session.mode !== 'team-americano') {
+    if (session.teams !== undefined) {
+      throw new Error(`Only Team Americano has teams — this session is ${session.mode}.`);
+    }
+
+    return;
+  }
+
+  if (session.teams === undefined || session.teams.length === 0) {
+    throw new Error('Team Americano needs its players paired into teams.');
+  }
+  if (session.roster.length % PLAYERS_PER_TEAM !== 0) {
+    throw new Error(
+      `Team Americano needs an even roster — ${session.roster.length} players cannot pair up.`,
+    );
+  }
+
+  const rosterIds = new Set(session.roster.map((entry) => entry.id));
+  const teamsPerPlayer = new Map<string, number>();
+  const seenTeamIds = new Set<string>();
+
+  for (const team of session.teams) {
+    if (team.id.trim() === '') {
+      throw new Error('Every team needs a stable id.');
+    }
+    if (seenTeamIds.has(team.id)) {
+      throw new Error(`Duplicate team id "${team.id}" — teams need unique ids.`);
+    }
+    seenTeamIds.add(team.id);
+
+    if (team.playerIds[0] === team.playerIds[1]) {
+      throw new Error(`Team "${team.id}" needs two different players.`);
+    }
+    for (const playerId of team.playerIds) {
+      if (!rosterIds.has(playerId)) {
+        throw new Error(`Team "${team.id}" names "${playerId}", who is not on the roster.`);
+      }
+      teamsPerPlayer.set(playerId, (teamsPerPlayer.get(playerId) ?? 0) + 1);
+    }
+  }
+
+  for (const entry of session.roster) {
+    const teams = teamsPerPlayer.get(entry.id) ?? 0;
+    if (teams === 0) {
+      throw new Error(`Player "${entry.id}" is in no team — every player plays for one.`);
+    }
+    if (teams > 1) {
+      throw new Error(`Player "${entry.id}" is in ${teams} teams — every player plays for one.`);
+    }
+  }
+}
+
+const MODES: readonly SessionMode[] = ['americano', 'mixicano', 'team-americano'];
 
 function isPositiveInteger(value: number): boolean {
   return Number.isInteger(value) && value > 0;

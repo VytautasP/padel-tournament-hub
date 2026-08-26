@@ -9,6 +9,7 @@
  * lives here and nowhere else, so `generateRemaining` and `recordScore` cannot disagree about it —
  * a match's score is a nested object too, and it is the easiest one to forget.
  */
+import { teamEntry } from './create-session';
 import type { Match, Round, Session } from './model';
 
 export function copyMatch(match: Match): Match {
@@ -18,6 +19,7 @@ export function copyMatch(match: Match): Match {
     ...match,
     sideA: [match.sideA[0], match.sideA[1]],
     sideB: [match.sideB[0], match.sideB[1]],
+    ...(match.teams ? { teams: { ...match.teams } } : {}),
   };
 
   // Re-added rather than spread in, so an unscored match keeps having no `score` key at all
@@ -40,6 +42,7 @@ export function copySession(session: Session, rounds: readonly Round[]): Session
   return {
     ...session,
     roster: session.roster.map((entry) => ({ ...entry })),
+    ...(session.teams ? { teams: session.teams.map((team) => teamEntry(team)) } : {}),
     rounds,
   };
 }

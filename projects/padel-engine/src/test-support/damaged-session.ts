@@ -21,10 +21,15 @@ export interface MutableMatch {
   courtNumber: number;
   sideA: [PlayerId, PlayerId];
   sideB: [PlayerId, PlayerId];
+  /** Which teams played the match, in Team Americano — and a field a test can put anywhere. */
+  teams?: { sideA: string; sideB: string };
   score?: MutableScore;
 }
 
-export interface MutableSession extends Omit<Session, 'id' | 'status' | 'roster' | 'rounds'> {
+export interface MutableSession extends Omit<
+  Session,
+  'id' | 'status' | 'roster' | 'teams' | 'rounds'
+> {
   id: string;
   /** Widened to `string`, so a test can damage a session with a status the engine never sets. */
   status: string;
@@ -36,6 +41,7 @@ export interface MutableSession extends Omit<Session, 'id' | 'status' | 'roster'
     joinedAtRound?: number;
     leftAfterRound?: number;
   }[];
+  teams?: { id: string; playerIds: [PlayerId, PlayerId] }[];
   rounds: { id: string; number: number; matches: MutableMatch[] }[];
 }
 

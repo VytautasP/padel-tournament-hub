@@ -18,11 +18,28 @@ export type RoundId = string;
 /** Stable id of a match. */
 export type MatchId = string;
 
+/** Stable id of a team. Never a position in an array, and never its two players' ids joined. */
+export type TeamId = string;
+
+/** The format being played. */
+export type SessionMode = 'americano' | 'mixicano' | 'team-americano';
+
 /**
- * The format being played. Team Americano lands in a later ticket and widens this union then —
- * a mode the engine cannot yet schedule has no business being nameable.
+ * Two players who play the whole session as a partnership (decision #2a).
+ *
+ * The organizer assigns them on a pairing screen at creation — there is no draw and no seeding,
+ * because the pairs are the ones the group already agreed on. From then on the team is the unit
+ * the session schedules, benches and ranks: everything Americano does to players, Team Americano
+ * does to these.
+ *
+ * The id is the team's own, not a function of who is in it, because membership is the mutable
+ * part: decision #2b repairs an orphaned partner by giving the team a new one, and the matches
+ * the team has already played have to keep counting for it.
  */
-export type SessionMode = 'americano' | 'mixicano';
+export interface Team {
+  readonly id: TeamId;
+  readonly playerIds: readonly [PlayerId, PlayerId];
+}
 
 /**
  * A player's gender, as Mixicano uses it: the one axis that format pairs across (decision #2).
@@ -79,6 +96,19 @@ export interface MatchScore {
   readonly sideB: number;
 }
 
+/**
+ * Which teams the two sides of a match were, in Team Americano.
+ *
+ * Stored rather than derived from the players on court, unlike the same-gender mark (ADR-0010),
+ * because a team's membership can change under it and its record must not: a side is *who was on
+ * the court*, and this is *who they were playing as*. Absent in the modes that rotate partners,
+ * where a side is a pairing for one round and belongs to nobody.
+ */
+export interface MatchTeams {
+  readonly sideA: TeamId;
+  readonly sideB: TeamId;
+}
+
 /** One court's worth of play in a round: two sides of two players. */
 export interface Match {
   readonly id: MatchId;
@@ -86,6 +116,8 @@ export interface Match {
   readonly courtNumber: number;
   readonly sideA: readonly [PlayerId, PlayerId];
   readonly sideB: readonly [PlayerId, PlayerId];
+  /** The teams these sides played as. Present in Team Americano and in no other mode. */
+  readonly teams?: MatchTeams;
   /**
    * The result, once someone has entered it. Absent means **not yet scored** — a court still
    * playing, or one whose result has not reached the organizer. Rounds finish in whatever order
@@ -122,6 +154,8 @@ export interface Session {
   readonly mode: SessionMode;
   readonly status: SessionStatus;
   readonly roster: readonly RosterEntry[];
+  /** The fixed partnerships. Required by Team Americano, and held by no other mode. */
+  readonly teams?: readonly Team[];
   readonly courtCount: number;
   /** Fixed point total per match (decision #3). */
   readonly targetScore: number;
@@ -134,6 +168,8 @@ export interface SessionConfig {
   readonly mode: SessionMode;
   /** The roster, with the ids supplied by the caller — which is what keeps creation pure. */
   readonly players: readonly RosterEntry[];
+  /** The pairing the organizer assigned. Required by Team Americano, refused by the other modes. */
+  readonly teams?: readonly Team[];
   readonly courtCount: number;
   readonly targetScore: number;
   readonly roundCount: number;

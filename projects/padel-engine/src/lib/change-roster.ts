@@ -30,6 +30,7 @@ import { hasLeft, joinedAtRound } from './roster-availability';
 import { copyRound, copySession } from './session-copy';
 import { assertSessionShape } from './session-shape';
 import { assertSessionOpen } from './session-status';
+import { teamPlayIn } from './teams';
 
 /**
  * Take a player onto a session already running. They are scheduled from the first round nobody
@@ -38,6 +39,7 @@ import { assertSessionOpen } from './session-status';
 export function addPlayer(session: Session, player: RosterEntry): Session {
   assertSessionShape(session);
   assertSessionOpen(session, 'adding a player');
+  assertPairsCanStayIntact(session, 'adding a player');
 
   if (session.roster.some((entry) => entry.id === player.id)) {
     throw new Error(`Player "${player.id}" is already on the roster.`);
@@ -61,6 +63,7 @@ export function addPlayer(session: Session, player: RosterEntry): Session {
 export function removePlayer(session: Session, playerId: PlayerId): Session {
   assertSessionShape(session);
   assertSessionOpen(session, 'removing a player');
+  assertPairsCanStayIntact(session, 'removing a player');
 
   const leaving = session.roster.find((entry) => entry.id === playerId);
   if (!leaving) {
@@ -78,6 +81,28 @@ export function removePlayer(session: Session, playerId: PlayerId): Session {
     session,
     session.roster.map((entry) => (entry.id === playerId ? { ...entry, leftAfterRound } : entry)),
   );
+}
+
+/**
+ * Team Americano refuses a roster change, for now, and says so at the moment it is asked.
+ *
+ * The two operations here are built on the roster being a flat list: a player arrives with an
+ * open window, a player leaves with a closed one, and the generator reschedules around both. A
+ * paired roster does not work that way. Removing one half of a pair leaves the other half a
+ * player without a partner, and decision #2b has a whole state for them — flagged `needs partner`,
+ * their team skipped in regenerated rounds until it is repaired, and its points kept. Adding a
+ * player is the same problem from the other end: one arrival is half a team.
+ *
+ * That state is the next ticket, and until it exists the honest answer is this error rather than
+ * a session quietly rescheduled around a team the engine no longer understands.
+ */
+function assertPairsCanStayIntact(session: Session, action: string): void {
+  if (teamPlayIn(session).plays) {
+    throw new Error(
+      `Team Americano cannot take a roster change yet — ${action} would leave a player ` +
+        'without their partner.',
+    );
+  }
 }
 
 /**

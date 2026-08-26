@@ -9,7 +9,7 @@
  * `generateRemaining` fills them.
  */
 import { deepFreeze } from './freeze';
-import type { RosterEntry, Session, SessionConfig } from './model';
+import type { RosterEntry, Session, SessionConfig, Team } from './model';
 import { assertSessionShape } from './session-shape';
 
 export function createSession(config: SessionConfig): Session {
@@ -24,6 +24,10 @@ export function createSession(config: SessionConfig): Session {
     mode: config.mode,
     status: 'in-progress',
     roster: config.players.map((player) => rosterEntry(player)),
+    // Absent rather than empty for a mode with no teams, so a session the app stores and reads
+    // back holds the same document it was given — and so the shape check can tell "this mode has
+    // no teams" from "this Team Americano session was never paired".
+    ...(config.teams ? { teams: config.teams.map((team) => teamEntry(team)) } : {}),
     courtCount: config.courtCount,
     targetScore: config.targetScore,
     rounds: Array.from({ length: config.roundCount }, (_, index) => ({
@@ -50,6 +54,11 @@ export function rosterEntry(player: RosterEntry): RosterEntry {
   return player.gender === undefined
     ? { id: player.id, name: player.name }
     : { id: player.id, name: player.name, gender: player.gender };
+}
+
+/** A team as the session stores it: its id and its two players, and nothing else the caller held. */
+export function teamEntry(team: Team): Team {
+  return { id: team.id, playerIds: [team.playerIds[0], team.playerIds[1]] };
 }
 
 export function roundId(sessionId: string, roundNumber: number): string {

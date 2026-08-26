@@ -16,12 +16,14 @@
  */
 import { mixedPairingIn } from './mixed-pairing';
 import type { MixedPairing } from './mixed-pairing';
-import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
+import type { Match, PlayerId, RosterEntry, Round, Session, Team, TeamId } from './model';
 import { PairTally } from './pair-tally';
 import { seedAtFloor } from './queue-seed';
 import { availableIn, joinedAtRound } from './roster-availability';
 import { assertScorePairValid } from './score-rules';
 import { assertSessionShape, courtsInPlay, PLAYERS_PER_COURT } from './session-shape';
+import { teamPlayIn, teamsAvailableIn } from './teams';
+import type { TeamPlay } from './teams';
 
 export function assertSessionValid(session: Session): void {
   assertSessionShape(session);
@@ -34,9 +36,14 @@ export function assertSessionValid(session: Session): void {
   assertScoresSumToTarget(session);
 
   const mixed = mixedPairingIn(session);
+  const play = teamPlayIn(session);
   const partnerCounts = new PairTally();
+  const meetings = new PairTally();
   const benchCounts = new Map<PlayerId, number>();
+  const teamBenchCounts = new Map<TeamId, number>();
   const sameGenderCounts = new Map<PlayerId, number>();
+
+  assertTeamsNamedOnlyWhereTheyExist(session, play);
 
   for (const round of session.rounds) {
     if (round.matches.length === 0) {
@@ -48,13 +55,46 @@ export function assertSessionValid(session: Session): void {
     const available = availableIn(session, round.number);
 
     assertRoundStructure(round, session, available, nameOf);
-    countBench(round, available, benchCounts);
+    countBench(playersIn(round), available, benchCounts);
 
     // Everything from here down is a prefix check: it holds after this round, given every
     // round before it, so a session truncated at any point is still valid.
+    //
+    // Team Americano's come first, because in that mode the team is the unit the rules are about
+    // (decision #2c): a bye falls on a team, and saying so is more use to whoever is reading the
+    // error than naming one of the two players it also fell on.
+    if (play.plays) {
+      const availableTeams = teamsAvailableIn(session, round.number);
+
+      assertTeamSides(round, play, nameOf);
+      countBench(teamsIn(round), availableTeams, teamBenchCounts);
+      assertBenchSpread(round, availableTeams, teamBenchCounts, (id) => `team ${play.nameOf(id)}`);
+      assertOpponentVariety(round, availableTeams, meetings, play);
+    }
+
     assertBenchSpread(round, available, benchCounts, nameOf);
     assertMixedPairing(round, available, mixed, sameGenderCounts, nameOf);
-    assertPartnerVariety(round, available, partnerCounts, mixed, nameOf);
+
+    // Partner variety is asked of every mode but Team Americano, where the partnership is the
+    // format rather than something the scheduler chose — exempt for the same reason a Mixicano
+    // same-gender pair is (ADR-0010). What replaces it is `assertOpponentVariety` above.
+    if (!play.plays) {
+      assertPartnerVariety(round, available, partnerCounts, mixed, nameOf);
+    }
+  }
+}
+
+/** Only Team Americano's matches say which teams played them; the other modes have none to say. */
+function assertTeamsNamedOnlyWhereTheyExist(session: Session, play: TeamPlay): void {
+  if (play.plays) {
+    return;
+  }
+
+  for (const round of session.rounds) {
+    const named = round.matches.find((match) => match.teams !== undefined);
+    if (named) {
+      throw new Error(`Match ${named.id} names teams, but this session is ${session.mode}.`);
+    }
   }
 }
 
@@ -173,21 +213,30 @@ function assertRoundStructure(
  * queue alongside those players, which is the one seeding that leaves the spread rule below
  * meaning what it says.
  */
-function countBench(
-  round: Round,
-  available: readonly RosterEntry[],
-  benchCounts: Map<PlayerId, number>,
+function countBench<Id extends string>(
+  playing: ReadonlySet<Id>,
+  available: readonly Unit<Id>[],
+  benchCounts: Map<Id, number>,
 ): void {
   const known = available
-    .filter((entry) => benchCounts.has(entry.id))
-    .map((entry) => benchCounts.get(entry.id) ?? 0);
+    .filter((unit) => benchCounts.has(unit.id))
+    .map((unit) => benchCounts.get(unit.id) ?? 0);
   const floor = known.length > 0 ? Math.min(...known) : 0;
 
-  const playing = new Set(round.matches.flatMap(playersOf));
-  for (const entry of available) {
-    const satOut = benchCounts.get(entry.id) ?? floor;
-    benchCounts.set(entry.id, playing.has(entry.id) ? satOut : satOut + 1);
+  for (const unit of available) {
+    const satOut = benchCounts.get(unit.id) ?? floor;
+    benchCounts.set(unit.id, playing.has(unit.id) ? satOut : satOut + 1);
   }
+}
+
+/**
+ * Whatever the bench rotates: a player in Americano, a whole team in Team Americano.
+ *
+ * It is the same rule at either level (decision #2c), so the two checks around this take the
+ * level as a parameter rather than existing twice.
+ */
+interface Unit<Id extends string> {
+  readonly id: Id;
 }
 
 /**
@@ -195,13 +244,13 @@ function countBench(
  * could have put on court. Someone who has gone home stops accruing a bench and stops being
  * compared: their count is a record of the evening they played, not of the one still going.
  */
-function assertBenchSpread(
+function assertBenchSpread<Id extends string>(
   round: Round,
-  available: readonly RosterEntry[],
-  benchCounts: Map<PlayerId, number>,
-  nameOf: (id: PlayerId) => string,
+  available: readonly Unit<Id>[],
+  benchCounts: Map<Id, number>,
+  nameOf: (id: Id) => string,
 ): void {
-  const counts = available.map((entry) => benchCounts.get(entry.id) ?? 0);
+  const counts = available.map((unit) => benchCounts.get(unit.id) ?? 0);
   const spread = Math.max(...counts) - Math.min(...counts);
   if (spread <= 1) {
     return;
@@ -349,6 +398,100 @@ interface Pairing {
   readonly a: PlayerId;
   readonly b: PlayerId;
   readonly count: number;
+}
+
+/**
+ * Every side is a team, and it is the team the match says it is.
+ *
+ * Both halves matter. A side holding two players who are not a pair would be Americano wearing
+ * Team Americano's name; and a side whose players are not the team named on the match would make
+ * every count that reads `match.teams` — the standings, the bench queue, the fixture list — a
+ * count of something that did not happen.
+ */
+function assertTeamSides(round: Round, play: TeamPlay, nameOf: (id: PlayerId) => string): void {
+  for (const match of round.matches) {
+    if (!match.teams) {
+      throw new Error(`Match ${match.id} does not say which teams played it.`);
+    }
+
+    for (const side of ['sideA', 'sideB'] as const) {
+      const teamId = match.teams[side];
+      const team = play.byId(teamId);
+      if (!team) {
+        throw new Error(`Match ${match.id} names team "${teamId}", which this session has not.`);
+      }
+
+      const played = [...match[side]].sort();
+      if (played.join('|') !== [...team.playerIds].sort().join('|')) {
+        throw new Error(
+          `Match ${match.id} fields ${played.map(nameOf).join(' & ')} as team ` +
+            `${play.nameOf(teamId)}, who are not that team.`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * No fixture repeats while either team still has an opponent it has never faced. Generalised past
+ * the first full rotation exactly as partner variety is: a fixture played `n` times requires both
+ * teams to have met every other available team at least `n - 1` times.
+ *
+ * "Every other" is the teams this round could have scheduled. A team that can no longer take the
+ * court will never be met again, so the empty column under its name is not a debt.
+ */
+function assertOpponentVariety(
+  round: Round,
+  available: readonly Team[],
+  meetings: PairTally,
+  play: TeamPlay,
+): void {
+  const repeated: Meeting[] = [];
+
+  for (const match of round.matches) {
+    if (!match.teams) {
+      continue;
+    }
+
+    const count = meetings.increment(match.teams.sideA, match.teams.sideB);
+    if (count > 1) {
+      repeated.push({ a: match.teams.sideA, b: match.teams.sideB, count });
+    }
+  }
+
+  for (const { a, b, count } of repeated) {
+    for (const team of [a, b]) {
+      const unplayed = available.find(
+        (other) => other.id !== team && meetings.count(other.id, team) < count - 1,
+      );
+
+      if (unplayed) {
+        throw new Error(
+          `Round ${round.number} puts ${play.nameOf(a)} against ${play.nameOf(b)} for the ` +
+            `${count} time(s) while ${play.nameOf(team)} has met ${play.nameOf(unplayed.id)} ` +
+            'fewer times than that.',
+        );
+      }
+    }
+  }
+}
+
+interface Meeting {
+  readonly a: TeamId;
+  readonly b: TeamId;
+  readonly count: number;
+}
+
+/** Everyone on court this round. */
+function playersIn(round: Round): Set<PlayerId> {
+  return new Set(round.matches.flatMap(playersOf));
+}
+
+/** Every team on court this round, read off the matches rather than off the players. */
+function teamsIn(round: Round): Set<TeamId> {
+  return new Set(
+    round.matches.flatMap((match) => (match.teams ? [match.teams.sideA, match.teams.sideB] : [])),
+  );
 }
 
 function playersOf(match: Match): PlayerId[] {

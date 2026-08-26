@@ -21,6 +21,7 @@ import { mixedPairingIn } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
 import { hasLeft, isAvailableIn, joinedAtRound, leftAfterRound } from './roster-availability';
 import { courtsInPlay } from './session-shape';
+import { teamPlayIn } from './teams';
 
 /** A session as readable text: a block per round, then a block per player. */
 export function formatSchedule(session: Session): string {
@@ -47,6 +48,7 @@ function renderer(session: Session): {
   const names = displayNames(session);
   const nameOf = (id: PlayerId): string => names.get(id) ?? id;
   const mixed = mixedPairingIn(session);
+  const play = teamPlayIn(session);
   const rosterOrder = new Map(session.roster.map((entry, index) => [entry.id, index]));
   const stats = tallies(session);
 
@@ -144,16 +146,19 @@ function renderer(session: Session): {
       const played = stats.get(entry.id) ?? emptyTally();
       // Only players this one could have been partnered with: someone who left before they
       // arrived was never a partner they could have had, and in Mixicano nor was anyone of the
-      // same gender — that column is empty by design rather than by neglect.
-      const missing = session.roster
-        .filter(
-          (other) =>
-            other.id !== entry.id &&
-            !played.partners.has(other.id) &&
-            !mixed.sameGender(entry.id, other.id) &&
-            overlaps(entry, other),
-        )
-        .map((other) => nameOf(other.id));
+      // same gender — that column is empty by design rather than by neglect. In Team Americano
+      // the whole line is: a player has one partner all evening and is owed no others.
+      const missing = play.plays
+        ? []
+        : session.roster
+            .filter(
+              (other) =>
+                other.id !== entry.id &&
+                !played.partners.has(other.id) &&
+                !mixed.sameGender(entry.id, other.id) &&
+                overlaps(entry, other),
+            )
+            .map((other) => nameOf(other.id));
 
       const lines = [
         `${nameOf(entry.id)}${genderNote(entry)}${windowNote(entry)} — played ${played.matches}, ` +
@@ -306,6 +311,10 @@ function label(text: string): string {
   return text.padEnd(9);
 }
 
+/** `team-americano` reads as `Team Americano`: a mode is a name, not an identifier, to a reader. */
 function titleCase(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  return value
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }

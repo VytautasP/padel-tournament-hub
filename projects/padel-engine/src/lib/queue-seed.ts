@@ -22,12 +22,11 @@
  * the number or a session the generator produced would fail its own referee. Which is why this
  * lives in one file rather than in each of them.
  */
-import type { PlayerId, RosterEntry } from './model';
-
-export function seedAtFloor(
-  counts: Map<PlayerId, number>,
-  available: readonly RosterEntry[],
-  compares: (a: PlayerId, b: PlayerId) => boolean,
+export function seedAtFloor<Id extends string>(
+  counts: Map<Id, number>,
+  // A player or a team, depending on which queue this is: all it needs is the id.
+  available: readonly { readonly id: Id }[],
+  compares: (a: Id, b: Id) => boolean,
 ): void {
   for (const entry of available) {
     if (counts.has(entry.id)) {

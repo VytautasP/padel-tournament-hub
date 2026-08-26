@@ -20,23 +20,33 @@
  *   - **A partnership is only a repeat against the players who were here as long.** Judging a
  *     repeat against someone who arrived two rounds ago would condemn every pairing on the court,
  *     since one late arrival can absorb only one partnership a round.
+ *
+ * The same walk carries the same two questions at team level, for the mode whose unit is a team
+ * (decision #2c): which teams have met, and how often each has taken a bye. They are counted in
+ * the same pass rather than by a second walk, because a session has one history and the level a
+ * reader asks about is their business rather than the walk's.
  */
 import type { MixedPairing } from './mixed-pairing';
-import type { Match, PlayerId, RosterEntry, Round } from './model';
+import type { Match, PlayerId, RosterEntry, Round, TeamId } from './model';
 import { PairTally } from './pair-tally';
 import { everyone, seedAtFloor } from './queue-seed';
 import { isAvailableIn, joinedAtRound } from './roster-availability';
+import { teamsAvailableAmong } from './teams';
+import type { TeamPlay } from './teams';
 
 export class SessionHistory {
   private readonly partners = new PairTally();
   private readonly opponents = new PairTally();
   private readonly bench = new Map<PlayerId, number>();
   private readonly compromised = new Map<PlayerId, number>();
+  private readonly teamBench = new Map<TeamId, number>();
+  private readonly meetings = new PairTally();
   private readonly joinedAt: ReadonlyMap<PlayerId, number>;
 
   constructor(
     private readonly roster: readonly RosterEntry[],
     private readonly mixed: MixedPairing,
+    private readonly play: TeamPlay,
   ) {
     this.joinedAt = new Map(roster.map((entry) => [entry.id, joinedAtRound(entry)]));
   }
@@ -72,6 +82,8 @@ export class SessionHistory {
         this.bench.set(entry.id, this.benchCount(entry.id) + 1);
       }
     }
+
+    this.recordTeams(round);
   }
 
   benchCount(id: PlayerId): number {
@@ -133,6 +145,36 @@ export class SessionHistory {
     return this.opponents.count(a, b);
   }
 
+  /** How often this team has sat a round out — the bench queue, at team level (decision #2c). */
+  teamBenchCount(team: TeamId): number {
+    return this.teamBench.get(team) ?? 0;
+  }
+
+  /** How often these two teams have faced each other. */
+  teamsMetCount(a: TeamId, b: TeamId): number {
+    return this.meetings.count(a, b);
+  }
+
+  /**
+   * Would putting these two teams across the net again leave either of them with an opponent they
+   * have never faced?
+   *
+   * `starvesAPartner` asked one level up, and for the same reason: it is the referee's variety
+   * rule asked forwards, so the search can avoid a rematch that is unfair rather than be caught
+   * making one. Teams have no arrival windows to allow for — a team is in the session from the
+   * pairing screen — so the question is only about who is available this round.
+   */
+  starvesAnOpponent(a: TeamId, b: TeamId, available: readonly TeamId[]): boolean {
+    const met = this.teamsMetCount(a, b);
+    if (met === 0) {
+      return false;
+    }
+
+    return [a, b].some((team) =>
+      available.some((other) => other !== team && this.teamsMetCount(other, team) < met),
+    );
+  }
+
   /**
    * Would partnering these two starve someone of a partner they have never had?
    *
@@ -175,6 +217,39 @@ export class SessionHistory {
   /** Was `other` here by the time `partner` was — so did they have the same chance to be paired? */
   private joinedBy(other: PlayerId, partner: PlayerId): boolean {
     return (this.joinedAt.get(other) ?? 1) <= (this.joinedAt.get(partner) ?? 1);
+  }
+
+  /**
+   * The same fold, one level up: which teams met, and which sat the round out.
+   *
+   * Read off `match.teams` rather than worked out from the players on court, because that is the
+   * field that says who a side was playing *as* — the two are the same today and stop being the
+   * same the moment decision #2b repairs a team with a new partner. Empty for a mode with no
+   * teams, so the walk is unbranched.
+   */
+  private recordTeams(round: Round): void {
+    if (!this.play.plays) {
+      return;
+    }
+
+    const available = teamsAvailableAmong(this.play.teams, this.roster, round.number);
+    seedAtFloor(this.teamBench, available, everyone);
+
+    const playing = new Set<TeamId>();
+    for (const match of round.matches) {
+      if (!match.teams) {
+        continue;
+      }
+      this.meetings.increment(match.teams.sideA, match.teams.sideB);
+      playing.add(match.teams.sideA);
+      playing.add(match.teams.sideB);
+    }
+
+    for (const team of available) {
+      if (!playing.has(team.id)) {
+        this.teamBench.set(team.id, this.teamBenchCount(team.id) + 1);
+      }
+    }
   }
 
   /**

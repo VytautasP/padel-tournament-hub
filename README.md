@@ -7,8 +7,8 @@ next partner. Installable as a PWA, so it behaves like an app without ever touch
 
 ## Status
 
-**Engine, fair scheduling.** `padel-engine` schedules Americano and Mixicano for any roster of
-four or more on any number of courts — through `createSession`, `generateRemaining` and the referee that ships with
+**Engine, fair scheduling.** `padel-engine` schedules Americano, Mixicano and Team Americano for
+any roster of four or more on any number of courts — through `createSession`, `generateRemaining` and the referee that ships with
 them, `assertSessionValid`. Players who do not fit onto a court are benched, and the bench rotates:
 bench counts never differ by more than one, after every round rather than only at the end, because
 an evening that stops early has to be as fair as one that runs its course. Eleven players on two
@@ -37,8 +37,17 @@ players on court force, and rotated so the same two people are not the ones comp
 round. Same-gender pairs are marked in the schedule, derived from the roster rather than stored,
 so the organizer can explain a pairing rather than appear to have invented it. Bench spread,
 partner variety and prefix fairness hold unchanged throughout; see
-[ADR-0010](docs/adr/0010-mixicano-is-one-cost-term-and-a-derived-mark.md). Team Americano is
-still to come. No application code exists yet.
+[ADR-0010](docs/adr/0010-mixicano-is-one-cost-term-and-a-derived-mark.md).
+
+**Team Americano** is the same engine one level up. The organizer pairs the roster themselves at
+creation — no draw, no seeding — and from there the team is the unit: teams face teams, a whole
+team takes the bye when there are more teams than courts, team bench counts stay within one at
+every prefix, and teams meet every other team before meeting any of them twice. The standings are
+the same ladder handed teams instead of players, so points per match played and the tie-break
+tiers mean exactly what they already meant. See
+[ADR-0011](docs/adr/0011-team-americano-is-the-same-engine-one-level-up.md). An orphaned partner —
+what happens when one half of a pair goes home — is the next ticket. No application code exists
+yet.
 
 All 26 design decisions — modes, scoring, fairness rules, data model, stack and build order —
 live in **[docs/DECISIONS.md](docs/DECISIONS.md)**. That file is the source of truth. If code and
@@ -86,7 +95,7 @@ Firebase, and that is enforced by lint rather than by convention — see
 1. **`padel-engine` + tests** — no UI. Print schedules, eyeball fairness on awkward rosters. ← *current*
 2. **Angular app, `localStorage` only** — create → generate → score → standings → finish. Usable at a real session.
 3. **Firebase** — repository implementation, anonymous auth, security rules, share code, QR, spectator view.
-4. **Mixicano + Team Americano, PWA polish**, Google account linking, session delete.
+4. **PWA polish**, Google account linking, session delete.
 
 Step 2 is deliberately a complete, usable app: swapping `localStorage` for Firestore touches a
 single file behind the `SessionRepository` interface.

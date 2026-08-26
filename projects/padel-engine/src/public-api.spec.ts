@@ -15,6 +15,7 @@ describe('padel-engine public API', () => {
       'addRound',
       'assertSessionValid',
       'computeStandings',
+      'computeTeamStandings',
       'createSession',
       'finishSession',
       'formatSchedule',
