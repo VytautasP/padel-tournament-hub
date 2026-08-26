@@ -68,13 +68,17 @@ function literalTextIn(template) {
  * A regular expression cannot do this: `@if (session(); as active)` holds parentheses inside its
  * own, and a lazy match stops at the first closing one and leaves `; as active)` behind looking
  * exactly like a literal string. So the parentheses are matched by counting them.
+ *
+ * `@else if` is matched as one block name rather than two, because `@else` alone would stop
+ * at the space and leave `if (pastTheLastRound())` standing there looking exactly like a
+ * sentence the organizer can read.
  */
 function stripBlockHeaders(text) {
   let out = '';
   let index = 0;
 
   while (index < text.length) {
-    const block = /^@[a-zA-Z]+/.exec(text.slice(index));
+    const block = /^@(?:else\s+if|[a-zA-Z]+)/.exec(text.slice(index));
     if (block === null) {
       out += text[index];
       index += 1;
