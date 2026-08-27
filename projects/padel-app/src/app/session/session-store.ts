@@ -24,12 +24,15 @@
  */
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
+  addPlayer,
   addRound,
   computeStandings,
   createSession,
   finishSession,
   generateRemaining,
   recordScore,
+  removePlayer,
+  type PlayerId,
   type RosterEntry,
   type ScoreEntry,
   type Session,
@@ -52,6 +55,38 @@ export interface SessionDraft {
   readonly courtNames: readonly string[];
   readonly targetScore: number;
   readonly roundCount: number;
+}
+
+/**
+ * A roster change in hand but not made: the evening as it would be, and the evening it came from.
+ *
+ * ADR-0015 puts a preview in front of every roster change, which means the app holds two sessions
+ * for the length of the interaction and must write neither until the organizer says so. This is
+ * that pair, and it is the only thing `commitRosterChange` will store — a screen cannot hand the
+ * store a session it built itself.
+ */
+export interface RosterChange {
+  /**
+   * The evening as it would be: played rounds carried through, everything after them planned
+   * again for the amended roster. Never written unless it is confirmed.
+   */
+  readonly candidate: Session;
+  /**
+   * The evening it was planned against.
+   *
+   * Kept so that committing can refuse a candidate whose session has moved on underneath it. The
+   * preview covers the screen while it is open, so this should never happen — and a score
+   * silently thrown away by a stale candidate is not a thing to find out about later.
+   */
+  readonly from: Session;
+  /**
+   * The first round the preview renders: the round the evening is on.
+   *
+   * The rounds behind it are frozen and identical in both sessions, so showing them would be
+   * showing the organizer what they already know. The current round is shown because it is where
+   * they are standing, whether or not the change redraws it.
+   */
+  readonly fromRound: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -237,6 +272,42 @@ export class SessionStore {
   }
 
   /**
+   * The evening as it would be with one more player on it, written nowhere (ADR-0015).
+   *
+   * The engine schedules them from the first round nobody has played and into none behind it, and
+   * hands back a whole session — so planning the change costs the same as making it, and the only
+   * difference between the two is whether anybody stores the answer.
+   */
+  planArrival(name: string): RosterChange {
+    return this.plan((session) => addPlayer(session, this.arriving(session, name)));
+  }
+
+  /**
+   * The evening as it would be with this player gone home (decision #5).
+   *
+   * They keep their entry, their played matches and their standings line; what closes is the
+   * stretch of the evening they are here for. The engine refuses a departure that would leave a
+   * round it cannot staff, which is why the Players tab does not offer one.
+   */
+  planDeparture(playerId: PlayerId): RosterChange {
+    return this.plan((session) => removePlayer(session, playerId));
+  }
+
+  /**
+   * Store a change the organizer has read and confirmed. This is the only write a roster change
+   * makes, and it happens after the preview rather than before it.
+   */
+  async commitRosterChange(change: RosterChange): Promise<void> {
+    await this.change('change the roster of', (session) => {
+      if (session !== change.from) {
+        throw new Error('The evening has moved since this roster change was planned.');
+      }
+
+      return change.candidate;
+    });
+  }
+
+  /**
    * End the evening: freeze it, and move it into history in the same breath.
    *
    * The two belong together. `finishSession` is what makes the document refuse every later change
@@ -282,6 +353,38 @@ export class SessionStore {
   async deleteFromHistory(sessionId: string): Promise<void> {
     await this.repository.deleteFromHistory(sessionId);
     this.endedRecords.update((held) => held.filter((record) => record.session.id !== sessionId));
+  }
+
+  /**
+   * Put one roster operation in hand: run it against the evening in progress and keep the pair.
+   *
+   * Shared by both changes because the difference between somebody arriving and somebody leaving
+   * is one engine call — everything else about them, including the fact that neither is stored
+   * yet, is the same interaction.
+   */
+  private plan(apply: (session: Session) => Session): RosterChange {
+    const current = this.record();
+    if (current === null) {
+      throw new Error('There is no active session to change the roster of.');
+    }
+
+    return {
+      candidate: apply(current.session),
+      from: current.session,
+      fromRound: currentRoundNumber(current.session),
+    };
+  }
+
+  /**
+   * The entry a late arrival joins on.
+   *
+   * The id is derived from the roster's length rather than from a count of who is still here,
+   * because nobody ever leaves the roster — a player who has gone home keeps their entry — so the
+   * length only ever grows and the id it produces has never been handed out. It reads the same way
+   * creation's do (decision #9), which is what keeps a schedule reproducible from the document.
+   */
+  private arriving(session: Session, name: string): RosterEntry {
+    return rosterEntry(session.id, session.roster.length, name.trim());
   }
 
   /**

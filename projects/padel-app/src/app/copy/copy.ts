@@ -156,6 +156,52 @@ export const copy = {
     enterScore: (courtName: string): string => `Enter score for ${courtName}`,
   },
 
+  players: {
+    /** The single input at the bottom of the list — the wizard's pattern, learned once. */
+    placeholder: 'Name',
+    add: 'Add',
+    /** The badge on whoever this round leaves off a court, so "am I out?" has an answer. */
+    benched: 'Sitting out',
+    /**
+     * The badge on somebody who has left. It is what happened rather than what was done to them:
+     * their played matches and their standings line stay, and no later round holds them.
+     */
+    gone: 'Went home',
+    /**
+     * The row's overflow, and the one thing in it.
+     *
+     * Going home is never a swipe. A stray thumb at the side of a court must not be able to take
+     * a player out of the evening, so it costs one deliberate tap to find and another to cause.
+     */
+    options: (name: string): string => `Options for ${name}`,
+    optionsGlyph: '⋯',
+    sendHome: 'Went home',
+    /**
+     * Why an evening at the minimum offers nobody the door.
+     *
+     * Absent rather than disabled, like New session on the landing page: the engine refuses a
+     * round it cannot staff (decision #4), so there is nothing to offer — and a greyed control
+     * invites a tap and explains nothing.
+     */
+    nobodyCanLeave: (minimum: number): string =>
+      `A session needs at least ${minimum} players, so nobody can go home from this one.`,
+    /**
+     * The preview every roster change opens (ADR-0015).
+     *
+     * The dismissal is worded for the cause rather than for the schedule, because backing out is
+     * not a chance to reject the rotation and keep the change — that state does not exist. The
+     * confirmation names the act for the same reason: it is the roster that moves, and the rounds
+     * below it are the consequence being read before it is caused.
+     */
+    preview: {
+      heading: 'The rest of the evening',
+      lead: 'Every round from here is planned again. Rounds already played do not move.',
+      dismiss: "Don't change the roster",
+      confirmArrival: (name: string): string => `Add ${name}`,
+      confirmDeparture: (name: string): string => `${name} went home`,
+    },
+  },
+
   score: {
     /** Beside each field, because `17` means nothing without `of 24` (ADR-0014). */
     outOf: (targetScore: number): string => `of ${targetScore}`,

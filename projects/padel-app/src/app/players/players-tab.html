@@ -1,0 +1,67 @@
+<section class="flex flex-col gap-5 px-4 py-6">
+  <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">
+    @for (row of rows(); track row.id) {
+      <li class="space-y-2 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <span class="min-w-0 flex-1 truncate text-base text-ink">{{ row.name }}</span>
+
+          @if (row.gone) {
+            <span class="rounded-full border border-line px-2 py-1 text-xs text-ink-muted">
+              {{ copy.players.gone }}
+            </span>
+          } @else if (row.benched) {
+            <span class="rounded-full bg-surface-sunken px-2 py-1 text-xs text-ink-muted">
+              {{ copy.players.benched }}
+            </span>
+          }
+
+          @if (!ended() && !row.gone && canSendAnybodyHome()) {
+            <button
+              type="button"
+              class="rounded-full border border-line px-3 py-1 text-ink-muted"
+              [attr.aria-label]="copy.players.options(row.name)"
+              [attr.aria-expanded]="isOpen(row.id)"
+              (click)="toggleOptions(row.id)"
+            >
+              {{ copy.players.optionsGlyph }}
+            </button>
+          }
+        </div>
+
+        @if (isOpen(row.id)) {
+          <button
+            type="button"
+            class="w-full rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
+            (click)="sendHome(row)"
+          >
+            {{ copy.players.sendHome }}
+          </button>
+        }
+      </li>
+    }
+  </ul>
+
+  @if (!ended()) {
+    @if (!canSendAnybodyHome()) {
+      <p class="text-sm text-ink-muted">{{ copy.players.nobodyCanLeave(minimumPlayers) }}</p>
+    }
+
+    <form class="flex gap-2" (submit)="$event.preventDefault(); add()">
+      <input
+        #field
+        type="text"
+        autocomplete="off"
+        class="min-w-0 flex-1 rounded-xl border border-line bg-surface-raised px-4 py-3 text-base text-ink"
+        [placeholder]="copy.players.placeholder"
+        [value]="typed()"
+        (input)="onType($event)"
+      />
+      <button
+        type="submit"
+        class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+      >
+        {{ copy.players.add }}
+      </button>
+    </form>
+  }
+</section>

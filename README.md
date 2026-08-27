@@ -65,6 +65,19 @@ nowhere. Prev and next reach every generated round with one control back to the 
 one page past the last round is where a round gets added — which is where "have we time for
 another?" is actually asked (ADR-0016 §4).
 
+**The Players tab is where the roster moves during the evening** (decision #5, ADR-0015). It lists
+the roster with a badge on whoever this round leaves off a court — the same derivation the bench
+strip renders, so the two cannot disagree — takes a late arrival through the wizard's own single
+input at the bottom of the list, and puts **went home** on the row's overflow rather than on a
+swipe, because a stray thumb at the side of a court must not be able to remove a player. A player
+who has gone home keeps their played matches and their line in the standings, and is scheduled into
+no later round. Every one of these opens a preview of **the whole regenerated remainder** first,
+scrollable, rounds from the current one onward as they will be rather than a diff of a rotation
+that would be nearly every line. Its dismissal reads **"Don't change the roster"**, because there
+is no state in which the schedule is rejected and the change kept, and there is no reroll: the
+scheduler is deterministic (ADR-0006), and a schedule the organizer shopped for is a fairness claim
+nobody can check. Nothing reaches storage until the preview comes back confirmed.
+
 **End session** is in the Standings footer, because the evening ends when the table is final and
 the table is what the organizer is looking at when they decide that. Behind a confirmation naming
 what freezes, it sets the engine's finished status (ADR-0009) and moves the evening into **session
