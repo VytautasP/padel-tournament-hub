@@ -1,0 +1,18 @@
+<span class="flex gap-2">
+  @for (gender of genders; track gender) {
+    <button
+      type="button"
+      class="rounded-full border px-4 py-2 text-sm font-medium"
+      [class]="
+        selected() === gender
+          ? 'border-brand bg-brand text-brand-ink'
+          : 'border-line text-ink-muted'
+      "
+      [attr.aria-label]="labelFor(gender)"
+      [attr.aria-pressed]="selected() === gender"
+      (click)="chose.emit(gender)"
+    >
+      {{ copy.gender.name(gender) }}
+    </button>
+  }
+</span>

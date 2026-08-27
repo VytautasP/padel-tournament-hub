@@ -10,12 +10,25 @@
  * to substitute, so the compiler checks that what a screen has to say is a thing it actually
  * knows. `tools/verify-app-conventions.mjs` proves no template has quietly grown a literal.
  */
-import type { SessionMode } from 'padel-engine';
+import type { Gender, SessionMode } from 'padel-engine';
 
 export const modeNames: Readonly<Record<SessionMode, string>> = {
   americano: 'Americano',
   mixicano: 'Mixicano',
   'team-americano': 'Team Americano',
+};
+
+/**
+ * The two answers Mixicano's toggle offers (ADR-0010).
+ *
+ * Two, because what is being recorded is the pairing rule rather than the person: a Mixicano pair
+ * is mixed or it is not. There is no third word here because there is no third answer the engine
+ * would schedule around, and a dictionary that offered one would be promising a format this is
+ * not.
+ */
+export const genderNames: Readonly<Record<Gender, string>> = {
+  woman: 'Woman',
+  man: 'Man',
 };
 
 export const copy = {
@@ -70,6 +83,15 @@ export const copy = {
       count: (playerCount: number): string =>
         playerCount === 1 ? '1 player' : `${playerCount} players`,
       tooFew: (minimum: number): string => `A session needs at least ${minimum} players.`,
+      /**
+       * Why an untouched toggle holds the step (ADR-0010).
+       *
+       * It says what is missing rather than that something is wrong, because nothing is: the
+       * organizer has not answered a question yet, and the question is one only they can answer.
+       * A default would be a guess, and a guessed gender does not fail loudly — it silently
+       * produces a pairing rule the schedule then honours all evening.
+       */
+      genderMissing: 'Mixicano pairs across gender, so every player needs one.',
     },
 
     review: {
@@ -154,6 +176,23 @@ export const copy = {
      * still sending people to the wrong end of the building.
      */
     enterScore: (courtName: string): string => `Enter score for ${courtName}`,
+    /**
+     * The mark on a same-gender side, and the sentence that explains it (ADR-0010).
+     *
+     * Real rosters do not split evenly: seven women and three men produce same-gender pairs
+     * however well the evening is scheduled. The mark exists so the organizer can *explain* a
+     * pairing rather than appear to have invented it, which is why the legend is never far from
+     * it — a glyph nobody can look up is a decoration, and an unexplained pairing is an argument.
+     *
+     * It sits on the side rather than on the card, because it is one pair of two that the roster
+     * forced, and a banner across the court would accuse the other pair as well.
+     */
+    sameGender: {
+      mark: '*',
+      /** What a screen reader announces in place of the glyph, which announces as nothing. */
+      markLabel: 'Same-gender pair',
+      legend: '* Same-gender pair: the roster left nobody of the other gender to partner.',
+    },
   },
 
   players: {
@@ -189,6 +228,15 @@ export const copy = {
      */
     nobodyCanLeave: (minimum: number): string =>
       `A session needs at least ${minimum} players, so nobody can go home from this one.`,
+    /**
+     * Why a late arrival to a Mixicano evening cannot be taken on yet (ADR-0010).
+     *
+     * The same rule the wizard's roster step enforces, at the other place a roster grows: a
+     * Mixicano roster cannot gain a player without a gender, so Add is absent until the toggle
+     * has been answered — absent rather than disabled, like every other control here that has
+     * nothing to do.
+     */
+    genderMissing: 'Mixicano pairs across gender, so a new player needs one.',
     /**
      * The preview every roster change opens (ADR-0015).
      *
@@ -264,6 +312,26 @@ export const copy = {
       lead: 'The evening goes for good — its rounds, its scores and its final table. Nothing here can be recovered.',
       action: 'Delete session',
     },
+  },
+
+  /**
+   * The gender toggle, written once for the two places a Mixicano roster grows a name (ADR-0010).
+   *
+   * The wizard's Players step and the Players tab ask the same question of the same roster, so
+   * they ask it in the same words. What differs is only which of them is on screen — and the
+   * sentence each says when the question has not been answered, because one blocks a step and the
+   * other blocks an addition.
+   */
+  gender: {
+    name: (gender: Gender): string => genderNames[gender],
+    /**
+     * What a screen reader announces for one player's half of the toggle.
+     *
+     * It carries the name because the wizard's list is a column of identical pairs of buttons,
+     * and `Woman` announced eleven times says nothing about whose row it is.
+     */
+    choose: (name: string, gender: Gender): string =>
+      `${name} is a ${genderNames[gender].toLowerCase()}`,
   },
 
   /** The way out of any confirmation, which is the same way out of all of them. */

@@ -28,10 +28,17 @@
     {{ copy.wizard.players.count(draft().players().length) }}
   </p>
 
-  @if (draft().playersProblem() === 'too-few') {
-    <p class="text-sm font-medium text-ink">
-      {{ copy.wizard.players.tooFew(minimumPlayers) }}
-    </p>
+  @switch (draft().playersProblem()) {
+    @case ('too-few') {
+      <p class="text-sm font-medium text-ink">
+        {{ copy.wizard.players.tooFew(minimumPlayers) }}
+      </p>
+    }
+    @case ('gender-missing') {
+      <p class="text-sm font-medium text-ink">
+        {{ copy.wizard.players.genderMissing }}
+      </p>
+    }
   }
 
   <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">
@@ -45,6 +52,15 @@
         >
           {{ player.name }}
         </button>
+        @if (asksGender()) {
+          <app-gender-toggle
+            class="shrink-0"
+            [selected]="player.gender ?? null"
+            [owner]="player.name"
+            (chose)="setGender(player.id, $event)"
+          />
+        }
+
         <button
           type="button"
           class="px-4 py-3 text-ink-muted"

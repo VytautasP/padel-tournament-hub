@@ -21,6 +21,10 @@
           }
         </ul>
 
+        @if (round.hasSameGenderPair) {
+          <p class="text-sm text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+        }
+
         @if (round.bench.length > 0) {
           <p class="text-sm text-ink-muted">{{ copy.round.bench(round.bench) }}</p>
         }

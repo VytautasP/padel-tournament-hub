@@ -8,7 +8,11 @@
  *
  * **Adding is inline at the bottom of the list**, the same single input the wizard's roster step
  * is, so the interaction is learned once and a late arrival is typed the way the first eleven
- * were.
+ * were. In Mixicano it carries the same two-state gender toggle for the same reason the wizard's
+ * rows do (ADR-0010): a Mixicano roster cannot gain a player without a gender, and there is no
+ * default to fall back on. Until the toggle is answered there is no Add — absent rather than
+ * disabled, with the sentence saying why, like every other control on this screen that has
+ * nothing to do.
  *
  * **Going home is on the row's overflow**, never on a swipe: a stray thumb at the side of a court
  * must not be able to take a player out of the evening. It is worded for what happened rather than
@@ -35,17 +39,19 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { PlayerId } from 'padel-engine';
+import type { Gender, PlayerId } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { MINIMUM_PLAYERS } from '../session/round-defaults';
-import { SessionStore } from '../session/session-store';
+import { newPlayer, SessionStore } from '../session/session-store';
 import type { RosterChange } from '../session/session-store';
+import { GenderToggle } from './gender-toggle';
 import { RosterPreview } from './roster-preview';
 import { rosterView } from './roster-view';
 import type { PlayerRow } from './roster-view';
 
 @Component({
   selector: 'app-players-tab',
+  imports: [GenderToggle],
   templateUrl: './players-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -62,6 +68,21 @@ export class PlayersTab {
   protected readonly copy = copy;
   protected readonly minimumPlayers = MINIMUM_PLAYERS;
   protected readonly typed = signal('');
+
+  /** The answer for the player being typed, or `null` while the question is unanswered. */
+  protected readonly gender = signal<Gender | null>(null);
+
+  /** Whether this evening pairs across gender, which is the whole of whether the toggle is here. */
+  protected readonly asksGender = computed(() => this.store.openSession()?.mode === 'mixicano');
+
+  /**
+   * Whether a late arrival can be taken on at all yet.
+   *
+   * A blank name is not a refusal — the field is simply empty, and an evening whose Add button
+   * came and went as the first letter was typed would be a jumpy screen saying nothing. The one
+   * thing that withholds Add is the question this mode asks and the organizer has not answered.
+   */
+  protected readonly canAdd = computed(() => !this.asksGender() || this.gender() !== null);
 
   /** Whether this session is a record being read rather than an evening being run. */
   protected readonly ended = this.store.ended;
@@ -95,6 +116,10 @@ export class PlayersTab {
     this.typed.set((event.target as HTMLInputElement).value);
   }
 
+  protected setGender(gender: Gender): void {
+    this.gender.set(gender);
+  }
+
   /**
    * Take a late arrival on, once the organizer has read the evening it produces.
    *
@@ -104,14 +129,21 @@ export class PlayersTab {
    */
   protected async add(): Promise<void> {
     const name = this.typed().trim();
-    if (name === '') {
+    const gender = this.gender();
+    if (name === '' || !this.canAdd()) {
       return;
     }
 
     if (
-      await this.previewed(this.store.planArrival(name), copy.players.preview.confirmArrival(name))
+      await this.previewed(
+        this.store.planArrival(newPlayer(name, gender)),
+        copy.players.preview.confirmArrival(name),
+      )
     ) {
       this.typed.set('');
+      // The next arrival is a different person, so the question is asked again from nothing. A
+      // toggle still showing the last answer is a default wearing a tapped-looking pill.
+      this.gender.set(null);
       this.focusField();
     }
   }

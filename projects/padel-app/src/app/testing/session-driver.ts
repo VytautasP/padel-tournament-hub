@@ -13,8 +13,19 @@
  * schedule a test cannot spell out in advance, and it is what the score sheet's field labels are
  * going to say.
  */
-import type { Match, MatchScore, Session } from 'padel-engine';
+import type { Gender, Match, MatchScore, Session } from 'padel-engine';
 import { AppHarness } from './app-harness';
+import type { NewPlayer } from '../session/session-store';
+
+/**
+ * A player on a Mixicano roster, as a spec spells one: the app's `NewPlayer` with the half that
+ * is optional everywhere else answered.
+ *
+ * Not `MixedPlayer` — CONTEXT.md reserves *mixed* for a pair. A player has a gender; a pair is
+ * mixed or same-gender, and a type that blurred the two would teach the wrong word to every spec
+ * that reads it.
+ */
+export type MixicanoPlayer = NewPlayer & { readonly gender: Gender };
 
 /** Who is on each side of a court, as the score sheet spells them: the sheet's two field labels. */
 export interface Sides {
@@ -37,6 +48,40 @@ export async function createSession(
     await app.tap('Add');
   }
 
+  return await review(app, courtCount, targetScore);
+}
+
+/**
+ * Create a Mixicano through the wizard: the same walk, plus the one thing this mode asks.
+ *
+ * A separate driver rather than an option on the one above, because the roster it takes is a
+ * different shape — a Mixicano roster is names *and* genders, and there is no default the
+ * wizard would fill in for a caller that left them out.
+ */
+export async function createMixicanoSession(
+  players: readonly MixicanoPlayer[],
+  courtCount = 1,
+  targetScore = 24,
+): Promise<AppHarness> {
+  const app = await AppHarness.launch();
+  await app.tap('New session');
+  await app.tap('Mixicano');
+
+  for (const player of players) {
+    await app.type('Name', player.name);
+    await app.tap('Add');
+    await app.tap(`${player.name} is a ${player.gender}`);
+  }
+
+  return await review(app, courtCount, targetScore);
+}
+
+/** The tail of every wizard walk: Next, whatever Review has to be told, Create. */
+async function review(
+  app: AppHarness,
+  courtCount: number,
+  targetScore: number,
+): Promise<AppHarness> {
   await app.tap('Next');
   if (courtCount !== 1) {
     await app.setNumber('Courts', courtCount);

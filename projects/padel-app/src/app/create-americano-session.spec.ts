@@ -35,12 +35,10 @@ describe('creating an Americano session', () => {
     expect(app.shows('Review & create')).toBe(true);
   });
 
-  it('shows the modes it cannot schedule yet without letting them be picked', async () => {
+  it('shows the mode it cannot schedule yet without letting it be picked', async () => {
     const app = await AppHarness.launch();
     await app.tap('New session');
 
-    expect(app.isOnScreen('Mixicano')).toBe(true);
-    expect(app.canTap('Mixicano')).toBe(false);
     expect(app.isOnScreen('Team Americano')).toBe(true);
     expect(app.canTap('Team Americano')).toBe(false);
   });

@@ -46,22 +46,34 @@
       <p class="text-sm text-ink-muted">{{ copy.players.nobodyCanLeave(minimumPlayers) }}</p>
     }
 
-    <form class="flex gap-2" (submit)="$event.preventDefault(); add()">
-      <input
-        #field
-        type="text"
-        autocomplete="off"
-        class="min-w-0 flex-1 rounded-xl border border-line bg-surface-raised px-4 py-3 text-base text-ink"
-        [placeholder]="copy.players.placeholder"
-        [value]="typed()"
-        (input)="onType($event)"
-      />
-      <button
-        type="submit"
-        class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
-      >
-        {{ copy.players.add }}
-      </button>
+    <form class="space-y-3" (submit)="$event.preventDefault(); add()">
+      <div class="flex gap-2">
+        <input
+          #field
+          type="text"
+          autocomplete="off"
+          class="min-w-0 flex-1 rounded-xl border border-line bg-surface-raised px-4 py-3 text-base text-ink"
+          [placeholder]="copy.players.placeholder"
+          [value]="typed()"
+          (input)="onType($event)"
+        />
+        @if (canAdd()) {
+          <button
+            type="submit"
+            class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+          >
+            {{ copy.players.add }}
+          </button>
+        }
+      </div>
+
+      @if (asksGender()) {
+        <app-gender-toggle [selected]="gender()" (chose)="setGender($event)" />
+
+        @if (!canAdd()) {
+          <p class="text-sm text-ink-muted">{{ copy.players.genderMissing }}</p>
+        }
+      }
     </form>
   }
 </section>
