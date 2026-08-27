@@ -11,17 +11,21 @@
  * would cut a joint third in half and would drop a name off a podium two players are sharing the
  * top of; taking every line placed third or better keeps whoever the places actually belong to.
  *
+ * It says nothing about who the competitor is. In Team Americano the top three are pairs and the
+ * same three rules hold word for word (ADR-0011) — which is the whole of what "the same ladder
+ * handed teams instead of players" means on this screen.
+ *
  * A player who has not been on a scored court is not on it either, however high the ranking puts
  * them. An evening can be ended with nothing scored — ADR-0009 finishes an abandoned session as
  * readily as a complete one — and every player is then joint first on nothing, which would put the
  * whole roster on a podium and call it a result.
  */
-import type { Standing } from 'padel-engine';
+import type { StandingRow } from './standing-row';
 
 /** How far down the table a podium reaches. Third place is on it; fourth is in the table below. */
 const LAST_PLACE_ON_THE_PODIUM = 3;
 
-export function podiumOf(standings: readonly Standing[]): readonly Standing[] {
+export function podiumOf(standings: readonly StandingRow[]): readonly StandingRow[] {
   return standings.filter(
     (standing) => standing.position <= LAST_PLACE_ON_THE_PODIUM && standing.matchesPlayed > 0,
   );

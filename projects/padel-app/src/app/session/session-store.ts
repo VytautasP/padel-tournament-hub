@@ -27,20 +27,28 @@ import {
   addPlayer,
   addRound,
   computeStandings,
+  assignPartner,
+  computeTeamStandings,
   createSession,
   finishSession,
   generateRemaining,
   recordScore,
   removePlayer,
+  teamsNeedingPartner,
   type Gender,
+  type OrphanedTeam,
   type PlayerId,
   type RosterEntry,
   type ScoreEntry,
   type Session,
   type SessionMode,
-  type Standing,
+  type Team,
+  type TeamId,
 } from 'padel-engine';
+import { rowsOfPlayers, rowsOfTeams } from '../standings/standing-row';
+import type { StandingRow } from '../standings/standing-row';
 import { currentRoundNumber } from './current-round';
+import { teamNameOf } from './teams';
 import type { SessionRecord } from './session-record';
 import { SESSION_REPOSITORY } from './session-repository';
 import { summarise } from './session-summary';
@@ -75,11 +83,23 @@ export function newPlayer(name: string, gender?: Gender | null): NewPlayer {
   return { name, ...(gender == null ? {} : { gender }) };
 }
 
+/**
+ * One team the organizer paired, as two positions in the draft's roster (decision #2a).
+ *
+ * Positions rather than ids for the same reason `NewPlayer` carries no id: roster ids are derived
+ * here from the session id and the order the names arrived in, and a screen that supplied them
+ * could break the reproducibility that derivation exists for. A pairing screen knows who it put
+ * together, and where they are standing in the list is the only way it can say so.
+ */
+export type DraftPairing = readonly [number, number];
+
 /** Everything the wizard has collected by the time the organizer taps Create. */
 export interface SessionDraft {
   readonly mode: SessionMode;
   /** The roster in the order it was typed. Ids are the store's business, not the wizard's. */
   readonly players: readonly NewPlayer[];
+  /** The pairing, in Team Americano and in no other mode — the engine refuses it elsewhere. */
+  readonly teams?: readonly DraftPairing[];
   readonly courtCount: number;
   /** What each court is called, in court-number order. Blanks are allowed and mean `Court N`. */
   readonly courtNames: readonly string[];
@@ -155,7 +175,7 @@ export class SessionStore {
   readonly history = computed<readonly SessionSummary[]>(() =>
     [...this.endedRecords()]
       .sort((a, b) => (b.endedAt ?? '').localeCompare(a.endedAt ?? ''))
-      .map((record) => summarise(record, computeStandings(record.session))),
+      .map((record) => summarise(record, this.tableOf(record.session))),
   );
 
   /**
@@ -219,11 +239,29 @@ export class SessionStore {
    * session, the session is a signal, and the table is whatever the engine says about it now. A
    * finished session is read exactly the same way — freezing the document froze the matches the
    * table is computed from, so the table needs no freezing of its own (ADR-0009 §4).
+   *
+   * One table for every mode, because there is one ladder (ADR-0011): Team Americano hands it
+   * teams where the others hand it players, and `tableOf` is the single line that knows which.
    */
-  readonly standings = computed<readonly Standing[]>(() => {
+  readonly standings = computed<readonly StandingRow[]>(() => {
     const session = this.openSession();
 
-    return session === null ? [] : computeStandings(session);
+    return session === null ? [] : this.tableOf(session);
+  });
+
+  /**
+   * The teams that are one player short, and the half of each still here (decision #2b).
+   *
+   * Read off the session on every call, like the table above and for the same reason: `needs
+   * partner` is a team's line-up seen against the roster rather than a field anybody stores, so a
+   * repair clears the flag by being made and a departure raises it the same way.
+   */
+  readonly teamsNeedingPartner = computed<readonly OrphanedTeam[]>(() => {
+    const session = this.openSession();
+
+    return session === null || session.mode !== 'team-americano'
+      ? []
+      : teamsNeedingPartner(session);
   });
 
   async restore(): Promise<void> {
@@ -258,11 +296,15 @@ export class SessionStore {
    */
   async create(draft: SessionDraft): Promise<void> {
     const id = newSessionId();
+    const players = draft.players.map((player, index) => rosterEntry(id, index, player));
     const session = generateRemaining(
       createSession({
         id,
         mode: draft.mode,
-        players: draft.players.map((player, index) => rosterEntry(id, index, player)),
+        players,
+        // Absent rather than empty where the mode pairs nobody: the engine reads a `teams` key at
+        // all as a claim that this session has teams, and refuses one from a mode that has none.
+        ...(draft.teams ? { teams: draft.teams.map(pairedTeam(id, players)) } : {}),
         courtCount: draft.courtCount,
         targetScore: draft.targetScore,
         roundCount: draft.roundCount,
@@ -321,6 +363,18 @@ export class SessionStore {
    */
   planGoingHome(playerId: PlayerId): RosterChange {
     return this.plan((session) => removePlayer(session, playerId));
+  }
+
+  /**
+   * The evening as it would be with a new partner on an orphaned team (decision #2b, ADR-0012).
+   *
+   * Repairing a team is a roster change, so it is planned and previewed like the other two rather
+   * than written where it is tapped (ADR-0015). The team keeps its id, and with it every point it
+   * has already won — that is the engine's doing, not the app's, and the app's part is only to
+   * hand it a player it has never seen.
+   */
+  planPartner(teamId: TeamId, player: NewPlayer): RosterChange {
+    return this.plan((session) => assignPartner(session, teamId, this.arriving(session, player)));
   }
 
   /**
@@ -392,6 +446,19 @@ export class SessionStore {
    * is one engine call — everything else about them, including the fact that neither is stored
    * yet, is the same interaction.
    */
+  /**
+   * The table for one session: the ladder its mode ranks, as rows the screens can render.
+   *
+   * The mode is read here and nowhere else. Team Americano ranks teams and every other mode ranks
+   * players (ADR-0011), the engine refuses the wrong question of either, and a screen asking both
+   * and picking one would be this check in a second place.
+   */
+  private tableOf(session: Session): readonly StandingRow[] {
+    return session.mode === 'team-americano'
+      ? rowsOfTeams(computeTeamStandings(session), (teamId) => teamNameOf(session, teamId))
+      : rowsOfPlayers(computeStandings(session));
+  }
+
   private plan(apply: (session: Session) => Session): RosterChange {
     const current = this.record();
     if (current === null || this.openSession() !== current.session) {
@@ -454,6 +521,23 @@ export class SessionStore {
  */
 function rosterEntry(sessionId: string, index: number, player: NewPlayer): RosterEntry {
   return { id: `${sessionId}:p${index + 1}`, ...newPlayer(player.name, player.gender) };
+}
+
+/**
+ * The team a pairing names: an id of the session's own, and the two roster entries it pairs.
+ *
+ * Ids are derived from the session id and the order the pairs were made, exactly as roster ids
+ * are and for the same reason (decision #9) — a schedule has to be reproducible from the document
+ * when somebody disputes it, and a team is what a Team Americano schedule is made of.
+ */
+function pairedTeam(
+  sessionId: string,
+  players: readonly RosterEntry[],
+): (pairing: DraftPairing, index: number) => Team {
+  return (pairing, index) => ({
+    id: `${sessionId}:t${index + 1}`,
+    playerIds: [players[pairing[0]].id, players[pairing[1]].id],
+  });
 }
 
 function newSessionId(): string {

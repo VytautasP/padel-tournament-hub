@@ -28,6 +28,10 @@
         @if (round.bench.length > 0) {
           <p class="text-sm text-ink-muted">{{ copy.round.bench(round.bench) }}</p>
         }
+
+        @if (round.bye.length > 0) {
+          <p class="text-sm text-ink-muted">{{ copy.round.bye(round.bye) }}</p>
+        }
       </section>
     }
   </div>

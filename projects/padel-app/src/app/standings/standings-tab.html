@@ -7,7 +7,7 @@
         {{ copy.standings.podium }}
       </h2>
       <ol class="space-y-2">
-        @for (standing of podium(); track standing.playerId) {
+        @for (standing of podium(); track standing.id) {
           <li class="flex items-baseline gap-3">
             <span class="w-6 text-base font-semibold tabular-nums text-brand">
               {{ standing.position }}
@@ -23,13 +23,13 @@
   }
 
   <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">
-    @for (standing of standings(); track standing.playerId) {
+    @for (standing of standings(); track standing.id) {
       <li>
         <button
           type="button"
           class="flex w-full items-baseline gap-3 px-4 py-3 text-left"
-          [attr.aria-expanded]="isExpanded(standing.playerId)"
-          (click)="toggle(standing.playerId)"
+          [attr.aria-expanded]="isExpanded(standing.id)"
+          (click)="toggle(standing.id)"
         >
           <span class="w-6 text-sm tabular-nums text-ink-muted">{{ standing.position }}</span>
           <span class="min-w-0 flex-1 truncate text-base text-ink">{{ standing.name }}</span>
@@ -38,7 +38,7 @@
           </span>
         </button>
 
-        @if (isExpanded(standing.playerId)) {
+        @if (isExpanded(standing.id)) {
           <dl class="flex gap-6 px-4 pb-3 text-sm text-ink-muted">
             <div class="flex gap-2">
               <dt>{{ copy.standings.matchesPlayed }}</dt>

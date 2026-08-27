@@ -24,11 +24,19 @@
  * dialog asking whether the organizer meant it. Nothing reaches the repository until it comes back
  * confirmed.
  *
+ * **A stranded half is flagged where the organizer is looking, and repaired there too.** When one
+ * half of a Team Americano pair goes home the other cannot play, and the row that says so is the
+ * row that offers Assign partner (decision #2b, ADR-0012): the fix belongs where the problem is
+ * displayed. Repairing a team is a roster change like the other two, so it rides the same preview.
+ *
  * **An evening at the minimum offers nobody the door.** The engine refuses a round it cannot staff
  * (decision #4), so on a four-player evening there is no departure to offer and the overflow is
- * absent rather than disabled — with the sentence that says why, because a control that vanishes
- * without explanation is a bug from the outside. A session that has ended is read-only for the
- * same reason it is everywhere else (ADR-0013): the engine takes no operation on it.
+ * absent rather than disabled, with the sentence that says why — a control that vanishes without
+ * explanation is a bug from the outside. In Team Americano that is a question per row rather than
+ * per list, because a round needs two teams with both their players (`roster-view.ts`).
+ *
+ * A session that has ended is read-only for the same reason it is everywhere else (ADR-0013): the
+ * engine takes no operation on it.
  */
 import {
   ChangeDetectionStrategy,
@@ -41,10 +49,12 @@ import {
 } from '@angular/core';
 import type { Gender, PlayerId } from 'padel-engine';
 import { copy } from '../copy/copy';
-import { MINIMUM_PLAYERS } from '../session/round-defaults';
+import { MINIMUM_PLAYERS, TEAMS_PER_COURT } from '../session/round-defaults';
+import { playsAsTeams } from '../session/teams';
 import { newPlayer, SessionStore } from '../session/session-store';
 import type { RosterChange } from '../session/session-store';
 import { GenderToggle } from './gender-toggle';
+import { Partner } from './partner-sheet';
 import { RosterPreview } from './roster-preview';
 import { rosterView } from './roster-view';
 import type { PlayerRow } from './roster-view';
@@ -58,6 +68,7 @@ import type { PlayerRow } from './roster-view';
 export class PlayersTab {
   private readonly store = inject(SessionStore);
   private readonly preview = inject(RosterPreview);
+  private readonly partner = inject(Partner);
 
   /** The one row whose overflow is open, if any. One at a time, like the Resume card's. */
   private readonly openRow = signal<PlayerId | null>(null);
@@ -67,6 +78,7 @@ export class PlayersTab {
 
   protected readonly copy = copy;
   protected readonly minimumPlayers = MINIMUM_PLAYERS;
+  protected readonly teamsPerCourt = TEAMS_PER_COURT;
   protected readonly typed = signal('');
 
   /** The answer for the player being typed, or `null` while the question is unanswered. */
@@ -74,6 +86,20 @@ export class PlayersTab {
 
   /** Whether this evening pairs across gender, which is the whole of whether the toggle is here. */
   protected readonly asksGender = computed(() => this.store.openSession()?.mode === 'mixicano');
+
+  /**
+   * Whether the competitor is a pair — which is the whole of whether a name can be added at all.
+   *
+   * In Team Americano nobody arrives on their own: a player joins as somebody's partner or not at
+   * all, and the engine refuses the lone arrival outright (`change-roster.ts`). So the field is
+   * absent rather than offered and then refused, with the sentence that says where the one
+   * arrival this format has actually lives.
+   */
+  protected readonly playsAsTeams = computed(() => {
+    const session = this.store.openSession();
+
+    return session !== null && playsAsTeams(session);
+  });
 
   /**
    * Whether a late arrival can be taken on at all yet.
@@ -90,7 +116,9 @@ export class PlayersTab {
   protected readonly rows = computed<readonly PlayerRow[]>(() => {
     const session = this.store.openSession();
 
-    return session === null ? [] : rosterView(session, this.store.currentRoundNumber() ?? 1);
+    return session === null
+      ? []
+      : rosterView(session, this.store.currentRoundNumber() ?? 1, this.store.teamsNeedingPartner());
   });
 
   /**
@@ -100,8 +128,8 @@ export class PlayersTab {
    * people are left: the round after the next departure needs four of them, and which four is not
    * a question anybody is asking.
    */
-  protected readonly canAnybodyGoHome = computed(
-    () => this.rows().filter((row) => !row.gone).length > MINIMUM_PLAYERS,
+  protected readonly canAnybodyGoHome = computed(() =>
+    this.rows().some((row) => !row.gone && row.canGoHome),
   );
 
   protected isOpen(playerId: PlayerId): boolean {
@@ -146,6 +174,30 @@ export class PlayersTab {
       this.gender.set(null);
       this.focusField();
     }
+  }
+
+  /**
+   * Repair the team this row is the surviving half of (decision #2b, ADR-0012).
+   *
+   * Two sheets in sequence rather than one, because they ask different things: the first is who,
+   * and the second is the schedule that answer produces. Backing out of either leaves the evening
+   * exactly as it was, and the team keeps its slot and its points either way.
+   */
+  protected async assignPartner(row: PlayerRow): Promise<void> {
+    const { teamId, team } = row;
+    if (teamId === null || team === null) {
+      return;
+    }
+
+    const name = await this.partner.named(team);
+    if (name === null) {
+      return;
+    }
+
+    await this.previewed(
+      this.store.planPartner(teamId, newPlayer(name)),
+      copy.players.preview.confirmPartner(name, team),
+    );
   }
 
   /** Record that this player has gone home, once the organizer has read what it reschedules. */

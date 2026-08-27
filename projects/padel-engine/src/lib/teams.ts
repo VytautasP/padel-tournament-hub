@@ -117,6 +117,32 @@ export function teamsAvailableAmong(
   );
 }
 
+/**
+ * The teams this round benches whole — the bye (CONTEXT.md).
+ *
+ * A team one player short is in neither this list nor the round: it is orphaned rather than
+ * resting, which is a different state said in a different place (`teamsNeedingPartner`). The
+ * teams on court are read off `match.teams` rather than worked out from the players standing on
+ * it, for the reason ADR-0011 §3 gives — a side is who was on the court, and the team is who they
+ * were playing as.
+ *
+ * Exported because the bye is what a screen shows a human, and every reading of it has to be the
+ * same reading: a strip under the courts naming a team the schedule thinks is playing is a bug
+ * the organizer cannot resolve, standing next to them.
+ */
+export function teamsOnByeIn(session: Session, roundNumber: number): Team[] {
+  const round = session.rounds.find((candidate) => candidate.number === roundNumber);
+  if (!round) {
+    return [];
+  }
+
+  const onCourt = new Set(
+    round.matches.flatMap((match) => (match.teams ? [match.teams.sideA, match.teams.sideB] : [])),
+  );
+
+  return teamsAvailableIn(session, roundNumber).filter((team) => !onCourt.has(team.id));
+}
+
 /** A team left with one player, and the player the flag is on. */
 export interface OrphanedTeam {
   readonly teamId: TeamId;

@@ -76,6 +76,44 @@ export async function createMixicanoSession(
   return await review(app, courtCount, targetScore);
 }
 
+/**
+ * A pair the organizer assigns on the pairing step, as a spec spells one.
+ *
+ * Two names rather than two ids, because ids do not exist yet: the pairing screen is walked before
+ * the session it describes has been created, and the names are what is on screen to tap.
+ */
+export type NamedPair = readonly [string, string];
+
+/**
+ * Create a Team Americano through the wizard: the same walk, plus the step that pairs the roster.
+ *
+ * The roster is given as pairs rather than as names and a pairing, because in this format the two
+ * are the same fact — there is no draw, so a Team Americano roster *is* a list of teams
+ * (decision #2a).
+ */
+export async function createTeamAmericanoSession(
+  pairs: readonly NamedPair[],
+  courtCount = 1,
+  targetScore = 24,
+): Promise<AppHarness> {
+  const app = await AppHarness.launch();
+  await app.tap('New session');
+  await app.tap('Team Americano');
+
+  for (const name of pairs.flat()) {
+    await app.type('Name', name);
+    await app.tap('Add');
+  }
+
+  await app.tap('Next');
+  for (const [first, second] of pairs) {
+    await app.tap(`Pair ${first}`);
+    await app.tap(`Pair ${second}`);
+  }
+
+  return await review(app, courtCount, targetScore);
+}
+
 /** The tail of every wizard walk: Next, whatever Review has to be told, Create. */
 async function review(
   app: AppHarness,

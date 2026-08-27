@@ -35,12 +35,13 @@ describe('creating an Americano session', () => {
     expect(app.shows('Review & create')).toBe(true);
   });
 
-  it('shows the mode it cannot schedule yet without letting it be picked', async () => {
+  it('offers all three formats, every one of them playable', async () => {
     const app = await AppHarness.launch();
     await app.tap('New session');
 
-    expect(app.isOnScreen('Team Americano')).toBe(true);
-    expect(app.canTap('Team Americano')).toBe(false);
+    for (const mode of ['Americano', 'Mixicano', 'Team Americano']) {
+      expect(app.canTap(mode)).toBe(true);
+    }
   });
 
   describe('the Players step', () => {
