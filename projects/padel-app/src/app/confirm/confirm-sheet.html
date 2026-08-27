@@ -1,0 +1,21 @@
+<section class="space-y-4 rounded-t-3xl border border-line bg-surface-raised p-5">
+  <h2 class="text-lg font-semibold tracking-tight text-ink">{{ data.heading }}</h2>
+  <p class="text-sm text-ink-muted">{{ data.lead }}</p>
+
+  <div class="flex gap-3">
+    <button
+      type="button"
+      class="flex-1 rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
+      (click)="cancel()"
+    >
+      {{ copy.confirm.cancel }}
+    </button>
+    <button
+      type="button"
+      class="flex-1 rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+      (click)="confirm()"
+    >
+      {{ data.action }}
+    </button>
+  </div>
+</section>

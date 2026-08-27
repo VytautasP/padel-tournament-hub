@@ -21,6 +21,15 @@ import type { SessionRepository } from './session-repository';
 /** Where the active session lives. Exported so a test can put a bad document there on purpose. */
 export const STORAGE_KEY = 'padel-tournament-hub:active-session';
 /**
+ * Where every ended session lives, under a key of its own.
+ *
+ * Separate from the active session rather than one document holding both, because the two are
+ * written at completely different rates: the active session is rewritten on every score, and
+ * rewriting a year of history alongside each of those is work nobody asked for. Ending an evening
+ * is the one moment both keys move, and it moves them one after the other.
+ */
+export const HISTORY_KEY = 'padel-tournament-hub:session-history';
+/**
  * 2 since courts could be named (ADR-0017 §6).
  *
  * A version-1 document has no `courtNames`, so reading one back would hand the app a record that
@@ -33,6 +42,11 @@ const FORMAT_VERSION = 2;
 interface StoredDocument {
   readonly version: number;
   readonly record: SessionRecord;
+}
+
+interface StoredHistory {
+  readonly version: number;
+  readonly records: readonly SessionRecord[];
 }
 
 @Injectable()
@@ -54,9 +68,50 @@ export class LocalStorageSessionRepository implements SessionRepository {
   async clearActive(): Promise<void> {
     localStorage.removeItem(STORAGE_KEY);
   }
+
+  async loadHistory(): Promise<readonly SessionRecord[]> {
+    const raw = localStorage.getItem(HISTORY_KEY);
+
+    return raw === null ? [] : readHistory(raw);
+  }
+
+  async addToHistory(record: SessionRecord): Promise<void> {
+    await this.writeHistory([record, ...(await this.loadHistory())]);
+  }
+
+  async deleteFromHistory(sessionId: string): Promise<void> {
+    const kept = (await this.loadHistory()).filter((held) => held.session.id !== sessionId);
+    await this.writeHistory(kept);
+  }
+
+  private async writeHistory(records: readonly SessionRecord[]): Promise<void> {
+    const history: StoredHistory = { version: FORMAT_VERSION, records };
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }
+}
+
+/**
+ * The archive, or an empty one where what is stored cannot be read.
+ *
+ * Same reasoning as `readDocument`, one level up: an unreadable archive is a landing page with no
+ * history on it, not a crash on launch. It is the more painful of the two failures — a year of
+ * evenings rather than tonight's — which is an argument for the version being checked, not for
+ * throwing at an organizer who cannot do anything about it either way.
+ */
+function readHistory(raw: string): readonly SessionRecord[] {
+  const parsed = parseObject(raw) as Partial<StoredHistory> | null;
+
+  return parsed?.version === FORMAT_VERSION && Array.isArray(parsed.records) ? parsed.records : [];
 }
 
 function readDocument(raw: string): SessionRecord | null {
+  const document = parseObject(raw) as Partial<StoredDocument> | null;
+
+  return document?.version === FORMAT_VERSION && document.record ? document.record : null;
+}
+
+/** What `raw` parses to if it parses to an object at all, and `null` for everything else. */
+function parseObject(raw: string): object | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -64,11 +119,5 @@ function readDocument(raw: string): SessionRecord | null {
     return null;
   }
 
-  if (typeof parsed !== 'object' || parsed === null) {
-    return null;
-  }
-
-  const document = parsed as Partial<StoredDocument>;
-
-  return document.version === FORMAT_VERSION && document.record ? document.record : null;
+  return typeof parsed === 'object' && parsed !== null ? parsed : null;
 }

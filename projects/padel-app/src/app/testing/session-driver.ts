@@ -49,6 +49,18 @@ export async function createSession(
   return app;
 }
 
+/**
+ * End the evening the way the organizer does: from the Standings tab, through the confirmation.
+ *
+ * Both taps say `End session`, because both buttons do. Only one of them is on screen at a time —
+ * the sheet hides everything behind it — which is what makes tapping by label unambiguous here.
+ */
+export async function endSession(app: AppHarness): Promise<void> {
+  await app.tap('Standings');
+  await app.tap('End session');
+  await app.tap('End session');
+}
+
 /** Open the score sheet for one court of the round on screen. */
 export async function openSheet(app: AppHarness, courtNumber = 1): Promise<Sides> {
   const sides = sidesOn(app, courtNumber);

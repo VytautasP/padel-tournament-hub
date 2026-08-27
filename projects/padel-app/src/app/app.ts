@@ -37,4 +37,21 @@ export class App {
   protected show(screen: Screen): void {
     this.screen.set(screen);
   }
+
+  /**
+   * Put one session on screen: the evening in progress, or one read out of history.
+   *
+   * One entry point for both, because the session screen is the same screen either way — what
+   * differs is the session's status, and the tabs read that for themselves (ADR-0013).
+   */
+  protected open(sessionId: string): void {
+    this.store.open(sessionId);
+    this.show('session');
+  }
+
+  /** Leave a finished session. Nothing else leaves the session screen (ADR-0016). */
+  protected leave(): void {
+    this.store.close();
+    this.show('landing');
+  }
 }

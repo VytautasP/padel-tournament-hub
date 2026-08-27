@@ -29,7 +29,7 @@
     </button>
   </header>
 
-  @if (!atCurrentRound()) {
+  @if (canReturnToCurrentRound()) {
     <button
       type="button"
       class="self-center text-sm font-medium text-brand underline"
@@ -43,31 +43,34 @@
     <ul class="space-y-3">
       @for (court of view.courts; track court.courtNumber) {
         <li>
-          <button
-            type="button"
-            class="w-full space-y-2 rounded-2xl border p-4 text-left"
-            [class]="
-              court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
-            "
-            [attr.aria-label]="copy.round.enterScore(court.name)"
-            (click)="score(court)"
-          >
-            <span class="block text-xs font-medium tracking-wide text-ink-muted uppercase">
-              {{ court.name }}
-            </span>
-            <span class="block text-lg text-ink">{{ copy.round.side(court.sideA) }}</span>
-            <span class="block text-xs tracking-wide text-ink-muted uppercase">
-              {{ copy.round.versus }}
-            </span>
-            <span class="block text-lg text-ink">{{ copy.round.side(court.sideB) }}</span>
-            @if (court.score; as score) {
-              <span class="block text-base font-semibold text-brand">
-                {{ copy.round.score(score.sideA, score.sideB) }}
-              </span>
-            } @else {
-              <span class="block text-sm text-ink-muted">{{ copy.round.noScore }}</span>
-            }
-          </button>
+          @if (readOnly()) {
+            <div
+              class="w-full space-y-2 rounded-2xl border p-4 text-left"
+              [class]="
+                court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
+              "
+            >
+              <ng-container
+                [ngTemplateOutlet]="card"
+                [ngTemplateOutletContext]="{ $implicit: court }"
+              />
+            </div>
+          } @else {
+            <button
+              type="button"
+              class="w-full space-y-2 rounded-2xl border p-4 text-left"
+              [class]="
+                court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
+              "
+              [attr.aria-label]="copy.round.enterScore(court.name)"
+              (click)="score(court)"
+            >
+              <ng-container
+                [ngTemplateOutlet]="card"
+                [ngTemplateOutletContext]="{ $implicit: court }"
+              />
+            </button>
+          }
         </li>
       }
     </ul>
@@ -98,3 +101,26 @@
     </div>
   }
 </section>
+
+<!--
+  One court, written once and instantiated twice: as a button while the evening is running, and as
+  plain content once it has ended. The card is identical either way — what changes is whether it
+  can be tapped — so the alternative is two copies of it drifting apart a line at a time.
+-->
+<ng-template #card let-court>
+  <span class="block text-xs font-medium tracking-wide text-ink-muted uppercase">
+    {{ court.name }}
+  </span>
+  <span class="block text-lg text-ink">{{ copy.round.side(court.sideA) }}</span>
+  <span class="block text-xs tracking-wide text-ink-muted uppercase">
+    {{ copy.round.versus }}
+  </span>
+  <span class="block text-lg text-ink">{{ copy.round.side(court.sideB) }}</span>
+  @if (court.score; as score) {
+    <span class="block text-base font-semibold text-brand">
+      {{ copy.round.score(score.sideA, score.sideB) }}
+    </span>
+  } @else {
+    <span class="block text-sm text-ink-muted">{{ copy.round.noScore }}</span>
+  }
+</ng-template>

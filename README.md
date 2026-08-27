@@ -49,7 +49,7 @@ tiers mean exactly what they already meant. See
 pair goes home the team keeps its slot and its points and the other half is flagged
 `needs partner`, until a replacement repairs the team or the stranded player leaves too; see
 [ADR-0012](docs/adr/0012-an-orphaned-team-keeps-its-slot-and-the-fixture-ledger-restarts-with-the-field.md).
-**The app runs an Americano evening, scored, with a live table.** `padel-app` opens on a landing
+**The app runs an Americano evening end to end.** `padel-app` opens on a landing
 page, walks a three-step wizard — mode, names, then a review screen already holding a target of 24,
 one court, a complete rotation capped at 12 and a name per court, pre-filled `Court 1…N` for the
 club that books courts 7 and 8 (ADR-0017 §6) — and generates the schedule. The session is a
@@ -63,8 +63,25 @@ anybody has played. The evening lives in `localStorage` behind a `SessionReposit
 reopens on the current round, which is worked out from the unscored matches every time and stored
 nowhere. Prev and next reach every generated round with one control back to the current one, and
 one page past the last round is where a round gets added — which is where "have we time for
-another?" is actually asked (ADR-0016 §4). The Players tab, ending a session and the other two
-modes are the slices after this one.
+another?" is actually asked (ADR-0016 §4).
+
+**End session** is in the Standings footer, because the evening ends when the table is final and
+the table is what the organizer is looking at when they decide that. Behind a confirmation naming
+what freezes, it sets the engine's finished status (ADR-0009) and moves the evening into **session
+history** in the same breath — after which the session takes no score and no roster change, and a
+podium block sits above the same final table rather than on a screen that would render those rows
+twice. A joint first is repeated rather than broken, because the engine declared that tie on the
+evidence and stopped (decision #8).
+
+That makes the landing page the app's front door (ADR-0013). One evening is in progress at a time:
+a Resume card names the mode, the round and the player count, New session is *absent* rather than
+disabled while it stands, and **Discard** — the only way past an evening that fell apart in round
+3 — is in that card's overflow and nowhere inside a running session. Below it, every ended session,
+read-only and uncapped, each row naming itself `Wed 26 Aug · Americano · 11 players` with the
+winner, because a padel night is identified by when it was and who won it and the wizard therefore
+asks for no name. Opening a row replays its rounds and its final table with nothing on screen to
+tap; deleting one is behind a confirmation and is the hard delete decision #10 promises. The
+Players tab and the other two modes are the slices after this one.
 
 Every string the organizer reads comes from one typed dictionary and every colour from one token
 file with a light and a dark value (ADR-0018); `npm run verify:conventions` proves no template has

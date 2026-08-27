@@ -4,10 +4,10 @@
       <app-create-wizard (created)="show('session')" (cancelled)="show('landing')" />
     }
     @case ('session') {
-      <app-session-shell />
+      <app-session-shell (left)="leave()" />
     }
     @default {
-      <app-landing (started)="show('wizard')" (resumed)="show('session')" />
+      <app-landing (started)="show('wizard')" (opened)="open($event)" />
     }
   }
 }

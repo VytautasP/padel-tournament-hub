@@ -158,6 +158,23 @@ export class AppHarness {
     assertSessionValid(record.session);
   }
 
+  /**
+   * The same referee, run over the evening most recently ended.
+   *
+   * Ending empties the active slot, so `expectStoredSessionValid` has nothing to look at from the
+   * moment the session becomes worth checking. Freezing a document is exactly the kind of change
+   * that could quietly damage it, which is why the check follows it into history rather than
+   * stopping at the door.
+   */
+  expectEndedSessionValid(): void {
+    const [record] = this.repository.historyRecords();
+    if (record === undefined) {
+      throw new Error('The repository holds no ended session to validate.');
+    }
+
+    assertSessionValid(record.session);
+  }
+
   private appRoot(): HTMLElement {
     return this.fixture.nativeElement as HTMLElement;
   }
@@ -237,9 +254,17 @@ function labelOf(control: HTMLButtonElement): string {
   return labelled ?? visibleText(control).replace(/\s+/g, ' ').trim();
 }
 
-/** Whether this element sits inside something the app has taken off the screen. */
+/**
+ * Whether this element sits inside something the app has taken off the screen.
+ *
+ * Two ways that happens, and the app uses both. A tab panel kept in the DOM so it can be returned
+ * to unchanged is `hidden`. Everything behind an open sheet is `aria-hidden` — CDK marks the rest
+ * of the document while a dialog is up — and that is exactly as off screen: a confirmation naming
+ * what it is about to do sits over the button that opened it, and only one of the two is a thing
+ * the organizer can read or reach.
+ */
 function isHidden(element: Element): boolean {
-  return element.closest('[hidden]') !== null;
+  return element.closest('[hidden], [aria-hidden="true"]') !== null;
 }
 
 /**

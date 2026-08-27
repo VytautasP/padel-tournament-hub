@@ -1,10 +1,22 @@
 /*
- * The active session, and the only thing in the app that calls the engine (decision #17).
+ * The sessions the app is holding, and the only thing in it that calls the engine (decision #17).
  *
  * Screens read signals off this store and call methods on it; none of them calls an engine
  * operation of its own. That is what keeps the engine's surface reviewable — every rule the app
  * exercises passes through this one file — and what makes a screen testable by rendering it.
  * Reading the engine's *types* is not a call, and happens wherever a session is rendered.
+ *
+ * Three facts about sessions live here, and ADR-0013 is all three:
+ *
+ *   - **At most one evening is in progress.** The store enforces that, not the repository: there
+ *     is one `record` signal, and ending or discarding is the only way to empty it. The repository
+ *     stays addressed by id (ADR-0013 §5) so the Firestore swap in step 3 is a swap rather than a
+ *     rewrite, which means it cannot be the thing that counts.
+ *   - **Every ended evening is kept.** Ending moves the record out of the active slot and into
+ *     history in one method, so there is no moment at which an evening is in neither.
+ *   - **One of them is on screen.** `openId` names it and the record itself is derived, which is
+ *     what puts a score landing on the active session onto the screen showing it with nothing to
+ *     keep in step — and what closes a screen whose session has just been discarded or deleted.
  *
  * The store also owns the fact that reading a session is asynchronous. `restore()` runs once at
  * startup; until it settles, `ready()` is false and the app renders nothing rather than flashing
@@ -15,6 +27,7 @@ import {
   addRound,
   computeStandings,
   createSession,
+  finishSession,
   generateRemaining,
   recordScore,
   type RosterEntry,
@@ -23,8 +36,11 @@ import {
   type SessionMode,
   type Standing,
 } from 'padel-engine';
+import { currentRoundNumber } from './current-round';
 import type { SessionRecord } from './session-record';
 import { SESSION_REPOSITORY } from './session-repository';
+import { summarise } from './session-summary';
+import type { SessionSummary } from './session-summary';
 
 /** Everything the wizard has collected by the time the organizer taps Create. */
 export interface SessionDraft {
@@ -42,6 +58,8 @@ export interface SessionDraft {
 export class SessionStore {
   private readonly repository = inject(SESSION_REPOSITORY);
   private readonly record = signal<SessionRecord | null>(null);
+  private readonly ended = signal<readonly SessionRecord[]>([]);
+  private readonly openId = signal<string | null>(null);
   private readonly restored = signal(false);
 
   /** False until the repository has been read once. */
@@ -50,55 +68,114 @@ export class SessionStore {
   readonly activeSession = computed<Session | null>(() => this.record()?.session ?? null);
 
   /**
-   * What the organizer calls each court of the active session (ADR-0017 §6).
+   * The round the evening in progress is on — what the Resume card names.
+   *
+   * Asked of the active session rather than of the session on screen, because the Resume card is
+   * on the landing page, where no session is on screen at all.
+   */
+  readonly activeRoundNumber = computed(() => {
+    const session = this.activeSession();
+
+    return session === null ? null : currentRoundNumber(session);
+  });
+
+  /** Every ended evening as a history row reads it, most recently ended first (ADR-0013 §4). */
+  readonly history = computed<readonly SessionSummary[]>(() =>
+    this.ended().map((record) => summarise(record, computeStandings(record.session))),
+  );
+
+  /**
+   * The session the organizer has open: the evening in progress, or one read out of history.
+   *
+   * Derived from an id rather than held as a second record, so that a score landing on the active
+   * session reaches the screen showing it with nothing to keep in step — and so that discarding or
+   * deleting whatever is open closes it rather than leaving a screen reading a record the app no
+   * longer holds.
+   */
+  private readonly openRecord = computed<SessionRecord | null>(() => {
+    const id = this.openId();
+    if (id === null) {
+      return null;
+    }
+
+    const active = this.record();
+    if (active !== null && active.session.id === id) {
+      return active;
+    }
+
+    return this.ended().find((held) => held.session.id === id) ?? null;
+  });
+
+  readonly openSession = computed<Session | null>(() => this.openRecord()?.session ?? null);
+
+  /**
+   * Whether the session on screen is a record rather than an evening.
+   *
+   * The engine refuses every changing operation on a finished session (ADR-0009) and would refuse
+   * these too; this is the app reading the same status so that it does not offer what would be
+   * refused. It is the one flag that turns the session screen read-only, which is what ADR-0013's
+   * "accepts no edits of any kind" amounts to in the UI.
+   */
+  readonly readOnly = computed(() => this.openSession()?.status === 'finished');
+
+  /**
+   * What the organizer calls each court of the session on screen (ADR-0017 §6).
    *
    * Empty where there is no session, which `courtNameFor` reads as "nobody named this one" and
    * renders as `Court N`. A stored record always carries the names: one written before courts
    * could be named is a version the repository refuses.
    */
-  readonly courtNames = computed<readonly string[]>(() => this.record()?.courtNames ?? []);
+  readonly courtNames = computed<readonly string[]>(() => this.openRecord()?.courtNames ?? []);
 
   /**
-   * The round the evening is on: the lowest-numbered generated round still holding an unscored
-   * match (ADR-0016). Derived from the scores on every read and never stored, so correcting a
-   * typo can move it backwards.
+   * The round the session on screen is on: the lowest-numbered generated round still holding an
+   * unscored match (ADR-0016). Derived from the scores on every read and never stored, so
+   * correcting a typo can move it backwards.
    */
   readonly currentRoundNumber = computed(() => {
-    const session = this.activeSession();
-    if (session === null) {
-      return null;
-    }
+    const session = this.openSession();
 
-    const unfinished = session.rounds.find(
-      (round) => round.matches.length > 0 && round.matches.some((match) => !match.score),
-    );
-
-    return (unfinished ?? session.rounds[session.rounds.length - 1]).number;
+    return session === null ? null : currentRoundNumber(session);
   });
 
   /**
    * The table, recomputed on every read and stored nowhere (decision #17).
    *
    * There is no invalidation here and nothing to keep in step: a corrected score changes the
-   * session, the session is a signal, and the table is whatever the engine says about it now.
+   * session, the session is a signal, and the table is whatever the engine says about it now. A
+   * finished session is read exactly the same way — freezing the document froze the matches the
+   * table is computed from, so the table needs no freezing of its own (ADR-0009 §4).
    */
   readonly standings = computed<readonly Standing[]>(() => {
-    const session = this.activeSession();
+    const session = this.openSession();
 
     return session === null ? [] : computeStandings(session);
   });
 
   async restore(): Promise<void> {
     this.record.set(await this.repository.loadActive());
+    this.ended.set(await this.repository.loadHistory());
     this.restored.set(true);
   }
 
+  /** Put the session with this id on screen: the active one, or one out of history. */
+  open(sessionId: string): void {
+    this.openId.set(sessionId);
+  }
+
+  /** Leave the session screen. Only a finished session offers this (ADR-0016). */
+  close(): void {
+    this.openId.set(null);
+  }
+
   /**
-   * Build the evening the wizard describes, generate its schedule and make it the active session.
+   * Build the evening the wizard describes, generate its schedule and open it.
    *
    * The schedule is generated here rather than round by round during play because decision #6
    * needs a whole rotation to be fair at every prefix — a schedule built one round at a time
    * cannot see the rounds it has not planned yet.
+   *
+   * Creating opens the session, because the last tap of the wizard has nowhere else to go.
    */
   async create(draft: SessionDraft): Promise<void> {
     const id = newSessionId();
@@ -120,6 +197,7 @@ export class SessionStore {
     };
     await this.repository.saveActive(record);
     this.record.set(record);
+    this.open(id);
   }
 
   /**
@@ -130,14 +208,7 @@ export class SessionStore {
    * the one the schedule would have held all along had the organizer asked at the start.
    */
   async addRound(): Promise<void> {
-    const current = this.record();
-    if (current === null) {
-      throw new Error('There is no active session to add a round to.');
-    }
-
-    const updated: SessionRecord = { ...current, session: addRound(current.session) };
-    await this.repository.saveActive(updated);
-    this.record.set(updated);
+    await this.change('add a round to', (session) => addRound(session));
   }
 
   /**
@@ -148,12 +219,71 @@ export class SessionStore {
    * something this method could be asked for.
    */
   async score(entry: ScoreEntry): Promise<void> {
+    await this.change('score', (session) => recordScore(session, entry));
+  }
+
+  /**
+   * End the evening: freeze it, and move it into history in the same breath.
+   *
+   * The two belong together. `finishSession` is what makes the document refuse every later change
+   * (ADR-0009); moving it is what makes the landing page offer New session again. An evening that
+   * was frozen but left in the active slot would be a session in progress that nothing can
+   * progress, and the landing page would go on offering to resume it.
+   *
+   * The record stays open afterwards, because the organizer is standing in front of the table it
+   * has just made final.
+   */
+  async end(): Promise<void> {
     const current = this.record();
     if (current === null) {
-      throw new Error('There is no active session to score.');
+      throw new Error('There is no active session to end.');
     }
 
-    const updated: SessionRecord = { ...current, session: recordScore(current.session, entry) };
+    const record: SessionRecord = {
+      ...current,
+      session: finishSession(current.session),
+      endedAt: new Date().toISOString(),
+    };
+    await this.repository.addToHistory(record);
+    await this.repository.clearActive();
+    this.ended.update((held) => [record, ...held]);
+    this.record.set(null);
+    this.open(record.session.id);
+  }
+
+  /**
+   * Throw the evening away: the only way past a session that stopped without an ending.
+   *
+   * It does not go to history. History is every session that was *ended* (ADR-0013 §2), and an
+   * evening that fell apart in round 3 is not a result anybody wants kept — which is why this is
+   * the other door out rather than a second kind of ending.
+   */
+  async discard(): Promise<void> {
+    await this.repository.clearActive();
+    this.record.set(null);
+    this.close();
+  }
+
+  /** Forget an ended evening, permanently. This is decision #10's hard delete. */
+  async deleteFromHistory(sessionId: string): Promise<void> {
+    await this.repository.deleteFromHistory(sessionId);
+    this.ended.update((held) => held.filter((record) => record.session.id !== sessionId));
+  }
+
+  /**
+   * Hand the evening in progress to an engine operation and keep what comes back.
+   *
+   * Every change goes through here, so "there is no session" is written once rather than once per
+   * operation. It is always the active record: a session opened out of history is finished, and
+   * the engine would refuse it even if a screen asked.
+   */
+  private async change(operation: string, apply: (session: Session) => Session): Promise<void> {
+    const current = this.record();
+    if (current === null) {
+      throw new Error(`There is no active session to ${operation}.`);
+    }
+
+    const updated: SessionRecord = { ...current, session: apply(current.session) };
     await this.repository.saveActive(updated);
     this.record.set(updated);
   }

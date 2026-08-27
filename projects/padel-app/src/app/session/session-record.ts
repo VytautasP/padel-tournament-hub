@@ -30,4 +30,18 @@ export interface SessionRecord {
    * is not a session the app should refuse to create.
    */
   readonly courtNames: readonly string[];
+  /**
+   * When the organizer ended the evening, as an ISO-8601 instant, or absent while it is still in
+   * progress.
+   *
+   * The engine's `status` already says *whether* a session is finished and is the field every rule
+   * is enforced against; this says *when*, which is the app's question and not a rule at all. It
+   * is the order history is kept in — the order the evenings were closed — as opposed to
+   * `createdAt`, which is the night a row names itself by.
+   *
+   * Absent rather than null on a session in progress, so a record that has never ended carries no
+   * key for it. That is the same shape the field has in storage, which is the shape it has to
+   * survive.
+   */
+  readonly endedAt?: string;
 }

@@ -15,10 +15,17 @@
  * The Players tab is on screen and cannot be opened. It belongs to a later slice, and showing
  * where it will be is honest about a shell that is three tabs wide; a tab that appeared later
  * would move the other two under a thumb that had learned where they are.
+ *
+ * **An ended session has a door, and only an ended session.** ADR-0016's "no back button" is a rule
+ * about an evening in progress: leaving one is ending it or discarding it, and both of those are
+ * elsewhere on purpose. A finished session is not an evening being run — it is a record being
+ * read, whether the organizer closed it a second ago or opened it out of history a week later —
+ * and a record has to be closable or the landing page is unreachable.
  */
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { copy } from '../copy/copy';
 import { RoundTab } from '../round/round-tab';
+import { SessionStore } from '../session/session-store';
 import { StandingsTab } from '../standings/standings-tab';
 
 type Tab = 'round' | 'standings' | 'players';
@@ -37,9 +44,17 @@ interface TabView {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SessionShell {
+  private readonly store = inject(SessionStore);
   private readonly tab = signal<Tab>('round');
 
+  /** Emitted when the organizer closes a finished session. Nothing else leaves this screen. */
+  readonly left = output<void>();
+
+  protected readonly copy = copy;
   protected readonly current = this.tab.asReadonly();
+
+  /** Whether this session has ended, which is the only condition under which there is a way out. */
+  protected readonly ended = this.store.readOnly;
 
   protected readonly tabs: readonly TabView[] = [
     { id: 'round', label: copy.session.round, ready: true },

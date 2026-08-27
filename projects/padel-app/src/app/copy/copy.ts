@@ -28,6 +28,22 @@ export const copy = {
     resume: 'Resume',
     resumeSummary: (mode: SessionMode, playerCount: number, roundNumber: number): string =>
       `${modeNames[mode]} · ${playerCount} players · round ${roundNumber}`,
+    /**
+     * The overflow on the Resume card, and the one thing in it.
+     *
+     * Discard is here rather than inside the session because an evening is never discarded from
+     * the side of a court (ADR-0013 §3). The overflow is what keeps it one deliberate tap away
+     * from the button beside it, which is the one the organizer actually wants.
+     */
+    options: 'Session options',
+    /** The overflow itself is a glyph; the sentence beside it is what a screen reader announces. */
+    optionsGlyph: '⋯',
+    discard: 'Discard',
+    discardConfirm: {
+      heading: 'Discard this session?',
+      lead: 'The evening goes for good — its rounds, its scores and its table. It is not kept in history.',
+      action: 'Discard session',
+    },
   },
 
   wizard: {
@@ -80,6 +96,15 @@ export const copy = {
     round: 'Round',
     standings: 'Standings',
     players: 'Players',
+    /**
+     * The way out of a session that has ended.
+     *
+     * A session in progress has no way out (ADR-0016) — leaving it is ending it or discarding it.
+     * A finished one is a record being read rather than an evening being run, so it has a door,
+     * and the door is the same whether the organizer just closed the night or opened it out of
+     * history a week later.
+     */
+    done: 'Done',
   },
 
   round: {
@@ -141,6 +166,22 @@ export const copy = {
 
   standings: {
     /**
+     * The top three, above the table rather than on a screen of their own.
+     *
+     * The top three *are* the standings (ADR-0013), so a podium screen would render the same rows
+     * twice. What the block adds is the pause at the end of the evening — and it repeats a joint
+     * first rather than picking a winner, because the engine declared the tie and the app does
+     * not break it (decision #8).
+     */
+    podium: 'Podium',
+    /** The ending, in the footer of the table it makes final (ADR-0013). */
+    end: 'End session',
+    endConfirm: {
+      heading: 'End the session?',
+      lead: 'The table is final from here: no more scores, no more rounds, no roster changes. This cannot be undone.',
+      action: 'End session',
+    },
+    /**
      * Points per match, or a dash for somebody who has not been on a scored court yet.
      *
      * A zero would be a claim about how they are playing. A dash says the evening has not
@@ -151,7 +192,53 @@ export const copy = {
     matchesPlayed: 'Matches played',
     totalPoints: 'Total points',
   },
+
+  history: {
+    heading: 'Session history',
+    /**
+     * A row names itself: when the evening was, what it played and how many played it.
+     *
+     * There is no name field in the wizard (ADR-0013 §4), so this is the whole of a session's
+     * identity in a list. The year is absent on purpose — a list of a year's Tuesdays does not
+     * need telling which year each of them was.
+     */
+    row: (day: string, mode: SessionMode, playerCount: number): string =>
+      `${day} · ${modeNames[mode]} · ${playerCount} players`,
+    /** Who topped the final table. More than one name where the top place was joint. */
+    winner: (names: readonly string[]): string => `${names.join(' & ')} won`,
+    /** Names the row it deletes, because every row on the page carries one of these. */
+    delete: (title: string): string => `Delete ${title}`,
+    deleteGlyph: '×',
+    deleteConfirm: {
+      heading: 'Delete this session?',
+      lead: 'The evening goes for good — its rounds, its scores and its final table. Nothing here can be recovered.',
+      action: 'Delete session',
+    },
+  },
+
+  /** The way out of any confirmation, which is the same way out of all of them. */
+  confirm: {
+    cancel: 'Cancel',
+  },
 } as const;
+
+/**
+ * The day an evening was played, as a history row says it: `Wed 26 Aug`.
+ *
+ * Formatting lives here rather than beside the record because the weekday and the month are words
+ * the organizer reads, and every word the organizer reads is in this file (decision #20). The
+ * locale is named rather than taken from the device for the same reason: the dictionary is
+ * English, so the date beside its words has to be too.
+ */
+const dayFormat = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
+
+export function formatDay(instant: string): string {
+  return dayFormat.format(new Date(instant));
+}
 
 const modeBlurbs: Readonly<Record<SessionMode, string>> = {
   americano: 'Partners rotate every round. Everyone plays with everyone.',

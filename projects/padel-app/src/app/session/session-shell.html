@@ -1,4 +1,12 @@
 <div class="mx-auto flex h-screen max-w-md flex-col">
+  @if (ended()) {
+    <header class="flex justify-end border-b border-line bg-surface-raised px-4 py-2">
+      <button type="button" class="text-sm font-medium text-brand" (click)="left.emit()">
+        {{ copy.session.done }}
+      </button>
+    </header>
+  }
+
   <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'round'">
     <app-round-tab />
   </div>

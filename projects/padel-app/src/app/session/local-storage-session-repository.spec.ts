@@ -1,5 +1,9 @@
 import { createSession, generateRemaining } from 'padel-engine';
-import { LocalStorageSessionRepository, STORAGE_KEY } from './local-storage-session-repository';
+import {
+  HISTORY_KEY,
+  LocalStorageSessionRepository,
+  STORAGE_KEY,
+} from './local-storage-session-repository';
 import type { SessionRecord } from './session-record';
 
 describe('the localStorage session repository', () => {
@@ -33,12 +37,45 @@ describe('the localStorage session repository', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 99, record: record() }));
     expect(await repository.loadActive()).toBeNull();
   });
+
+  it('keeps ended sessions under a key of their own, most recently ended first', async () => {
+    const repository = new LocalStorageSessionRepository();
+    expect(await repository.loadHistory()).toEqual([]);
+
+    await repository.addToHistory(record('session-1'));
+    await repository.addToHistory(record('session-2'));
+
+    expect(await repository.loadHistory()).toEqual([record('session-2'), record('session-1')]);
+    // The archive and the evening in progress are written at completely different rates, so they
+    // are separate documents rather than one that has to be rewritten on every score.
+    expect(await repository.loadActive()).toBeNull();
+  });
+
+  it('deletes one ended session and leaves the rest', async () => {
+    const repository = new LocalStorageSessionRepository();
+    await repository.addToHistory(record('session-1'));
+    await repository.addToHistory(record('session-2'));
+
+    await repository.deleteFromHistory('session-1');
+
+    expect(await repository.loadHistory()).toEqual([record('session-2')]);
+  });
+
+  it('treats an unreadable archive as an empty one rather than as a crash', async () => {
+    const repository = new LocalStorageSessionRepository();
+
+    localStorage.setItem(HISTORY_KEY, 'not json at all');
+    expect(await repository.loadHistory()).toEqual([]);
+
+    localStorage.setItem(HISTORY_KEY, JSON.stringify({ version: 99, records: [record()] }));
+    expect(await repository.loadHistory()).toEqual([]);
+  });
 });
 
-function record(): SessionRecord {
+function record(id = 'session-1'): SessionRecord {
   const session = generateRemaining(
     createSession({
-      id: 'session-1',
+      id,
       mode: 'americano',
       players: [
         { id: 'p1', name: 'Ana' },

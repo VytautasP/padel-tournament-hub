@@ -13,6 +13,7 @@ import type { SessionRepository } from './session-repository';
 @Injectable()
 export class InMemorySessionRepository implements SessionRepository {
   private stored: string | null = null;
+  private history: string = JSON.stringify([]);
 
   async loadActive(): Promise<SessionRecord | null> {
     return this.activeRecord();
@@ -26,11 +27,30 @@ export class InMemorySessionRepository implements SessionRepository {
     this.stored = null;
   }
 
+  async loadHistory(): Promise<readonly SessionRecord[]> {
+    return this.historyRecords();
+  }
+
+  async addToHistory(record: SessionRecord): Promise<void> {
+    this.history = JSON.stringify([record, ...this.historyRecords()]);
+  }
+
+  async deleteFromHistory(sessionId: string): Promise<void> {
+    this.history = JSON.stringify(
+      this.historyRecords().filter((held) => held.session.id !== sessionId),
+    );
+  }
+
   /**
    * What the repository is holding, read the way a test reads it rather than the way the app
    * does — synchronously, so an assertion does not have to be `await`ed.
    */
   activeRecord(): SessionRecord | null {
     return this.stored === null ? null : (JSON.parse(this.stored) as SessionRecord);
+  }
+
+  /** Every ended session it is holding, read the same way, most recently ended first. */
+  historyRecords(): readonly SessionRecord[] {
+    return JSON.parse(this.history) as readonly SessionRecord[];
   }
 }

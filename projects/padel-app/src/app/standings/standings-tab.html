@@ -1,6 +1,27 @@
 <section class="flex flex-col gap-5 px-4 py-6">
   <h1 class="text-2xl font-semibold tracking-tight text-ink">{{ copy.session.standings }}</h1>
 
+  @if (ended()) {
+    <section class="space-y-3 rounded-2xl border border-brand bg-surface-sunken p-4">
+      <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+        {{ copy.standings.podium }}
+      </h2>
+      <ol class="space-y-2">
+        @for (standing of podium(); track standing.playerId) {
+          <li class="flex items-baseline gap-3">
+            <span class="w-6 text-base font-semibold tabular-nums text-brand">
+              {{ standing.position }}
+            </span>
+            <span class="min-w-0 flex-1 truncate text-lg text-ink">{{ standing.name }}</span>
+            <span class="text-base font-semibold tabular-nums text-ink">
+              {{ copy.standings.rate(standing.pointsPerMatch, standing.matchesPlayed) }}
+            </span>
+          </li>
+        }
+      </ol>
+    </section>
+  }
+
   <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">
     @for (standing of standings(); track standing.playerId) {
       <li>
@@ -32,4 +53,14 @@
       </li>
     }
   </ul>
+
+  @if (!ended()) {
+    <button
+      type="button"
+      class="rounded-xl border border-line px-4 py-3 text-base font-semibold text-ink"
+      (click)="end()"
+    >
+      {{ copy.standings.end }}
+    </button>
+  }
 </section>

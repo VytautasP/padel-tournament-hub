@@ -13,15 +13,23 @@
  * paging left them — which is what lets one round at a time still answer "who am I with in round
  * six?" (ADR-0016 §2).
  *
- * One page past the last round is the Add round card. It is not a round, which is why `showing`
- * ranges one beyond the round count rather than being clamped to it: the place the evening
- * visibly runs out is the place the question gets asked (ADR-0016 §4), and it keeps a
- * schedule-lengthening button off the screen in use all night.
+ * One page past the last round is the Add round card. It is not a round, which is why the paging
+ * range runs one beyond the round count rather than stopping at it: the place the evening visibly
+ * runs out is the place the question gets asked (ADR-0016 §4), and it keeps a schedule-lengthening
+ * button off the screen in use all night.
  *
  * Tapping a court opens the score sheet for that one match, scored or not. Courts finish minutes
  * apart and corrections are ordinary (ADR-0007), so there is one gesture rather than two.
+ *
+ * **A finished session is the same tab with nothing to tap.** Every round it played is still paged
+ * through, because that is what a record of an evening is for; the courts stop being buttons, and
+ * the range stops one page earlier, because there is no round to add to a session the engine will
+ * take no operations on (ADR-0009). Nothing here is disabled — a control that cannot be used is
+ * still a control, and ADR-0013 asks for no editable control anywhere on a session read out of
+ * history.
  */
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Dialog } from '@angular/cdk/dialog';
 import { Overlay } from '@angular/cdk/overlay';
 import { copy } from '../copy/copy';
@@ -32,6 +40,7 @@ import { SessionStore } from '../session/session-store';
 
 @Component({
   selector: 'app-round-tab',
+  imports: [NgTemplateOutlet],
   templateUrl: './round-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -43,39 +52,58 @@ export class RoundTab {
   /**
    * The page the tab is showing: a round number, or one past the last round for the Add round
    * card. Set when the tab opens, moved only by the organizer, and never by a score landing.
+   *
+   * An evening in progress opens where it is. A finished one opens at round one, because it has
+   * no "where it is" left — the lowest unscored round of a session that has ended is a round
+   * nobody played, and opening a record there would show an empty court instead of the evening.
    */
-  protected readonly showing = signal(this.store.currentRoundNumber() ?? FIRST_ROUND);
+  protected readonly showing = signal(
+    this.store.readOnly() ? FIRST_ROUND : (this.store.currentRoundNumber() ?? FIRST_ROUND),
+  );
 
   protected readonly copy = copy;
 
-  protected readonly roundCount = computed(() => this.store.activeSession()?.rounds.length ?? 0);
+  /** Whether this session is a record being read rather than an evening being run. */
+  protected readonly readOnly = this.store.readOnly;
+
+  protected readonly roundCount = computed(() => this.store.openSession()?.rounds.length ?? 0);
 
   protected readonly round = computed(() => {
-    const session = this.store.activeSession();
+    const session = this.store.openSession();
 
     return session === null ? null : roundView(session, this.showing(), this.store.courtNames());
   });
 
   /**
-   * The page the Add round card is on: one past the last round generated (ADR-0016 §4).
+   * The last page there is something to show on: the Add round card while the evening is running,
+   * and the last round once it has ended.
    *
-   * It is the far end of the paging range as well as the card's address, which is why it is one
-   * expression rather than two — a range that stopped at the last round would put the card
-   * somewhere the organizer cannot page to.
+   * One expression rather than two, because it is the far end of the paging range as well as the
+   * card's address — a range that stopped at the last round would put the card somewhere the
+   * organizer cannot page to, and a range that ran past it on a finished session would page to a
+   * blank screen offering nothing.
    */
-  private readonly addRoundPage = computed(() => this.roundCount() + 1);
+  private readonly lastPage = computed(() =>
+    this.readOnly() ? this.roundCount() : this.roundCount() + 1,
+  );
 
   /** Whether the page on screen is the Add round card rather than a round. */
-  protected readonly pastTheLastRound = computed(() => this.showing() >= this.addRoundPage());
+  protected readonly pastTheLastRound = computed(() => this.showing() > this.roundCount());
 
   protected readonly canPage = computed(() => ({
     back: this.showing() > FIRST_ROUND,
-    forward: this.showing() < this.addRoundPage(),
+    forward: this.showing() < this.lastPage(),
   }));
 
-  /** Whether the round on screen is the one the evening is on, which is when there is no way back. */
-  protected readonly atCurrentRound = computed(
-    () => this.showing() === this.store.currentRoundNumber(),
+  /**
+   * Whether the way back to the current round is worth offering.
+   *
+   * Not on the round the evening is already on, and not on a finished session at all: an evening
+   * that has ended has no round it is on, so a link back to one would be pointing at whichever
+   * round happened to be unscored when the lights went off.
+   */
+  protected readonly canReturnToCurrentRound = computed(
+    () => !this.readOnly() && this.showing() !== this.store.currentRoundNumber(),
   );
 
   /**
@@ -109,7 +137,7 @@ export class RoundTab {
    * a round count that shrank under a stale page would otherwise render nothing at all.
    */
   protected show(page: number): void {
-    this.showing.set(Math.min(Math.max(page, FIRST_ROUND), this.addRoundPage()));
+    this.showing.set(Math.min(Math.max(page, FIRST_ROUND), this.lastPage()));
   }
 
   protected backToCurrentRound(): void {
@@ -128,7 +156,7 @@ export class RoundTab {
 
   /** Open the sheet for one court, and record whatever comes back out of it. */
   protected async score(court: CourtView): Promise<void> {
-    const session = this.store.activeSession();
+    const session = this.store.openSession();
     if (session === null) {
       return;
     }
