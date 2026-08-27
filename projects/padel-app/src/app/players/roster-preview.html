@@ -15,15 +15,8 @@
 
         <ul class="space-y-2">
           @for (court of round.courts; track court.courtNumber) {
-            <li class="space-y-1 rounded-xl border border-line bg-surface-sunken p-3">
-              <span class="block text-xs font-medium tracking-wide text-ink-muted uppercase">
-                {{ court.name }}
-              </span>
-              <span class="block text-base text-ink">{{ copy.round.side(court.sideA) }}</span>
-              <span class="block text-xs tracking-wide text-ink-muted uppercase">
-                {{ copy.round.versus }}
-              </span>
-              <span class="block text-base text-ink">{{ copy.round.side(court.sideB) }}</span>
+            <li class="rounded-xl border border-line bg-surface-sunken p-3">
+              <app-court-card class="block space-y-1" [court]="court" />
             </li>
           }
         </ul>

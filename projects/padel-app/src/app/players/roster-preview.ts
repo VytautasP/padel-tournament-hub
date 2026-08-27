@@ -20,14 +20,15 @@
  * honesty of the whole interaction: there is no state in which the schedule is rejected and the
  * roster change kept, so backing out is backing out of the cause.
  */
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, Injectable } from '@angular/core';
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Overlay } from '@angular/cdk/overlay';
-import { firstValueFrom } from 'rxjs';
 import type { Session } from 'padel-engine';
 import { copy } from '../copy/copy';
+import { CourtCard } from '../round/court-card';
 import { roundView } from '../round/round-view';
 import type { RoundView } from '../round/round-view';
+import { openBottomSheet } from '../sheet/bottom-sheet';
 
 export interface RosterPreviewData {
   /** The evening as it would be. Stored by the caller if this sheet closes with `true`. */
@@ -45,11 +46,12 @@ export interface RosterPreviewData {
 }
 
 @Component({
-  selector: 'app-roster-preview',
+  selector: 'app-roster-preview-sheet',
+  imports: [CourtCard],
   templateUrl: './roster-preview.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RosterPreview {
+export class RosterPreviewSheet {
   protected readonly data = inject<RosterPreviewData>(DIALOG_DATA);
 
   private readonly sheetRef = inject<DialogRef<boolean>>(DialogRef);
@@ -78,23 +80,33 @@ export class RosterPreview {
 }
 
 /**
- * Show the regenerated remainder, and answer whether the organizer caused it.
+ * Asking the question, from the screen where the roster moves.
  *
- * Every way out of the sheet that is not the action button — the dismissal, the backdrop, Escape —
- * answers `false`, which is what makes the candidate safe: the change happens on one tap and on
- * nothing else.
+ * A service rather than a function taking `Dialog` and `Overlay` for the reason `Confirm` is one:
+ * those two always travel together and neither is anything the Players tab has an opinion about. A
+ * screen holding both would be holding the machinery of a bottom sheet in order to show a
+ * schedule.
  */
-export function openRosterPreview(
-  dialog: Dialog,
-  overlay: Overlay,
-  data: RosterPreviewData,
-): Promise<boolean> {
-  const sheet = dialog.open<boolean, RosterPreviewData>(RosterPreview, {
-    data,
-    positionStrategy: overlay.position().global().bottom().centerHorizontally(),
-    width: '100%',
-    maxWidth: '28rem',
-  });
+@Injectable({ providedIn: 'root' })
+export class RosterPreview {
+  private readonly dialog = inject(Dialog);
+  private readonly overlay = inject(Overlay);
 
-  return firstValueFrom(sheet.closed).then((confirmed) => confirmed === true);
+  /**
+   * Show the regenerated remainder, and answer whether the organizer caused it.
+   *
+   * Every way out of the sheet that is not the action button — the dismissal, the backdrop, Escape
+   * — answers `false`, which is what makes the candidate safe: the change happens on one tap and
+   * on nothing else.
+   */
+  async granted(data: RosterPreviewData): Promise<boolean> {
+    const confirmed = await openBottomSheet<boolean, RosterPreviewData>(
+      this.dialog,
+      this.overlay,
+      RosterPreviewSheet,
+      data,
+    );
+
+    return confirmed === true;
+  }
 }

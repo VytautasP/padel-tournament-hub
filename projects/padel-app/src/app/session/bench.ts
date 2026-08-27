@@ -37,7 +37,7 @@ export function benchedIn(session: Session, roundNumber: number): readonly Roste
  * The window is the engine's, read rather than recomputed: absent bounds mean "since the start"
  * and "still here", which is what a session written before roster changes existed carries.
  */
-export function isHereForRound(entry: RosterEntry, roundNumber: number): boolean {
+function isHereForRound(entry: RosterEntry, roundNumber: number): boolean {
   return (
     (entry.joinedAtRound ?? 1) <= roundNumber && roundNumber <= (entry.leftAfterRound ?? Infinity)
   );

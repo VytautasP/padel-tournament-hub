@@ -25,10 +25,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Overlay } from '@angular/cdk/overlay';
-import { firstValueFrom } from 'rxjs';
 import type { ScoreEntry, Side } from 'padel-engine';
 import { copy } from '../copy/copy';
 import type { CourtView } from '../round/round-view';
+import { openBottomSheet } from '../sheet/bottom-sheet';
 
 /** The court that was tapped, and the total its two numbers have to add up to. */
 export interface ScoreSheetData {
@@ -133,24 +133,16 @@ export class ScoreSheet {
 /**
  * Open the sheet for one court and wait for the number, or for nothing.
  *
- * Opening it lives here rather than at the call site because *bottom* sheet is a fact about this
- * component (ADR-0014 §1): it opens under the thumb that tapped the court, not in the middle of a
- * screen the same thumb cannot reach. A caller that had to say so would be a caller that could
- * forget to.
+ * Opening it lives here rather than at the call site because where it opens is a fact about this
+ * component rather than about the screen that asked for it (ADR-0014 §1). A caller that had to say
+ * so would be a caller that could forget to.
  */
 export function openScoreSheet(
   dialog: Dialog,
   overlay: Overlay,
   data: ScoreSheetData,
 ): Promise<ScoreEntry | undefined> {
-  const sheet = dialog.open<ScoreEntry | undefined, ScoreSheetData>(ScoreSheet, {
-    data,
-    positionStrategy: overlay.position().global().bottom().centerHorizontally(),
-    width: '100%',
-    maxWidth: '28rem',
-  });
-
-  return firstValueFrom(sheet.closed);
+  return openBottomSheet<ScoreEntry, ScoreSheetData>(dialog, overlay, ScoreSheet, data);
 }
 
 /**

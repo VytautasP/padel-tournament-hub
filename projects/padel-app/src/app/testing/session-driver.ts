@@ -122,6 +122,21 @@ export function shownRoundNumber(app: AppHarness): number {
   return Number(heading[1]);
 }
 
+/**
+ * The id the session gave one of its players.
+ *
+ * Every spec that says something about a named player has to cross from the name it typed to the
+ * id the document holds, because identity is by id and never by name (decision #9).
+ */
+export function idOf(app: AppHarness, name: string): string {
+  const entry = storedSession(app).roster.find((candidate) => candidate.name === name);
+  if (entry === undefined) {
+    throw new Error(`Nobody called ${name} is on the roster.`);
+  }
+
+  return entry.id;
+}
+
 export function storedSession(app: AppHarness): Session {
   const record = app.repository.activeRecord();
   if (record === null) {

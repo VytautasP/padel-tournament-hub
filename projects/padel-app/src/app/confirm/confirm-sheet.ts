@@ -17,8 +17,8 @@
 import { ChangeDetectionStrategy, Component, inject, Injectable } from '@angular/core';
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Overlay } from '@angular/cdk/overlay';
-import { firstValueFrom } from 'rxjs';
 import { copy } from '../copy/copy';
+import { openBottomSheet } from '../sheet/bottom-sheet';
 
 /** What is being confirmed, in the organizer's words. */
 export interface ConfirmData {
@@ -70,13 +70,13 @@ export class Confirm {
    * sheet that is not the button leaves the evening exactly as it was.
    */
   async granted(data: ConfirmData): Promise<boolean> {
-    const sheet = this.dialog.open<boolean, ConfirmData>(ConfirmSheet, {
+    const confirmed = await openBottomSheet<boolean, ConfirmData>(
+      this.dialog,
+      this.overlay,
+      ConfirmSheet,
       data,
-      positionStrategy: this.overlay.position().global().bottom().centerHorizontally(),
-      width: '100%',
-      maxWidth: '28rem',
-    });
+    );
 
-    return (await firstValueFrom(sheet.closed)) === true;
+    return confirmed === true;
   }
 }

@@ -175,7 +175,11 @@ export const copy = {
      */
     options: (name: string): string => `Options for ${name}`,
     optionsGlyph: '⋯',
-    sendHome: 'Went home',
+    /**
+     * The one thing in the overflow. It says the same words as the badge it produces, because it
+     * records the same fact: the player went home. Nobody is being removed (CONTEXT.md).
+     */
+    wentHome: 'Went home',
     /**
      * Why an evening at the minimum offers nobody the door.
      *

@@ -75,10 +75,10 @@ export interface RosterChange {
    * The evening it was planned against.
    *
    * Kept so that committing can refuse a candidate whose session has moved on underneath it. The
-   * preview covers the screen while it is open, so this should never happen — and a score
-   * silently thrown away by a stale candidate is not a thing to find out about later.
+   * preview covers the screen while it is open, so this should never happen — and a score silently
+   * thrown away by a stale candidate is not a thing to find out about later.
    */
-  readonly from: Session;
+  readonly plannedAgainst: Session;
   /**
    * The first round the preview renders: the round the evening is on.
    *
@@ -289,7 +289,7 @@ export class SessionStore {
    * stretch of the evening they are here for. The engine refuses a departure that would leave a
    * round it cannot staff, which is why the Players tab does not offer one.
    */
-  planDeparture(playerId: PlayerId): RosterChange {
+  planGoingHome(playerId: PlayerId): RosterChange {
     return this.plan((session) => removePlayer(session, playerId));
   }
 
@@ -299,7 +299,7 @@ export class SessionStore {
    */
   async commitRosterChange(change: RosterChange): Promise<void> {
     await this.change('change the roster of', (session) => {
-      if (session !== change.from) {
+      if (session !== change.plannedAgainst) {
         throw new Error('The evening has moved since this roster change was planned.');
       }
 
@@ -364,13 +364,16 @@ export class SessionStore {
    */
   private plan(apply: (session: Session) => Session): RosterChange {
     const current = this.record();
-    if (current === null) {
-      throw new Error('There is no active session to change the roster of.');
+    if (current === null || this.openSession() !== current.session) {
+      // Always the evening in progress, and only while it is the evening on screen. A session read
+      // out of history is finished and the engine would refuse it — but it would be refused after
+      // a preview had been built from it, which is a screen offering a change that cannot happen.
+      throw new Error('The session on screen is not an evening in progress.');
     }
 
     return {
       candidate: apply(current.session),
-      from: current.session,
+      plannedAgainst: current.session,
       fromRound: currentRoundNumber(current.session),
     };
   }

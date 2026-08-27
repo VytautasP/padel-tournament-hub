@@ -15,7 +15,7 @@
             </span>
           }
 
-          @if (!ended() && !row.gone && canSendAnybodyHome()) {
+          @if (!ended() && !row.gone && canAnybodyGoHome()) {
             <button
               type="button"
               class="rounded-full border border-line px-3 py-1 text-ink-muted"
@@ -32,9 +32,9 @@
           <button
             type="button"
             class="w-full rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
-            (click)="sendHome(row)"
+            (click)="wentHome(row)"
           >
-            {{ copy.players.sendHome }}
+            {{ copy.players.wentHome }}
           </button>
         }
       </li>
@@ -42,7 +42,7 @@
   </ul>
 
   @if (!ended()) {
-    @if (!canSendAnybodyHome()) {
+    @if (!canAnybodyGoHome()) {
       <p class="text-sm text-ink-muted">{{ copy.players.nobodyCanLeave(minimumPlayers) }}</p>
     }
 

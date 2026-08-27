@@ -15,7 +15,7 @@
 import { addPlayer, removePlayer } from 'padel-engine';
 import type { Round, Session } from 'padel-engine';
 import type { AppHarness } from './testing/app-harness';
-import { createSession, score, storedSession } from './testing/session-driver';
+import { createSession, idOf, score, storedSession } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 const SIX = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin', 'Finn'];
@@ -285,15 +285,6 @@ function offTheCourtsIn(app: AppHarness, roundNumber: number): readonly string[]
 
 function without(names: readonly string[], name: string): readonly string[] {
   return names.filter((candidate) => candidate !== name);
-}
-
-function idOf(app: AppHarness, name: string): string {
-  const entry = storedSession(app).roster.find((candidate) => candidate.name === name);
-  if (entry === undefined) {
-    throw new Error(`Nobody called ${name} is on the roster.`);
-  }
-
-  return entry.id;
 }
 
 /**

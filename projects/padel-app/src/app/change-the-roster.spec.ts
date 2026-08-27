@@ -13,7 +13,7 @@
  */
 import type { Session } from 'padel-engine';
 import type { AppHarness } from './testing/app-harness';
-import { createSession, endSession, score, storedSession } from './testing/session-driver';
+import { createSession, endSession, idOf, score, storedSession } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 const SIX = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin', 'Finn'];
@@ -67,7 +67,7 @@ describe('changing the roster mid-session', () => {
   });
 
   describe('adding a player', () => {
-    it('previews the whole regenerated remainder before anything is stored', async () => {
+    it('previews the whole remainder from the current round on, and stores nothing yet', async () => {
       const app = await createSession(SIX);
       await score(app, 17);
       const before = JSON.stringify(storedSession(app));
@@ -79,8 +79,30 @@ describe('changing the roster mid-session', () => {
       expect(app.shows('Round 2 of 8')).toBe(true);
       expect(app.shows('Round 8 of 8')).toBe(true);
       expect(app.shows('Round 1 of 8')).toBe(false);
-      expect(app.shows('Gita')).toBe(true);
       expect(JSON.stringify(storedSession(app))).toBe(before);
+    });
+
+    it('renders the schedule it is about to cause, not the one it would replace', async () => {
+      // The whole worth of the preview. Every side of every round from the current one on is read
+      // off the screen while nothing is stored, and then checked against what the confirmed change
+      // actually wrote — so a preview showing the *old* rotation, which is the failure this is
+      // written against, cannot pass it.
+      const app = await createSession(SIX);
+      await score(app, 17);
+      const replaced = sidesFrom(storedSession(app), 2);
+
+      await app.tap('Players');
+      await app.type('Name', 'Gita');
+      await app.tap('Add');
+      const previewed = app.text();
+      await app.tap('Add Gita');
+
+      const caused = sidesFrom(storedSession(app), 2);
+      expect(caused).not.toEqual(replaced);
+      for (const side of caused) {
+        expect(previewed).toContain(side);
+      }
+      expect(caused.some((side) => side.includes('Gita'))).toBe(true);
     });
 
     it('offers no way to generate a different one', async () => {
@@ -166,7 +188,7 @@ describe('changing the roster mid-session', () => {
       await score(app, 17);
       const before = JSON.stringify(storedSession(app));
 
-      await sendHome(app, 'Finn', { confirm: false });
+      await goesHome(app, 'Finn', { confirm: false });
 
       expect(JSON.stringify(storedSession(app))).toBe(before);
       app.expectStoredSessionValid();
@@ -178,7 +200,7 @@ describe('changing the roster mid-session', () => {
       const leaver = roundOne.a.split(' & ')[0];
       const playedBefore = JSON.stringify(storedSession(app).rounds.slice(0, 1));
 
-      await sendHome(app, leaver);
+      await goesHome(app, leaver);
 
       const session = storedSession(app);
       const id = idOf(app, leaver);
@@ -195,7 +217,7 @@ describe('changing the roster mid-session', () => {
       const roundOne = await score(app, 17);
       const leaver = roundOne.a.split(' & ')[0];
 
-      await sendHome(app, leaver);
+      await goesHome(app, leaver);
       await app.tap('Standings');
 
       expect(app.shows(leaver)).toBe(true);
@@ -205,7 +227,7 @@ describe('changing the roster mid-session', () => {
       const app = await createSession(SIX);
       await score(app, 17);
 
-      await sendHome(app, 'Finn');
+      await goesHome(app, 'Finn');
 
       expect(app.shows('Finn Went home')).toBe(true);
       expect(app.isOnScreen('Options for Finn')).toBe(false);
@@ -244,8 +266,8 @@ async function addPlayer(app: AppHarness, name: string): Promise<void> {
   await app.tap(`Add ${name}`);
 }
 
-/** Send a player home through the row overflow, confirming the preview unless told not to. */
-async function sendHome(
+/** Record that a player went home, through the row overflow, confirming unless told not to. */
+async function goesHome(
   app: AppHarness,
   name: string,
   { confirm = true }: { confirm?: boolean } = {},
@@ -276,6 +298,22 @@ function playersIn(session: Session, roundNumber: number): readonly string[] {
   return (round?.matches ?? []).flatMap((match) => [...match.sideA, ...match.sideB]);
 }
 
+/**
+ * Every side of every court from `fromRound` on, spelled the way a screen spells one: `Ana & Ben`.
+ *
+ * Read off the stored document rather than off the screen, because it is what the *screen* is
+ * checked against — a helper that read the preview to check the preview would agree with anything.
+ */
+function sidesFrom(session: Session, fromRound: number): readonly string[] {
+  const nameOf = (id: string): string =>
+    session.roster.find((entry) => entry.id === id)?.name ?? id;
+
+  return session.rounds
+    .filter((round) => round.number >= fromRound)
+    .flatMap((round) => round.matches)
+    .flatMap((match) => [match.sideA.map(nameOf).join(' & '), match.sideB.map(nameOf).join(' & ')]);
+}
+
 /** The names the bench strip on the Round tab is naming right now, in the order it names them. */
 function benchStripNames(app: AppHarness): readonly string[] {
   const strip = /Sitting out: (.*?) Round /.exec(app.text());
@@ -288,13 +326,4 @@ function badgedNames(app: AppHarness): readonly string[] {
   return storedSession(app)
     .roster.map((entry) => entry.name)
     .filter((name) => app.shows(`${name} Sitting out`));
-}
-
-function idOf(app: AppHarness, name: string): string {
-  const entry = storedSession(app).roster.find((candidate) => candidate.name === name);
-  if (entry === undefined) {
-    throw new Error(`Nobody called ${name} is on the roster.`);
-  }
-
-  return entry.id;
 }

@@ -35,14 +35,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Dialog } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
 import type { PlayerId } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { MINIMUM_PLAYERS } from '../session/round-defaults';
 import { SessionStore } from '../session/session-store';
 import type { RosterChange } from '../session/session-store';
-import { openRosterPreview } from './roster-preview';
+import { RosterPreview } from './roster-preview';
 import { rosterView } from './roster-view';
 import type { PlayerRow } from './roster-view';
 
@@ -53,8 +51,7 @@ import type { PlayerRow } from './roster-view';
 })
 export class PlayersTab {
   private readonly store = inject(SessionStore);
-  private readonly dialog = inject(Dialog);
-  private readonly overlay = inject(Overlay);
+  private readonly preview = inject(RosterPreview);
 
   /** The one row whose overflow is open, if any. One at a time, like the Resume card's. */
   private readonly openRow = signal<PlayerId | null>(null);
@@ -82,7 +79,7 @@ export class PlayersTab {
    * people are left: the round after the next departure needs four of them, and which four is not
    * a question anybody is asking.
    */
-  protected readonly canSendAnybodyHome = computed(
+  protected readonly canAnybodyGoHome = computed(
     () => this.rows().filter((row) => !row.gone).length > MINIMUM_PLAYERS,
   );
 
@@ -120,11 +117,11 @@ export class PlayersTab {
   }
 
   /** Record that this player has gone home, once the organizer has read what it reschedules. */
-  protected async sendHome(row: PlayerRow): Promise<void> {
+  protected async wentHome(row: PlayerRow): Promise<void> {
     this.openRow.set(null);
 
     await this.previewed(
-      this.store.planDeparture(row.id),
+      this.store.planGoingHome(row.id),
       copy.players.preview.confirmDeparture(row.name),
     );
   }
@@ -137,7 +134,7 @@ export class PlayersTab {
    * to in code (ADR-0015).
    */
   private async previewed(change: RosterChange, action: string): Promise<boolean> {
-    const confirmed = await openRosterPreview(this.dialog, this.overlay, {
+    const confirmed = await this.preview.granted({
       candidate: change.candidate,
       courtNames: this.store.courtNames(),
       fromRound: change.fromRound,
@@ -151,11 +148,8 @@ export class PlayersTab {
     return confirmed;
   }
 
+  /** Hand the field back for the next name. What it holds is the binding's business, not this. */
   private focusField(): void {
-    const element = this.field()?.nativeElement;
-    if (element !== undefined) {
-      element.value = this.typed();
-      element.focus();
-    }
+    this.field()?.nativeElement.focus();
   }
 }
