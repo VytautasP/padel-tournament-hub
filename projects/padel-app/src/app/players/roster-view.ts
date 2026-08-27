@@ -10,13 +10,10 @@
  * That is the whole reason that file exists: an organizer reading a strip that says Cara is out
  * and a row that does not is looking at a disagreement they cannot resolve, standing next to Cara.
  */
-import type { OrphanedTeam, PlayerId, Session, Team } from 'padel-engine';
+import type { OrphanedTeam, PlayerId, Session, Team, TeamId } from 'padel-engine';
 import { benchedIn, hasGoneHome } from '../session/bench';
-import { MINIMUM_PLAYERS, PLAYERS_PER_TEAM } from '../session/round-defaults';
+import { MINIMUM_PLAYERS, PLAYERS_PER_TEAM, TEAMS_PER_COURT } from '../session/round-defaults';
 import { playsAsTeams, teamNameIn, teamOf, teamsIn } from '../session/teams';
-
-/** The fewest teams a round can be scheduled from: one on each side of the net. */
-const TEAMS_PER_COURT = 2;
 
 export interface PlayerRow {
   readonly id: PlayerId;
@@ -33,7 +30,7 @@ export interface PlayerRow {
    */
   readonly team: string | null;
   /** That team's id, which is what a repair is addressed to. */
-  readonly teamId: string | null;
+  readonly teamId: TeamId | null;
   /**
    * Whether this is the half of a pair whose partner went home (decision #2b, ADR-0012).
    *

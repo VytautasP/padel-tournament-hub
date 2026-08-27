@@ -244,7 +244,7 @@ describe('assigning a new partner', () => {
 
     // She joins in round 3 and plays exactly as t1 plays. Counting her sit-outs against a player
     // who has been here since round 1 compares her with an evening she was not at — the unit the
-    // bye falls on is the team (decision #2c, ADR-0011).
+    // bye falls on is the team (decision #2c, ADR-0020).
     expectFairAtEveryPrefix(repaired);
   });
 

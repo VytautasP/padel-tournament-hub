@@ -36,6 +36,9 @@ export const MINIMUM_PLAYERS = 4;
  */
 export const PLAYERS_PER_TEAM = 2;
 
+/** Two teams fill a court — one on each side of the net, which is what makes a team the unit. */
+export const TEAMS_PER_COURT = 2;
+
 /**
  * How many rounds it takes for everyone to have partnered everyone — capped.
  *
@@ -51,7 +54,28 @@ export const PLAYERS_PER_TEAM = 2;
 export function completeRotationRoundCount(playerCount: number, courtCount: number): number {
   const courtsInPlay = Math.max(1, Math.min(courtCount, Math.floor(playerCount / MINIMUM_PLAYERS)));
   const pairs = (playerCount * (playerCount - 1)) / 2;
-  const rounds = Math.ceil(pairs / (courtsInPlay * 2));
 
-  return Math.min(Math.max(1, rounds), MAX_SUGGESTED_ROUND_COUNT);
+  return capped(pairs / (courtsInPlay * 2));
+}
+
+/**
+ * The same question asked of the unit Team Americano rotates: how many rounds it takes for every
+ * team to have faced every other one (ADR-0011).
+ *
+ * A different sum rather than the same one with different numbers in it. Americano's rotation is
+ * over *partnerships*, two of which are consumed per court; here the partnerships are fixed and
+ * what rotates is the fixture list, one of which is consumed per court. Handing the players'
+ * formula a team count would suggest an evening several times longer than the one that has any
+ * rounds left to be new.
+ */
+export function completeTeamRotationRoundCount(teamCount: number, courtCount: number): number {
+  const courtsInPlay = Math.max(1, Math.min(courtCount, Math.floor(teamCount / TEAMS_PER_COURT)));
+  const fixtures = (teamCount * (teamCount - 1)) / 2;
+
+  return capped(fixtures / courtsInPlay);
+}
+
+/** At least one round, at most the cap, and always a whole number of them. */
+function capped(rounds: number): number {
+  return Math.min(Math.max(1, Math.ceil(rounds)), MAX_SUGGESTED_ROUND_COUNT);
 }

@@ -35,7 +35,7 @@ export { createSession } from './lib/create-session';
 export { addRound } from './lib/add-round';
 export { addPlayer, removePlayer } from './lib/change-roster';
 export { assignPartner } from './lib/assign-partner';
-export { teamsNeedingPartner } from './lib/teams';
+export { teamsNeedingPartner, teamsOnByeIn } from './lib/teams';
 export { generateRemaining } from './lib/generate-remaining';
 export { finishSession } from './lib/finish-session';
 export { recordScore } from './lib/record-score';

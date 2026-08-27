@@ -82,7 +82,7 @@ export async function createMixicanoSession(
  * Two names rather than two ids, because ids do not exist yet: the pairing screen is walked before
  * the session it describes has been created, and the names are what is on screen to tap.
  */
-export type DraftPair = readonly [string, string];
+export type NamedPair = readonly [string, string];
 
 /**
  * Create a Team Americano through the wizard: the same walk, plus the step that pairs the roster.
@@ -92,7 +92,7 @@ export type DraftPair = readonly [string, string];
  * (decision #2a).
  */
 export async function createTeamAmericanoSession(
-  pairs: readonly DraftPair[],
+  pairs: readonly NamedPair[],
   courtCount = 1,
   targetScore = 24,
 ): Promise<AppHarness> {

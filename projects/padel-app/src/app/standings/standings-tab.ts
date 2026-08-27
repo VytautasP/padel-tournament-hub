@@ -24,6 +24,7 @@
  * three *are* the standings, so a podium screen would render the same rows twice.
  */
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import type { PlayerId, TeamId } from 'padel-engine';
 import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
 import { SessionStore } from '../session/session-store';
@@ -38,7 +39,7 @@ export class StandingsTab {
   private readonly store = inject(SessionStore);
   private readonly confirm = inject(Confirm);
   /** Which rows are open, by competitor id — a player's, or a team's (ADR-0011). */
-  private readonly expanded = signal<readonly string[]>([]);
+  private readonly expanded = signal<readonly (PlayerId | TeamId)[]>([]);
 
   protected readonly copy = copy;
   protected readonly standings = this.store.standings;
@@ -48,11 +49,11 @@ export class StandingsTab {
 
   protected readonly podium = computed(() => podiumOf(this.standings()));
 
-  protected isExpanded(id: string): boolean {
+  protected isExpanded(id: PlayerId | TeamId): boolean {
     return this.expanded().includes(id);
   }
 
-  protected toggle(id: string): void {
+  protected toggle(id: PlayerId | TeamId): void {
     this.expanded.update((open) =>
       open.includes(id) ? open.filter((held) => held !== id) : [...open, id],
     );

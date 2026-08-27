@@ -31,10 +31,12 @@
  *
  * **An evening at the minimum offers nobody the door.** The engine refuses a round it cannot staff
  * (decision #4), so on a four-player evening there is no departure to offer and the overflow is
- * absent rather than disabled — and in Team Americano that is a question per row rather than per
- * list, because a round needs two teams with both their players (`roster-view.ts`) — with the sentence that says why, because a control that vanishes
- * without explanation is a bug from the outside. A session that has ended is read-only for the
- * same reason it is everywhere else (ADR-0013): the engine takes no operation on it.
+ * absent rather than disabled, with the sentence that says why — a control that vanishes without
+ * explanation is a bug from the outside. In Team Americano that is a question per row rather than
+ * per list, because a round needs two teams with both their players (`roster-view.ts`).
+ *
+ * A session that has ended is read-only for the same reason it is everywhere else (ADR-0013): the
+ * engine takes no operation on it.
  */
 import {
   ChangeDetectionStrategy,
@@ -47,7 +49,8 @@ import {
 } from '@angular/core';
 import type { Gender, PlayerId } from 'padel-engine';
 import { copy } from '../copy/copy';
-import { MINIMUM_PLAYERS } from '../session/round-defaults';
+import { MINIMUM_PLAYERS, TEAMS_PER_COURT } from '../session/round-defaults';
+import { playsAsTeams } from '../session/teams';
 import { newPlayer, SessionStore } from '../session/session-store';
 import type { RosterChange } from '../session/session-store';
 import { GenderToggle } from './gender-toggle';
@@ -75,6 +78,7 @@ export class PlayersTab {
 
   protected readonly copy = copy;
   protected readonly minimumPlayers = MINIMUM_PLAYERS;
+  protected readonly teamsPerCourt = TEAMS_PER_COURT;
   protected readonly typed = signal('');
 
   /** The answer for the player being typed, or `null` while the question is unanswered. */
@@ -82,6 +86,20 @@ export class PlayersTab {
 
   /** Whether this evening pairs across gender, which is the whole of whether the toggle is here. */
   protected readonly asksGender = computed(() => this.store.openSession()?.mode === 'mixicano');
+
+  /**
+   * Whether the competitor is a pair — which is the whole of whether a name can be added at all.
+   *
+   * In Team Americano nobody arrives on their own: a player joins as somebody's partner or not at
+   * all, and the engine refuses the lone arrival outright (`change-roster.ts`). So the field is
+   * absent rather than offered and then refused, with the sentence that says where the one
+   * arrival this format has actually lives.
+   */
+  protected readonly playsAsTeams = computed(() => {
+    const session = this.store.openSession();
+
+    return session !== null && playsAsTeams(session);
+  });
 
   /**
    * Whether a late arrival can be taken on at all yet.

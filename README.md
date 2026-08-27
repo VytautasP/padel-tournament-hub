@@ -50,7 +50,8 @@ pair goes home the team keeps its slot and its points and the other half is flag
 `needs partner`, until a replacement repairs the team or the stranded player leaves too; see
 [ADR-0012](docs/adr/0012-an-orphaned-team-keeps-its-slot-and-the-fixture-ledger-restarts-with-the-field.md).
 **The app runs an evening end to end, in every format.** `padel-app` opens on a landing page, walks
-a wizard of three steps — mode, names, then a review screen already holding a target of 24, one
+a wizard of three steps — four in Team Americano — mode, names, then a review screen already
+holding a target of 24, one
 court, a complete rotation capped at 12 and a name per court, pre-filled `Court 1…N` for the club
 that books courts 7 and 8 (ADR-0017 §6) — and generates the schedule. The session is a
 three-tab shell (ADR-0016): the Round tab renders the round the evening is on — every court, both

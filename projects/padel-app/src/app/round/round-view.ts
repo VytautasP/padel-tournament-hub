@@ -17,11 +17,11 @@
  * typo in round 6 re-marks round 1 rather than leaving it wrong. Nothing in this file stores it,
  * and there is nowhere it could be stored.
  */
-import { sameGenderSides } from 'padel-engine';
+import { sameGenderSides, teamsOnByeIn } from 'padel-engine';
 import type { MatchId, MatchScore, PlayerId, Session } from 'padel-engine';
 import { benchedIn } from '../session/bench';
 import { courtNameFor } from '../session/court-names';
-import { playsAsTeams, teamNameIn, teamsOnByeIn } from '../session/teams';
+import { playsAsTeams, teamNameIn } from '../session/teams';
 
 /** One half of a court: who is on it, and whether the roster forced them together. */
 export interface SideView {

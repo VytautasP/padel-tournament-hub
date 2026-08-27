@@ -48,6 +48,7 @@ import {
 import { rowsOfPlayers, rowsOfTeams } from '../standings/standing-row';
 import type { StandingRow } from '../standings/standing-row';
 import { currentRoundNumber } from './current-round';
+import { teamNameOf } from './teams';
 import type { SessionRecord } from './session-record';
 import { SESSION_REPOSITORY } from './session-repository';
 import { summarise } from './session-summary';
@@ -303,7 +304,7 @@ export class SessionStore {
         players,
         // Absent rather than empty where the mode pairs nobody: the engine reads a `teams` key at
         // all as a claim that this session has teams, and refuses one from a mode that has none.
-        ...(draft.teams ? { teams: draft.teams.map(teamOf(id, players)) } : {}),
+        ...(draft.teams ? { teams: draft.teams.map(pairedTeam(id, players)) } : {}),
         courtCount: draft.courtCount,
         targetScore: draft.targetScore,
         roundCount: draft.roundCount,
@@ -454,7 +455,7 @@ export class SessionStore {
    */
   private tableOf(session: Session): readonly StandingRow[] {
     return session.mode === 'team-americano'
-      ? rowsOfTeams(computeTeamStandings(session))
+      ? rowsOfTeams(computeTeamStandings(session), (teamId) => teamNameOf(session, teamId))
       : rowsOfPlayers(computeStandings(session));
   }
 
@@ -529,7 +530,7 @@ function rosterEntry(sessionId: string, index: number, player: NewPlayer): Roste
  * are and for the same reason (decision #9) — a schedule has to be reproducible from the document
  * when somebody disputes it, and a team is what a Team Americano schedule is made of.
  */
-function teamOf(
+function pairedTeam(
   sessionId: string,
   players: readonly RosterEntry[],
 ): (pairing: DraftPairing, index: number) => Team {

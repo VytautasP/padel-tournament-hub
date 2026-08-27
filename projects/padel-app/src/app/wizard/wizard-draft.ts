@@ -15,6 +15,7 @@ import type { Gender, SessionMode } from 'padel-engine';
 import { copy } from '../copy/copy';
 import {
   completeRotationRoundCount,
+  completeTeamRotationRoundCount,
   DEFAULT_COURT_COUNT,
   DEFAULT_TARGET_SCORE,
   MINIMUM_PLAYERS,
@@ -105,7 +106,14 @@ export class WizardDraft {
    * noticed after the evening has run the wrong length.
    */
   readonly suggestedRoundCount = computed(() =>
-    completeRotationRoundCount(this.entries().length, this.courtCount()),
+    // A complete rotation is over whatever this mode rotates: partnerships in the modes that make
+    // new ones every round, and the fixture list where the pairs are fixed (ADR-0011).
+    this.asksPairing()
+      ? completeTeamRotationRoundCount(
+          Math.floor(this.entries().length / PLAYERS_PER_TEAM),
+          this.courtCount(),
+        )
+      : completeRotationRoundCount(this.entries().length, this.courtCount()),
   );
 
   private readonly chosenRoundCount = signal<number | null>(null);
@@ -337,9 +345,15 @@ export class WizardDraft {
   private draftTeams(): readonly DraftPairing[] {
     const position = new Map(this.entries().map((player, index) => [player.id, index]));
 
-    return this.livePairs().map(
-      ([first, second]) => [position.get(first) ?? 0, position.get(second) ?? 0] as const,
-    );
+    return this.livePairs().flatMap(([first, second]) => {
+      const one = position.get(first);
+      const other = position.get(second);
+
+      // A pair naming somebody the roster no longer holds is dropped rather than defaulted. Both
+      // halves are on the list by construction — `livePairs` is pruned to it — and a miss that
+      // quietly became "the first name typed" would pair two people who never agreed to it.
+      return one === undefined || other === undefined ? [] : [[one, other] as const];
+    });
   }
 
   toSessionDraft(): SessionDraft {

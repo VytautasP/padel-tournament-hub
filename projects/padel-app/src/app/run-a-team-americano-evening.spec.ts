@@ -29,16 +29,16 @@ import {
   score,
   storedSession,
 } from './testing/session-driver';
-import type { DraftPair } from './testing/session-driver';
+import type { NamedPair } from './testing/session-driver';
 
 /** Two teams: one court, nobody on a bye, and the smallest evening this format can be. */
-const TWO_TEAMS: readonly DraftPair[] = [
+const TWO_TEAMS: readonly NamedPair[] = [
   ['Ana', 'Ben'],
   ['Cara', 'Dov'],
 ];
 
 /** Three teams on one court: two play, one takes the bye, and a team can afford to lose a half. */
-const THREE_TEAMS: readonly DraftPair[] = [
+const THREE_TEAMS: readonly NamedPair[] = [
   ['Ana', 'Ben'],
   ['Cara', 'Dov'],
   ['Elin', 'Finn'],
@@ -168,6 +168,14 @@ describe('running a Team Americano evening', () => {
       expect(teamRowsOnScreen(app)).toEqual(['Ana & Ben', 'Cara & Dov']);
     });
 
+    it('suggests a round count that is a rotation of teams, not of partnerships', async () => {
+      const app = await createTeamAmericanoSession(THREE_TEAMS);
+
+      // Three teams have three fixtures and one court plays one of them a round. Counting the
+      // fifteen partnerships six players hold would plan an evening five times too long.
+      expect(storedSession(app).rounds).toHaveLength(3);
+    });
+
     it('renders a joint position the way it does for players', async () => {
       const app = await createTeamAmericanoSession(TWO_TEAMS);
 
@@ -258,7 +266,38 @@ describe('running a Team Americano evening', () => {
       await app.tap('Players');
 
       expect(app.isOnScreen('Options for Ana')).toBe(false);
-      expect(app.shows('so nobody can go home from this one')).toBe(true);
+      // The reason is the one that applies: four players is not the number this evening is short
+      // of, and it has eight of them once a third team turns up.
+      expect(
+        app.shows('A round needs 2 teams with both their players, so nobody can go home'),
+      ).toBe(true);
+      expect(app.shows('A session needs at least 4 players')).toBe(false);
+    });
+
+    it('offers the last full half of a third team no door either', async () => {
+      const app = await createTeamAmericanoSession(THREE_TEAMS);
+      const { partner } = await sendHalfHome(app);
+
+      // Two full teams and one orphan: the stranded half can still leave, because their team is
+      // taking no court anyway, and nobody else can without emptying the courts.
+      expect(app.canTap(`Options for ${partner}`)).toBe(true);
+      expect(app.isOnScreen('Options for Cara')).toBe(false);
+    });
+  });
+
+  describe('a late arrival', () => {
+    it('offers no lone arrival, and says where the one this format has lives', async () => {
+      const app = await createTeamAmericanoSession(THREE_TEAMS);
+
+      await app.tap('Players');
+
+      expect(app.hasField('Name')).toBe(false);
+      expect(app.isOnScreen('Add')).toBe(false);
+      expect(
+        app.shows(
+          'Team Americano plays in fixed pairs, so a new player joins a team that needs a partner.',
+        ),
+      ).toBe(true);
     });
   });
 
@@ -311,21 +350,21 @@ async function atPlayers(mode: string, names: readonly string[]): Promise<AppHar
 }
 
 /** Walk the wizard to the pairing step, with the roster typed in and nobody paired yet. */
-async function atPairing(pairs: readonly DraftPair[]): Promise<AppHarness> {
+async function atPairing(pairs: readonly NamedPair[]): Promise<AppHarness> {
   const app = await atPlayers('Team Americano', namesOf(pairs));
   await app.tap('Next');
 
   return app;
 }
 
-async function pairEveryone(app: AppHarness, pairs: readonly DraftPair[]): Promise<void> {
+async function pairEveryone(app: AppHarness, pairs: readonly NamedPair[]): Promise<void> {
   for (const [first, second] of pairs) {
     await app.tap(`Pair ${first}`);
     await app.tap(`Pair ${second}`);
   }
 }
 
-function namesOf(pairs: readonly DraftPair[]): readonly string[] {
+function namesOf(pairs: readonly NamedPair[]): readonly string[] {
   return pairs.flat();
 }
 

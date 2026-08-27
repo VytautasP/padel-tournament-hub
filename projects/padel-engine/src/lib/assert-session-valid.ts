@@ -68,12 +68,12 @@ export function assertSessionValid(session: Session): void {
     // round before it, so a session truncated at any point is still valid.
     //
     // Which unit they are asked of is the whole of the difference between the modes (decision
-    // #2c). Team Americano rotates a bye between teams and rotates opponents between teams; the
-    // modes that rotate partners rotate a bench and a partnership between players. Asking both
-    // sets of both would not be twice as strict, it would be wrong: a player of a team on a bye
-    // has not been kept off a court by the scheduler, their team has, and a replacement who
-    // joined in round 3 has sat out exactly as often as the team she plays for — which is not
-    // what a count of her own rounds says, and never can be.
+    // #2c, ADR-0020). Team Americano rotates a bye between teams and rotates opponents between
+    // teams; the modes that rotate partners rotate a bench and a partnership between players.
+    // Asking both sets of both would not be twice as strict, it would be wrong: a player of a
+    // team on a bye has not been kept off a court by the scheduler, their team has, and a
+    // replacement who joined in round 3 has sat out exactly as often as the team she plays for —
+    // which is not what a count of her own rounds says, and never can be.
     if (play.plays) {
       // The `needs partner` check first: a stranded player on a court also makes the side wrong
       // for its team, and saying which of the two problems it actually is helps more.

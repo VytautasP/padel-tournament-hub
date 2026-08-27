@@ -262,6 +262,26 @@ export const copy = {
     nobodyCanLeave: (minimum: number): string =>
       `A session needs at least ${minimum} players, so nobody can go home from this one.`,
     /**
+     * The same sentence where the unit is the team (ADR-0011).
+     *
+     * A different reason rather than the same one counting differently: an eight-player Team
+     * Americano evening of two teams has twice the minimum roster and still cannot lose anybody,
+     * because what a round needs is two teams with both their players. Saying "a session needs at
+     * least four players" to somebody looking at eight would be answering a question they did not
+     * ask with a number that does not apply.
+     */
+    noTeamCanLose: (teams: number): string =>
+      `A round needs ${teams} teams with both their players, so nobody can go home from this one.`,
+    /**
+     * Why there is no Add on the Players tab of a Team Americano evening (decision #2a).
+     *
+     * A player does not arrive alone in this format — they arrive as somebody's partner — so the
+     * field is absent rather than offered and refused. The one arrival that exists is the repair
+     * above, and this says where to find it.
+     */
+    arrivalsJoinATeam:
+      'Team Americano plays in fixed pairs, so a new player joins a team that needs a partner.',
+    /**
      * Why a late arrival to a Mixicano evening cannot be taken on yet (ADR-0010).
      *
      * The same rule the wizard's roster step enforces, at the other place a roster grows: a

@@ -12,11 +12,11 @@
  * player's id in the rotating modes and a team's in Team Americano, which is exactly the shift
  * decision #2c describes — the competitor changes, and nothing else does.
  */
-import type { Standing, TeamStanding } from 'padel-engine';
+import type { PlayerId, Standing, TeamId, TeamStanding } from 'padel-engine';
 
 export interface StandingRow {
   /** The competitor's id: a player's, or a team's where the team is the unit. */
-  readonly id: string;
+  readonly id: PlayerId | TeamId;
   /** `Ana`, or `Ana & Ben` where the competitor is a pair. */
   readonly name: string;
   /** 1-based place, shared by everyone in a joint position (decision #8). */
@@ -32,12 +32,24 @@ export function rowsOfPlayers(standings: readonly Standing[]): readonly Standing
   return standings.map((standing) => row(standing.playerId, standing));
 }
 
-/** The teams' table as a row apiece, named the way a pair is named: `Ana & Ben`. */
-export function rowsOfTeams(standings: readonly TeamStanding[]): readonly StandingRow[] {
-  return standings.map((standing) => row(standing.teamId, standing));
+/**
+ * The teams' table as a row apiece, named by the caller rather than by the engine.
+ *
+ * The engine names a team too, and it names it identically — but every word the organizer reads
+ * comes from the copy dictionary (decision #20), and two independent spellings of `Ana & Ben` are
+ * two chances for the bye strip and the table to disagree about what a pair is called.
+ */
+export function rowsOfTeams(
+  standings: readonly TeamStanding[],
+  nameOf: (teamId: TeamId) => string,
+): readonly StandingRow[] {
+  return standings.map((standing) => ({
+    ...row(standing.teamId, standing),
+    name: nameOf(standing.teamId),
+  }));
 }
 
-function row(id: string, standing: Omit<Standing, 'playerId'>): StandingRow {
+function row(id: PlayerId | TeamId, standing: Omit<Standing, 'playerId'>): StandingRow {
   return {
     id,
     name: standing.name,
