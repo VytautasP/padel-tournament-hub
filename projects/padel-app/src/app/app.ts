@@ -51,7 +51,7 @@ export class App {
 
   /** Leave a finished session. Nothing else leaves the session screen (ADR-0016). */
   protected leave(): void {
-    this.store.close();
+    this.store.leave();
     this.show('landing');
   }
 }

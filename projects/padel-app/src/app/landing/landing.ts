@@ -26,9 +26,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { Dialog } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
-import { confirmed } from '../confirm/confirm-sheet';
+import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
 import { SessionStore } from '../session/session-store';
 
@@ -39,8 +37,7 @@ import { SessionStore } from '../session/session-store';
 })
 export class Landing {
   private readonly store = inject(SessionStore);
-  private readonly dialog = inject(Dialog);
-  private readonly overlay = inject(Overlay);
+  private readonly confirm = inject(Confirm);
   private readonly overflow = signal(false);
 
   readonly started = output<void>();
@@ -64,7 +61,7 @@ export class Landing {
    * scored so far, and there is nothing to undo it with.
    */
   protected async discard(): Promise<void> {
-    if (await confirmed(this.dialog, this.overlay, copy.landing.discardConfirm)) {
+    if (await this.confirm.granted(copy.landing.discardConfirm)) {
       await this.store.discard();
     }
     this.overflow.set(false);
@@ -72,7 +69,7 @@ export class Landing {
 
   /** Forget one ended evening, permanently (decision #10). */
   protected async remove(sessionId: string): Promise<void> {
-    if (await confirmed(this.dialog, this.overlay, copy.history.deleteConfirm)) {
+    if (await this.confirm.granted(copy.history.deleteConfirm)) {
       await this.store.deleteFromHistory(sessionId);
     }
   }

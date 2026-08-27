@@ -27,7 +27,7 @@ export const copy = {
     resumeHeading: 'Session in progress',
     resume: 'Resume',
     resumeSummary: (mode: SessionMode, playerCount: number, roundNumber: number): string =>
-      `${modeNames[mode]} · ${playerCount} players · round ${roundNumber}`,
+      `${modeAndSize(mode, playerCount)} · round ${roundNumber}`,
     /**
      * The overflow on the Resume card, and the one thing in it.
      *
@@ -168,13 +168,13 @@ export const copy = {
     /**
      * The top three, above the table rather than on a screen of their own.
      *
-     * The top three *are* the standings (ADR-0013), so a podium screen would render the same rows
+     * The top three *are* the standings (ADR-0016 §6), so a podium screen would render the same rows
      * twice. What the block adds is the pause at the end of the evening — and it repeats a joint
      * first rather than picking a winner, because the engine declared the tie and the app does
      * not break it (decision #8).
      */
     podium: 'Podium',
-    /** The ending, in the footer of the table it makes final (ADR-0013). */
+    /** The ending, in the footer of the table it makes final (ADR-0016 §6). */
     end: 'End session',
     endConfirm: {
       heading: 'End the session?',
@@ -203,7 +203,7 @@ export const copy = {
      * need telling which year each of them was.
      */
     row: (day: string, mode: SessionMode, playerCount: number): string =>
-      `${day} · ${modeNames[mode]} · ${playerCount} players`,
+      `${day} · ${modeAndSize(mode, playerCount)}`,
     /** Who topped the final table. More than one name where the top place was joint. */
     winner: (names: readonly string[]): string => `${names.join(' & ')} won`,
     /** Names the row it deletes, because every row on the page carries one of these. */
@@ -221,6 +221,17 @@ export const copy = {
     cancel: 'Cancel',
   },
 } as const;
+
+/**
+ * What an evening is, in the two words both the Resume card and a history row use to say it.
+ *
+ * One expression rather than two identical ones, because a session summarised on the front door
+ * and a session summarised in the list below it are the same sentence about the same thing, and
+ * they should not be able to drift into disagreeing about the separator.
+ */
+function modeAndSize(mode: SessionMode, playerCount: number): string {
+  return `${modeNames[mode]} · ${playerCount} players`;
+}
 
 /**
  * The day an evening was played, as a history row says it: `Wed 26 Aug`.

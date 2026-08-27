@@ -1,7 +1,7 @@
 <section class="flex flex-col gap-5 px-4 py-6">
   <h1 class="text-2xl font-semibold tracking-tight text-ink">{{ copy.session.standings }}</h1>
 
-  @if (ended()) {
+  @if (podium().length > 0) {
     <section class="space-y-3 rounded-2xl border border-brand bg-surface-sunken p-4">
       <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
         {{ copy.standings.podium }}

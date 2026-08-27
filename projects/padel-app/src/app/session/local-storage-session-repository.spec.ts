@@ -46,7 +46,7 @@ describe('the localStorage session repository', () => {
     await repository.addToHistory(record('session-2'));
 
     expect(await repository.loadHistory()).toEqual([record('session-2'), record('session-1')]);
-    // The archive and the evening in progress are written at completely different rates, so they
+    // The history and the evening in progress are written at completely different rates, so they
     // are separate documents rather than one that has to be rewritten on every score.
     expect(await repository.loadActive()).toBeNull();
   });
@@ -61,7 +61,7 @@ describe('the localStorage session repository', () => {
     expect(await repository.loadHistory()).toEqual([record('session-2')]);
   });
 
-  it('treats an unreadable archive as an empty one rather than as a crash', async () => {
+  it('treats unreadable history as empty history rather than as a crash', async () => {
     const repository = new LocalStorageSessionRepository();
 
     localStorage.setItem(HISTORY_KEY, 'not json at all');

@@ -25,7 +25,7 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { copy } from '../copy/copy';
 import { RoundTab } from '../round/round-tab';
-import { SessionStore } from '../session/session-store';
+import { SessionStore } from './session-store';
 import { StandingsTab } from '../standings/standings-tab';
 
 type Tab = 'round' | 'standings' | 'players';
@@ -54,7 +54,7 @@ export class SessionShell {
   protected readonly current = this.tab.asReadonly();
 
   /** Whether this session has ended, which is the only condition under which there is a way out. */
-  protected readonly ended = this.store.readOnly;
+  protected readonly ended = this.store.ended;
 
   protected readonly tabs: readonly TabView[] = [
     { id: 'round', label: copy.session.round, ready: true },

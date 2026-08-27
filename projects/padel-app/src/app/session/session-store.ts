@@ -58,7 +58,7 @@ export interface SessionDraft {
 export class SessionStore {
   private readonly repository = inject(SESSION_REPOSITORY);
   private readonly record = signal<SessionRecord | null>(null);
-  private readonly ended = signal<readonly SessionRecord[]>([]);
+  private readonly endedRecords = signal<readonly SessionRecord[]>([]);
   private readonly openId = signal<string | null>(null);
   private readonly restored = signal(false);
 
@@ -79,9 +79,18 @@ export class SessionStore {
     return session === null ? null : currentRoundNumber(session);
   });
 
-  /** Every ended evening as a history row reads it, most recently ended first (ADR-0013 §4). */
+  /**
+   * Every ended evening as a history row reads it, most recently ended first (ADR-0013 §4).
+   *
+   * Ordered by `endedAt` rather than by the order the repository handed them over. That is what
+   * the field is for: a list that leaned on insertion order would be correct today and would be a
+   * bug the first time a store returns its documents in an order of its own, which is exactly what
+   * the Firestore implementation of step 3 is free to do.
+   */
   readonly history = computed<readonly SessionSummary[]>(() =>
-    this.ended().map((record) => summarise(record, computeStandings(record.session))),
+    [...this.endedRecords()]
+      .sort((a, b) => (b.endedAt ?? '').localeCompare(a.endedAt ?? ''))
+      .map((record) => summarise(record, computeStandings(record.session))),
   );
 
   /**
@@ -103,7 +112,7 @@ export class SessionStore {
       return active;
     }
 
-    return this.ended().find((held) => held.session.id === id) ?? null;
+    return this.endedRecords().find((held) => held.session.id === id) ?? null;
   });
 
   readonly openSession = computed<Session | null>(() => this.openRecord()?.session ?? null);
@@ -116,7 +125,7 @@ export class SessionStore {
    * refused. It is the one flag that turns the session screen read-only, which is what ADR-0013's
    * "accepts no edits of any kind" amounts to in the UI.
    */
-  readonly readOnly = computed(() => this.openSession()?.status === 'finished');
+  readonly ended = computed(() => this.openSession()?.status === 'finished');
 
   /**
    * What the organizer calls each court of the session on screen (ADR-0017 §6).
@@ -154,7 +163,7 @@ export class SessionStore {
 
   async restore(): Promise<void> {
     this.record.set(await this.repository.loadActive());
-    this.ended.set(await this.repository.loadHistory());
+    this.endedRecords.set(await this.repository.loadHistory());
     this.restored.set(true);
   }
 
@@ -163,8 +172,13 @@ export class SessionStore {
     this.openId.set(sessionId);
   }
 
-  /** Leave the session screen. Only a finished session offers this (ADR-0016). */
-  close(): void {
+  /**
+   * Put nothing on screen. Only a session that has ended offers a way out (ADR-0016).
+   *
+   * Named for leaving the screen rather than closing the session, because *closing* is one of the
+   * words CONTEXT.md reserves — a session is **ended**, and this is not that.
+   */
+  leave(): void {
     this.openId.set(null);
   }
 
@@ -246,7 +260,7 @@ export class SessionStore {
     };
     await this.repository.addToHistory(record);
     await this.repository.clearActive();
-    this.ended.update((held) => [record, ...held]);
+    this.endedRecords.update((held) => [record, ...held]);
     this.record.set(null);
     this.open(record.session.id);
   }
@@ -261,13 +275,13 @@ export class SessionStore {
   async discard(): Promise<void> {
     await this.repository.clearActive();
     this.record.set(null);
-    this.close();
+    this.leave();
   }
 
   /** Forget an ended evening, permanently. This is decision #10's hard delete. */
   async deleteFromHistory(sessionId: string): Promise<void> {
     await this.repository.deleteFromHistory(sessionId);
-    this.ended.update((held) => held.filter((record) => record.session.id !== sessionId));
+    this.endedRecords.update((held) => held.filter((record) => record.session.id !== sessionId));
   }
 
   /**

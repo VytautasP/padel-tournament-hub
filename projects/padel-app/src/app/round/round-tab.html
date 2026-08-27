@@ -43,7 +43,7 @@
     <ul class="space-y-3">
       @for (court of view.courts; track court.courtNumber) {
         <li>
-          @if (readOnly()) {
+          @if (ended()) {
             <div
               class="w-full space-y-2 rounded-2xl border p-4 text-left"
               [class]="

@@ -14,7 +14,7 @@
  * thumb that asked for it, and the confirming tap is the one that has to be comfortable — a dialog
  * in the middle of the screen puts Cancel where the thumb already is.
  */
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Injectable } from '@angular/core';
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Overlay } from '@angular/cdk/overlay';
 import { firstValueFrom } from 'rxjs';
@@ -51,23 +51,32 @@ export class ConfirmSheet {
 }
 
 /**
- * Ask, and answer `true` only if the organizer said so.
+ * Asking the question, from wherever the irreversible thing is offered.
  *
- * Dismissing the sheet any other way — the backdrop, Escape — closes it with `undefined`, which is
- * not a yes. Reading that as a no is the whole safety of the thing: every path out of the sheet
- * that is not the button leaves the evening exactly as it was.
+ * A service rather than a function taking `Dialog` and `Overlay`, because those two always travel
+ * together and neither is anything the calling screen has an opinion about — a screen that had to
+ * hold both would be holding the machinery of a bottom sheet in order to ask a question.
  */
-export async function confirmed(
-  dialog: Dialog,
-  overlay: Overlay,
-  data: ConfirmData,
-): Promise<boolean> {
-  const sheet = dialog.open<boolean, ConfirmData>(ConfirmSheet, {
-    data,
-    positionStrategy: overlay.position().global().bottom().centerHorizontally(),
-    width: '100%',
-    maxWidth: '28rem',
-  });
+@Injectable({ providedIn: 'root' })
+export class Confirm {
+  private readonly dialog = inject(Dialog);
+  private readonly overlay = inject(Overlay);
 
-  return (await firstValueFrom(sheet.closed)) === true;
+  /**
+   * Ask, and answer `true` only if the organizer said so.
+   *
+   * Dismissing the sheet any other way — the backdrop, Escape — closes it with `undefined`, which
+   * is not a yes. Reading that as a no is the whole safety of the thing: every path out of the
+   * sheet that is not the button leaves the evening exactly as it was.
+   */
+  async granted(data: ConfirmData): Promise<boolean> {
+    const sheet = this.dialog.open<boolean, ConfirmData>(ConfirmSheet, {
+      data,
+      positionStrategy: this.overlay.position().global().bottom().centerHorizontally(),
+      width: '100%',
+      maxWidth: '28rem',
+    });
+
+    return (await firstValueFrom(sheet.closed)) === true;
+  }
 }

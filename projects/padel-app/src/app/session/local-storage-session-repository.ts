@@ -91,9 +91,9 @@ export class LocalStorageSessionRepository implements SessionRepository {
 }
 
 /**
- * The archive, or an empty one where what is stored cannot be read.
+ * The history, or an empty one where what is stored cannot be read.
  *
- * Same reasoning as `readDocument`, one level up: an unreadable archive is a landing page with no
+ * Same reasoning as `readDocument`, one level up: an unreadable history is a landing page with no
  * history on it, not a crash on launch. It is the more painful of the two failures — a year of
  * evenings rather than tonight's — which is an argument for the version being checked, not for
  * throwing at an organizer who cannot do anything about it either way.

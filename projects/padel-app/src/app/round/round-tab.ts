@@ -50,21 +50,21 @@ export class RoundTab {
   private readonly overlay = inject(Overlay);
 
   /**
-   * The page the tab is showing: a round number, or one past the last round for the Add round
-   * card. Set when the tab opens, moved only by the organizer, and never by a score landing.
+   * The page the organizer has asked for. Set when the tab opens, moved only by them, and never by
+   * a score landing.
    *
    * An evening in progress opens where it is. A finished one opens at round one, because it has
    * no "where it is" left — the lowest unscored round of a session that has ended is a round
    * nobody played, and opening a record there would show an empty court instead of the evening.
    */
-  protected readonly showing = signal(
-    this.store.readOnly() ? FIRST_ROUND : (this.store.currentRoundNumber() ?? FIRST_ROUND),
+  private readonly requested = signal(
+    this.store.ended() ? FIRST_ROUND : (this.store.currentRoundNumber() ?? FIRST_ROUND),
   );
 
   protected readonly copy = copy;
 
   /** Whether this session is a record being read rather than an evening being run. */
-  protected readonly readOnly = this.store.readOnly;
+  protected readonly ended = this.store.ended;
 
   protected readonly roundCount = computed(() => this.store.openSession()?.rounds.length ?? 0);
 
@@ -84,7 +84,20 @@ export class RoundTab {
    * blank screen offering nothing.
    */
   private readonly lastPage = computed(() =>
-    this.readOnly() ? this.roundCount() : this.roundCount() + 1,
+    this.ended() ? this.roundCount() : this.roundCount() + 1,
+  );
+
+  /**
+   * The page actually on screen: what was asked for, held inside the range there is something to
+   * show.
+   *
+   * Derived rather than clamped on the way in, because the range moves underneath it. Ending the
+   * evening takes the Add round card away, and an organizer standing on that card when they end
+   * the session would otherwise be left on a page that no longer exists — looking at a button that
+   * asks the engine for a round it has already refused to give.
+   */
+  protected readonly showing = computed(() =>
+    Math.min(Math.max(this.requested(), FIRST_ROUND), this.lastPage()),
   );
 
   /** Whether the page on screen is the Add round card rather than a round. */
@@ -103,7 +116,7 @@ export class RoundTab {
    * round happened to be unscored when the lights went off.
    */
   protected readonly canReturnToCurrentRound = computed(
-    () => !this.readOnly() && this.showing() !== this.store.currentRoundNumber(),
+    () => !this.ended() && this.showing() !== this.store.currentRoundNumber(),
   );
 
   /**
@@ -129,15 +142,9 @@ export class RoundTab {
     this.show(this.showing() + 1);
   }
 
-  /**
-   * Show one page, held inside the range there is something to show.
-   *
-   * The controls are disabled at both ends, so nothing in the app asks for a page outside it. The
-   * clamp is here anyway because the range is this component's invariant and not the template's:
-   * a round count that shrank under a stale page would otherwise render nothing at all.
-   */
+  /** Ask for one page. What is shown is `showing`, which holds it inside the range. */
   protected show(page: number): void {
-    this.showing.set(Math.min(Math.max(page, FIRST_ROUND), this.lastPage()));
+    this.requested.set(page);
   }
 
   protected backToCurrentRound(): void {

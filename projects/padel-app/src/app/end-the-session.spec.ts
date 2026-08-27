@@ -83,6 +83,38 @@ describe('ending the session', () => {
       expect(app.isOnScreen('Add round')).toBe(false);
     });
 
+    it('takes the Add round card away, even from under an organizer standing on it', async () => {
+      const app = await createSession(FOUR);
+      await score(app, 17);
+
+      // Page past the last round, so the card the evening ends under is the one that lengthens it.
+      await app.tap('Next round');
+      await app.tap('Next round');
+      await app.tap('Next round');
+      expect(app.isOnScreen('Add round')).toBe(true);
+
+      await endSession(app);
+      await app.tap('Round');
+
+      expect(app.isOnScreen('Add round')).toBe(false);
+      expect(app.shows('The evening ends here')).toBe(false);
+      expect(app.shows('Round 3 of 3')).toBe(true);
+    });
+
+    it('shows no podium for an evening that ended with nothing scored', async () => {
+      const app = await createSession(FOUR);
+
+      await endSession(app);
+
+      // Nobody has been on a scored court, so everybody is joint first on nothing. A podium of the
+      // whole roster would be reporting an artefact of the ranking as a result.
+      expect(app.shows('Podium')).toBe(false);
+      for (const name of FOUR) {
+        expect(timesShown(app, name)).toBe(1);
+      }
+      app.expectEndedSessionValid();
+    });
+
     it('repeats a joint first on the podium rather than picking a winner', async () => {
       const app = await createSession(EIGHT, 2);
       const drawn = await score(app, 12, 1);
@@ -190,6 +222,16 @@ describe('ending the session', () => {
       expect(app.shows(ROW)).toBe(true);
       // Both players on the winning side are first, so both of them won it.
       expect(app.shows(winnersOf(sides))).toBe(true);
+    });
+
+    it('names no winner for an evening that ended with nothing scored', async () => {
+      const app = await createSession(FOUR);
+      await endSession(app);
+
+      await app.tap('Done');
+
+      expect(app.shows(ROW)).toBe(true);
+      expect(app.shows('won')).toBe(false);
     });
 
     it('asks for no name at creation, because a row names itself', async () => {
