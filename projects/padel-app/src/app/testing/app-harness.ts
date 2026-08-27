@@ -78,6 +78,17 @@ export class AppHarness {
     return this.controls().some((control) => labelOf(control) === label && !control.disabled);
   }
 
+  /**
+   * Whether a two-state control is currently the chosen one — `aria-pressed`, which is exactly
+   * what a screen reader announces and what the colour on the pill means to everyone else.
+   *
+   * A toggle with no default has to be shown holding neither answer, and there is no other way to
+   * ask: an unpressed pill and a pressed one are the same words in the same place.
+   */
+  isPressed(label: string): boolean {
+    return this.control(label).getAttribute('aria-pressed') === 'true';
+  }
+
   isOnScreen(label: string): boolean {
     return this.controls().some((control) => labelOf(control) === label);
   }

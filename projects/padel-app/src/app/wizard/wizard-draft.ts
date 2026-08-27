@@ -11,7 +11,7 @@
  * Two of these would be two half-described evenings, and there is only ever one.
  */
 import { computed, signal } from '@angular/core';
-import type { SessionMode } from 'padel-engine';
+import type { Gender, SessionMode } from 'padel-engine';
 import { copy } from '../copy/copy';
 import {
   completeRotationRoundCount,
@@ -26,10 +26,22 @@ import type { SessionDraft } from '../session/session-store';
 export interface DraftPlayer {
   readonly id: string;
   readonly name: string;
+  /**
+   * Answered on the row, and only in Mixicano. Undefined is **not asked yet** rather than a third
+   * answer: the toggle has no default (ADR-0010), so this is what an untouched row holds and what
+   * blocks the step.
+   */
+  readonly gender?: Gender;
 }
 
-/** The one thing that can be wrong with a roster in this slice (decision #4). */
-export type PlayersProblem = 'too-few';
+/**
+ * What can be wrong with a roster on its way to Review.
+ *
+ * Two codes rather than one sentence, because the two are different questions with different
+ * answers: `too-few` is about how many names there are, `gender-missing` about a question the
+ * organizer has not answered on one of them.
+ */
+export type PlayersProblem = 'too-few' | 'gender-missing';
 
 export class WizardDraft {
   readonly mode = signal<SessionMode>('americano');
@@ -86,8 +98,22 @@ export class WizardDraft {
 
   readonly roundCount = computed(() => this.chosenRoundCount() ?? this.suggestedRoundCount());
 
-  /** Whether the roster is one the engine could schedule (decision #4). */
-  readonly canLeavePlayers = computed(() => this.entries().length >= MINIMUM_PLAYERS);
+  /**
+   * Whether every name on the list carries the gender its mode needs (ADR-0010).
+   *
+   * True for every mode that does not pair across gender, because there is nothing to ask. In
+   * Mixicano it is the create screen enforcing what the engine refuses: there is no
+   * "unspecified" it would schedule around, so a roster with a gap cannot become a session.
+   */
+  private readonly everyGenderAnswered = computed(
+    () =>
+      this.mode() !== 'mixicano' || this.entries().every((player) => player.gender !== undefined),
+  );
+
+  /** Whether the roster is one the engine could schedule (decision #4, ADR-0010). */
+  readonly canLeavePlayers = computed(
+    () => this.entries().length >= MINIMUM_PLAYERS && this.everyGenderAnswered(),
+  );
 
   /**
    * Why the roster cannot go on to Review, as a code rather than a sentence — and only once
@@ -101,9 +127,18 @@ export class WizardDraft {
    * (decision #20). Returning the sentence itself would put English in here, which is the one
    * place outside a template where it would be just as hard to find later.
    */
-  readonly playersProblem = computed<PlayersProblem | null>(() =>
-    this.entries().length > 0 && !this.canLeavePlayers() ? 'too-few' : null,
-  );
+  readonly playersProblem = computed<PlayersProblem | null>(() => {
+    if (this.entries().length === 0) {
+      return null;
+    }
+    if (this.entries().length < MINIMUM_PLAYERS) {
+      return 'too-few';
+    }
+
+    // Reported only once there are enough names to go on with, so a roster halfway through being
+    // typed is told one thing at a time. The untouched toggles are visible on the rows either way.
+    return this.everyGenderAnswered() ? null : 'gender-missing';
+  });
 
   addPlayer(name: string): void {
     const trimmed = name.trim();
@@ -129,6 +164,19 @@ export class WizardDraft {
 
     this.entries.update((players) =>
       players.map((player) => (player.id === id ? { ...player, name: trimmed } : player)),
+    );
+  }
+
+  /**
+   * Answer the gender question for one player.
+   *
+   * There is no un-answering it, because the toggle is two states and not three: the way back
+   * from a mis-tap is the other half of the toggle, and a roster entry that could return to
+   * "not asked" would be a gap the organizer had to notice a second time.
+   */
+  setGender(id: string, gender: Gender): void {
+    this.entries.update((players) =>
+      players.map((player) => (player.id === id ? { ...player, gender } : player)),
     );
   }
 
@@ -175,7 +223,10 @@ export class WizardDraft {
   toSessionDraft(): SessionDraft {
     return {
       mode: this.mode(),
-      playerNames: this.entries().map((player) => player.name),
+      players: this.entries().map((player) => ({
+        name: player.name,
+        ...(player.gender === undefined ? {} : { gender: player.gender }),
+      })),
       courtCount: this.courtCount(),
       courtNames: this.courtNames(),
       targetScore: this.targetScore(),

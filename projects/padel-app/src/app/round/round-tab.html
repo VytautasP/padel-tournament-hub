@@ -75,6 +75,10 @@
       }
     </ul>
 
+    @if (view.hasSameGenderPair) {
+      <p class="text-sm text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+    }
+
     @if (view.bench.length > 0) {
       <p class="text-sm text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
     }

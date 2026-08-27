@@ -60,8 +60,8 @@ export class ScoreSheet {
 
   /** The two sides, so the template writes one field rather than two that have to stay alike. */
   protected readonly sides: readonly { side: Side; names: readonly string[] }[] = [
-    { side: 'A', names: this.data.court.sideA },
-    { side: 'B', names: this.data.court.sideB },
+    { side: 'A', names: this.data.court.sideA.names },
+    { side: 'B', names: this.data.court.sideB.names },
   ];
 
   private readonly sheetId = nextSheetId++;

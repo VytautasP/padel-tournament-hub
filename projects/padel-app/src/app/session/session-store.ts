@@ -32,6 +32,7 @@ import {
   generateRemaining,
   recordScore,
   removePlayer,
+  type Gender,
   type PlayerId,
   type RosterEntry,
   type ScoreEntry,
@@ -45,11 +46,25 @@ import { SESSION_REPOSITORY } from './session-repository';
 import { summarise } from './session-summary';
 import type { SessionSummary } from './session-summary';
 
+/**
+ * A player as a screen hands them over: what they are called, and — where the mode pairs across
+ * gender — which side of that pairing they are on (ADR-0010).
+ *
+ * The id is deliberately absent. Roster ids are derived from the session and the order names
+ * arrived in (see `rosterEntry` below), which is what keeps a schedule reproducible from the
+ * document; a screen that supplied one could break that without ever looking wrong.
+ */
+export interface NewPlayer {
+  readonly name: string;
+  /** Required by Mixicano and by nothing else. The engine refuses a Mixicano roster missing one. */
+  readonly gender?: Gender;
+}
+
 /** Everything the wizard has collected by the time the organizer taps Create. */
 export interface SessionDraft {
   readonly mode: SessionMode;
   /** The roster in the order it was typed. Ids are the store's business, not the wizard's. */
-  readonly playerNames: readonly string[];
+  readonly players: readonly NewPlayer[];
   readonly courtCount: number;
   /** What each court is called, in court-number order. Blanks are allowed and mean `Court N`. */
   readonly courtNames: readonly string[];
@@ -232,7 +247,7 @@ export class SessionStore {
       createSession({
         id,
         mode: draft.mode,
-        players: draft.playerNames.map((name, index) => rosterEntry(id, index, name)),
+        players: draft.players.map((player, index) => rosterEntry(id, index, player)),
         courtCount: draft.courtCount,
         targetScore: draft.targetScore,
         roundCount: draft.roundCount,
@@ -278,8 +293,8 @@ export class SessionStore {
    * hands back a whole session — so planning the change costs the same as making it, and the only
    * difference between the two is whether anybody stores the answer.
    */
-  planArrival(name: string): RosterChange {
-    return this.plan((session) => addPlayer(session, this.arriving(session, name)));
+  planArrival(player: NewPlayer): RosterChange {
+    return this.plan((session) => addPlayer(session, this.arriving(session, player)));
   }
 
   /**
@@ -386,8 +401,8 @@ export class SessionStore {
    * length only ever grows and the id it produces has never been handed out. It reads the same way
    * creation's do (decision #9), which is what keeps a schedule reproducible from the document.
    */
-  private arriving(session: Session, name: string): RosterEntry {
-    return rosterEntry(session.id, session.roster.length, name.trim());
+  private arriving(session: Session, player: NewPlayer): RosterEntry {
+    return rosterEntry(session.id, session.roster.length, { ...player, name: player.name.trim() });
   }
 
   /**
@@ -418,8 +433,16 @@ export class SessionStore {
  * decision #9's rule is that a roster change may not reassign anyone's results, and appending or
  * removing a name never renumbers the ids already handed out.
  */
-function rosterEntry(sessionId: string, index: number, name: string): RosterEntry {
-  return { id: `${sessionId}:p${index + 1}`, name };
+function rosterEntry(sessionId: string, index: number, player: NewPlayer): RosterEntry {
+  return {
+    id: `${sessionId}:p${index + 1}`,
+    name: player.name,
+    // Spread rather than assigned, so an Americano entry carries no `gender` key at all. An
+    // explicit `undefined` would survive `JSON.stringify` as a missing key anyway, but it would
+    // read in the debugger as a question that was asked and left blank, which is not what
+    // happened (ADR-0010: an Americano roster carries none).
+    ...(player.gender === undefined ? {} : { gender: player.gender }),
+  };
 }
 
 function newSessionId(): string {
