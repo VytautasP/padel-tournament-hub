@@ -29,6 +29,13 @@ The players this session knows, by first name. A roster entry is a name with an 
 of the evening the player is present for — not a person, not an account.
 _Avoid_: Squad, participants, attendees, players list
 
+**Gender**:
+The one axis Mixicano pairs across, held on a roster entry as woman or man. Two values, because
+what is modelled is the pairing rule rather than the person. Required by Mixicano and by nothing
+else, with no default and no "unspecified": a Mixicano roster cannot gain a name without one,
+whether at creation or mid-evening.
+_Avoid_: Sex, category, mixed player (a *pair* is mixed; a player has a gender)
+
 **Target score**:
 The fixed point total every match adds up to. The organizer enters one side's points and the other
 side's are derived from it, so a scoreline that does not sum to the target cannot be built.

@@ -42,14 +42,16 @@ import {
 import type { Gender, PlayerId } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { MINIMUM_PLAYERS } from '../session/round-defaults';
-import { SessionStore } from '../session/session-store';
+import { newPlayer, SessionStore } from '../session/session-store';
 import type { RosterChange } from '../session/session-store';
+import { GenderToggle } from './gender-toggle';
 import { RosterPreview } from './roster-preview';
 import { rosterView } from './roster-view';
 import type { PlayerRow } from './roster-view';
 
 @Component({
   selector: 'app-players-tab',
+  imports: [GenderToggle],
   templateUrl: './players-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -66,9 +68,6 @@ export class PlayersTab {
   protected readonly copy = copy;
   protected readonly minimumPlayers = MINIMUM_PLAYERS;
   protected readonly typed = signal('');
-
-  /** The two halves of the toggle, so the row writes one button rather than two alike ones. */
-  protected readonly genders: readonly Gender[] = ['woman', 'man'];
 
   /** The answer for the player being typed, or `null` while the question is unanswered. */
   protected readonly gender = signal<Gender | null>(null);
@@ -135,11 +134,9 @@ export class PlayersTab {
       return;
     }
 
-    const arriving = { name, ...(gender === null ? {} : { gender }) };
-
     if (
       await this.previewed(
-        this.store.planArrival(arriving),
+        this.store.planArrival(newPlayer(name, gender)),
         copy.players.preview.confirmArrival(name),
       )
     ) {

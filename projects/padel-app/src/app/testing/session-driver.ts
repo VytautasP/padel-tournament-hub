@@ -15,12 +15,17 @@
  */
 import type { Gender, Match, MatchScore, Session } from 'padel-engine';
 import { AppHarness } from './app-harness';
+import type { NewPlayer } from '../session/session-store';
 
-/** A name and the answer Mixicano's toggle needs on it, as a spec spells a roster. */
-export interface MixedPlayer {
-  readonly name: string;
-  readonly gender: Gender;
-}
+/**
+ * A player on a Mixicano roster, as a spec spells one: the app's `NewPlayer` with the half that
+ * is optional everywhere else answered.
+ *
+ * Not `MixedPlayer` — CONTEXT.md reserves *mixed* for a pair. A player has a gender; a pair is
+ * mixed or same-gender, and a type that blurred the two would teach the wrong word to every spec
+ * that reads it.
+ */
+export type MixicanoPlayer = NewPlayer & { readonly gender: Gender };
 
 /** Who is on each side of a court, as the score sheet spells them: the sheet's two field labels. */
 export interface Sides {
@@ -54,7 +59,7 @@ export async function createSession(
  * wizard would fill in for a caller that left them out.
  */
 export async function createMixicanoSession(
-  players: readonly MixedPlayer[],
+  players: readonly MixicanoPlayer[],
   courtCount = 1,
   targetScore = 24,
 ): Promise<AppHarness> {

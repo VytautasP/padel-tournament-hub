@@ -60,6 +60,21 @@ export interface NewPlayer {
   readonly gender?: Gender;
 }
 
+/**
+ * A player, with the gender question left off entirely where it was never asked.
+ *
+ * Written once because three screens' worth of callers would otherwise each decide what an
+ * unanswered question serialises as. `{ gender: undefined }` survives `JSON.stringify` as a
+ * missing key anyway, so the engine cannot tell the difference — but the debugger can, and
+ * "asked and left blank" is not what happened on an Americano roster (ADR-0010: it carries none).
+ *
+ * `null` is accepted alongside `undefined` because that is what an unanswered toggle holds: a
+ * screen should not have to translate its own empty state on the way here.
+ */
+export function newPlayer(name: string, gender?: Gender | null): NewPlayer {
+  return { name, ...(gender == null ? {} : { gender }) };
+}
+
 /** Everything the wizard has collected by the time the organizer taps Create. */
 export interface SessionDraft {
   readonly mode: SessionMode;
@@ -402,7 +417,11 @@ export class SessionStore {
    * creation's do (decision #9), which is what keeps a schedule reproducible from the document.
    */
   private arriving(session: Session, player: NewPlayer): RosterEntry {
-    return rosterEntry(session.id, session.roster.length, { ...player, name: player.name.trim() });
+    return rosterEntry(
+      session.id,
+      session.roster.length,
+      newPlayer(player.name.trim(), player.gender),
+    );
   }
 
   /**
@@ -434,15 +453,7 @@ export class SessionStore {
  * removing a name never renumbers the ids already handed out.
  */
 function rosterEntry(sessionId: string, index: number, player: NewPlayer): RosterEntry {
-  return {
-    id: `${sessionId}:p${index + 1}`,
-    name: player.name,
-    // Spread rather than assigned, so an Americano entry carries no `gender` key at all. An
-    // explicit `undefined` would survive `JSON.stringify` as a missing key anyway, but it would
-    // read in the debugger as a question that was asked and left blank, which is not what
-    // happened (ADR-0010: an Americano roster carries none).
-    ...(player.gender === undefined ? {} : { gender: player.gender }),
-  };
+  return { id: `${sessionId}:p${index + 1}`, ...newPlayer(player.name, player.gender) };
 }
 
 function newSessionId(): string {

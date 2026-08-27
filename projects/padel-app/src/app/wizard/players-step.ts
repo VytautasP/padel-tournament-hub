@@ -27,11 +27,13 @@ import {
 } from '@angular/core';
 import type { Gender } from 'padel-engine';
 import { copy } from '../copy/copy';
+import { GenderToggle } from '../players/gender-toggle';
 import { MINIMUM_PLAYERS } from '../session/round-defaults';
 import { WizardDraft } from './wizard-draft';
 
 @Component({
   selector: 'app-players-step',
+  imports: [GenderToggle],
   templateUrl: './players-step.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -45,9 +47,6 @@ export class PlayersStep {
   protected readonly minimumPlayers = MINIMUM_PLAYERS;
   protected readonly typed = signal('');
   protected readonly isEditing = computed(() => this.editing() !== null);
-
-  /** The two halves of the toggle, so the row writes one button rather than two alike ones. */
-  protected readonly genders: readonly Gender[] = ['woman', 'man'];
 
   /** Whether this evening pairs across gender, which is the whole of whether the toggle is here. */
   protected readonly asksGender = computed(() => this.draft().mode() === 'mixicano');

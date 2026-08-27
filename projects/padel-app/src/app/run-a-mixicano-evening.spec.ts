@@ -30,10 +30,10 @@ import {
   score,
   storedSession,
 } from './testing/session-driver';
-import type { MixedPlayer } from './testing/session-driver';
+import type { MixicanoPlayer } from './testing/session-driver';
 
 /** Two of each: every court can be filled with mixed pairs, so nothing is ever marked. */
-const EVEN_FOUR: readonly MixedPlayer[] = [
+const EVEN_FOUR: readonly MixicanoPlayer[] = [
   { name: 'Ana', gender: 'woman' },
   { name: 'Ben', gender: 'man' },
   { name: 'Cara', gender: 'woman' },
@@ -41,21 +41,21 @@ const EVEN_FOUR: readonly MixedPlayer[] = [
 ];
 
 /** Three women and one man: one same-gender pair is arithmetic, not a scheduling failure. */
-const SKEWED_FOUR: readonly MixedPlayer[] = [
+const SKEWED_FOUR: readonly MixicanoPlayer[] = [
   { name: 'Ana', gender: 'woman' },
   { name: 'Bea', gender: 'woman' },
   { name: 'Cara', gender: 'woman' },
   { name: 'Dov', gender: 'man' },
 ];
 
-const EVEN_SIX: readonly MixedPlayer[] = [
+const EVEN_SIX: readonly MixicanoPlayer[] = [
   ...EVEN_FOUR,
   { name: 'Elin', gender: 'woman' },
   { name: 'Finn', gender: 'man' },
 ];
 
 /** Five women and one man, which is the roster nobody's evening divides evenly into. */
-const LOPSIDED_SIX: readonly MixedPlayer[] = [
+const LOPSIDED_SIX: readonly MixicanoPlayer[] = [
   { name: 'Ana', gender: 'woman' },
   { name: 'Bea', gender: 'woman' },
   { name: 'Cara', gender: 'woman' },
@@ -130,6 +130,23 @@ describe('running a Mixicano evening', () => {
       const app = await atPlayers('Americano', namesOf(EVEN_FOUR));
 
       expect(app.canTap('Next')).toBe(true);
+    });
+
+    it('drops the answers when the mode stops asking for them', async () => {
+      const app = await atPlayers('Mixicano', namesOf(EVEN_FOUR));
+      for (const player of EVEN_FOUR) {
+        await app.tap(`${player.name} is a ${player.gender}`);
+      }
+
+      // Back to the mode step and out the other side: this is an Americano now, and a gender on
+      // its roster would be an answer to a question the evening never put.
+      await app.tap('Back');
+      await app.tap('Americano');
+      await app.tap('Next');
+      await app.tap('Create session');
+
+      expect([...gendersOf(app).values()]).toEqual([undefined, undefined, undefined, undefined]);
+      app.expectStoredSessionValid();
     });
 
     it('puts what was tapped on the roster the session is built from', async () => {
@@ -226,6 +243,22 @@ describe('running a Mixicano evening', () => {
       expect(app.shows('*')).toBe(false);
     });
 
+    it('explains the mark on the preview of a regenerated schedule too', async () => {
+      const app = await createMixicanoSession(SKEWED_FOUR);
+      await app.tap('Players');
+
+      await app.type('Name', 'Gita');
+      await app.tap('Woman');
+      await app.tap('Add');
+
+      // Four women and one man: whoever the four on court are, one pair of them is forced. The
+      // preview renders the same court card as the Round tab, so it owes the same explanation.
+      expect(app.shows('The rest of the evening')).toBe(true);
+      expect(
+        app.shows('* Same-gender pair: the roster left nobody of the other gender to partner.'),
+      ).toBe(true);
+    });
+
     it('re-marks a round already played when a gender is corrected', async () => {
       const app = await createMixicanoSession(SKEWED_FOUR);
       await score(app, 17);
@@ -304,7 +337,7 @@ async function atPlayers(mode: string, names: readonly string[]): Promise<AppHar
   return app;
 }
 
-function namesOf(players: readonly MixedPlayer[]): readonly string[] {
+function namesOf(players: readonly MixicanoPlayer[]): readonly string[] {
   return players.map((player) => player.name);
 }
 

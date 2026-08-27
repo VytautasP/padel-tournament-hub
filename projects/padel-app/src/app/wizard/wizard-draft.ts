@@ -20,6 +20,7 @@ import {
   MINIMUM_PLAYERS,
   MINIMUM_SESSION_NUMBER,
 } from '../session/round-defaults';
+import { newPlayer } from '../session/session-store';
 import type { SessionDraft } from '../session/session-store';
 
 /** A name on the list, with an id so that editing or removing it never depends on its position. */
@@ -99,6 +100,15 @@ export class WizardDraft {
   readonly roundCount = computed(() => this.chosenRoundCount() ?? this.suggestedRoundCount());
 
   /**
+   * Whether this evening pairs across gender — the whole of whether the roster is asked at all.
+   *
+   * Asked once here rather than at each of the three places that care, because Back is
+   * non-destructive: a draft can be carried into Mixicano, answered, carried back out again, and
+   * every one of those places has to agree about which mode it is now in.
+   */
+  private readonly asksGender = computed(() => this.mode() === 'mixicano');
+
+  /**
    * Whether every name on the list carries the gender its mode needs (ADR-0010).
    *
    * True for every mode that does not pair across gender, because there is nothing to ask. In
@@ -106,8 +116,7 @@ export class WizardDraft {
    * "unspecified" it would schedule around, so a roster with a gap cannot become a session.
    */
   private readonly everyGenderAnswered = computed(
-    () =>
-      this.mode() !== 'mixicano' || this.entries().every((player) => player.gender !== undefined),
+    () => !this.asksGender() || this.entries().every((player) => player.gender !== undefined),
   );
 
   /** Whether the roster is one the engine could schedule (decision #4, ADR-0010). */
@@ -223,10 +232,12 @@ export class WizardDraft {
   toSessionDraft(): SessionDraft {
     return {
       mode: this.mode(),
-      players: this.entries().map((player) => ({
-        name: player.name,
-        ...(player.gender === undefined ? {} : { gender: player.gender }),
-      })),
+      // The answers are dropped where the mode stopped asking. Someone who described a Mixicano,
+      // stepped back and chose Americano has described an Americano, and a gender riding along on
+      // its roster would be an answer to a question this evening never put.
+      players: this.entries().map((player) =>
+        newPlayer(player.name, this.asksGender() ? player.gender : undefined),
+      ),
       courtCount: this.courtCount(),
       courtNames: this.courtNames(),
       targetScore: this.targetScore(),

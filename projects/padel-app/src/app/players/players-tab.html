@@ -68,23 +68,7 @@
       </div>
 
       @if (asksGender()) {
-        <div class="flex gap-2">
-          @for (choice of genders; track choice) {
-            <button
-              type="button"
-              class="rounded-full border px-4 py-2 text-sm font-medium"
-              [class]="
-                gender() === choice
-                  ? 'border-brand bg-brand text-brand-ink'
-                  : 'border-line text-ink-muted'
-              "
-              [attr.aria-pressed]="gender() === choice"
-              (click)="setGender(choice)"
-            >
-              {{ copy.gender.name(choice) }}
-            </button>
-          }
-        </div>
+        <app-gender-toggle [selected]="gender()" (chose)="setGender($event)" />
 
         @if (!canAdd()) {
           <p class="text-sm text-ink-muted">{{ copy.players.genderMissing }}</p>
