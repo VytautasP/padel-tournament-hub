@@ -13,15 +13,17 @@
   <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'standings'">
     <app-standings-tab />
   </div>
+  <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'players'">
+    <app-players-tab />
+  </div>
 
   <nav class="flex border-t border-line bg-surface-raised">
     @for (tab of tabs; track tab.id) {
       <button
         type="button"
-        class="flex-1 py-3 text-sm font-medium disabled:opacity-40"
+        class="flex-1 py-3 text-sm font-medium"
         [class]="current() === tab.id ? 'text-brand' : 'text-ink-muted'"
         [attr.aria-current]="current() === tab.id ? 'page' : null"
-        [disabled]="!tab.ready"
         (click)="show(tab.id)"
       >
         {{ tab.label }}

@@ -1,0 +1,9 @@
+<span class="block text-xs font-medium tracking-wide text-ink-muted uppercase">
+  {{ court().name }}
+</span>
+<span class="block text-lg text-ink">{{ copy.round.side(court().sideA) }}</span>
+<span class="block text-xs tracking-wide text-ink-muted uppercase">
+  {{ copy.round.versus }}
+</span>
+<span class="block text-lg text-ink">{{ copy.round.side(court().sideB) }}</span>
+<ng-content />

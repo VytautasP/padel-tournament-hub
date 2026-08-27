@@ -45,7 +45,7 @@
         <li>
           @if (ended()) {
             <div
-              class="w-full space-y-2 rounded-2xl border p-4 text-left"
+              class="w-full rounded-2xl border p-4 text-left"
               [class]="
                 court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
               "
@@ -58,7 +58,7 @@
           } @else {
             <button
               type="button"
-              class="w-full space-y-2 rounded-2xl border p-4 text-left"
+              class="w-full rounded-2xl border p-4 text-left"
               [class]="
                 court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
               "
@@ -103,24 +103,21 @@
 </section>
 
 <!--
-  One court, written once and instantiated twice: as a button while the evening is running, and as
-  plain content once it has ended. The card is identical either way — what changes is whether it
-  can be tapped — so the alternative is two copies of it drifting apart a line at a time.
+  One court, instantiated twice: as a button while the evening is running, and as plain content
+  once it has ended. The card is identical either way — what changes is whether it can be tapped —
+  so the alternative is two copies of it drifting apart a line at a time.
+
+  The card itself is `app-court-card`, shared with the preview of a regenerated schedule. What
+  this template adds is the one thing that card leaves to the screen showing it: the result.
 -->
 <ng-template #card let-court>
-  <span class="block text-xs font-medium tracking-wide text-ink-muted uppercase">
-    {{ court.name }}
-  </span>
-  <span class="block text-lg text-ink">{{ copy.round.side(court.sideA) }}</span>
-  <span class="block text-xs tracking-wide text-ink-muted uppercase">
-    {{ copy.round.versus }}
-  </span>
-  <span class="block text-lg text-ink">{{ copy.round.side(court.sideB) }}</span>
-  @if (court.score; as score) {
-    <span class="block text-base font-semibold text-brand">
-      {{ copy.round.score(score.sideA, score.sideB) }}
-    </span>
-  } @else {
-    <span class="block text-sm text-ink-muted">{{ copy.round.noScore }}</span>
-  }
+  <app-court-card class="block space-y-2" [court]="court">
+    @if (court.score; as score) {
+      <span class="block text-base font-semibold text-brand">
+        {{ copy.round.score(score.sideA, score.sideB) }}
+      </span>
+    } @else {
+      <span class="block text-sm text-ink-muted">{{ copy.round.noScore }}</span>
+    }
+  </app-court-card>
 </ng-template>

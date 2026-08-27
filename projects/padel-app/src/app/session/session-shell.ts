@@ -12,9 +12,9 @@
  * a scroll offset of its own. One scroller shared between them would hand the standings the
  * round's offset and lose both.
  *
- * The Players tab is on screen and cannot be opened. It belongs to a later slice, and showing
- * where it will be is honest about a shell that is three tabs wide; a tab that appeared later
- * would move the other two under a thumb that had learned where they are.
+ * All three tabs open. The Players tab joined last and landed where it had been sitting disabled
+ * since the shell shipped, which is why it was drawn before it worked: a tab that appeared later
+ * would have moved the other two under a thumb that had learned where they are.
  *
  * **An ended session has a door, and only an ended session.** ADR-0016's "no back button" is a rule
  * about an evening in progress: leaving one is ending it or discarding it, and both of those are
@@ -24,22 +24,22 @@
  */
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { copy } from '../copy/copy';
+import { PlayersTab } from '../players/players-tab';
 import { RoundTab } from '../round/round-tab';
 import { SessionStore } from './session-store';
 import { StandingsTab } from '../standings/standings-tab';
 
 type Tab = 'round' | 'standings' | 'players';
 
-/** One tab in the bar: what it is called, and whether this slice can open it. */
+/** One tab in the bar: what it is called, and the panel it shows. */
 interface TabView {
   readonly id: Tab;
   readonly label: string;
-  readonly ready: boolean;
 }
 
 @Component({
   selector: 'app-session-shell',
-  imports: [RoundTab, StandingsTab],
+  imports: [PlayersTab, RoundTab, StandingsTab],
   templateUrl: './session-shell.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -57,9 +57,9 @@ export class SessionShell {
   protected readonly ended = this.store.ended;
 
   protected readonly tabs: readonly TabView[] = [
-    { id: 'round', label: copy.session.round, ready: true },
-    { id: 'standings', label: copy.session.standings, ready: true },
-    { id: 'players', label: copy.session.players, ready: false },
+    { id: 'round', label: copy.session.round },
+    { id: 'standings', label: copy.session.standings },
+    { id: 'players', label: copy.session.players },
   ];
 
   protected show(tab: Tab): void {

@@ -8,9 +8,11 @@
  *
  * The bench is derived rather than read: the engine stores who is playing, and whoever the round
  * does not name is sitting out. Deriving it is what keeps it honest when a roster changes under
- * an already-generated round.
+ * an already-generated round — and it is derived in `bench.ts` rather than here, so that the strip
+ * under the courts and the badges on the Players tab cannot answer the question differently.
  */
-import type { MatchId, MatchScore, PlayerId, RosterEntry, Session } from 'padel-engine';
+import type { MatchId, MatchScore, PlayerId, Session } from 'padel-engine';
+import { benchedIn } from '../session/bench';
 import { courtNameFor } from '../session/court-names';
 
 export interface CourtView {
@@ -53,10 +55,6 @@ export function roundView(
   const nameOf = (id: PlayerId): string =>
     session.roster.find((entry) => entry.id === id)?.name ?? id;
 
-  const playing = new Set<PlayerId>(
-    round.matches.flatMap((match) => [...match.sideA, ...match.sideB]),
-  );
-
   return {
     number: round.number,
     courts: round.matches.map((match) => ({
@@ -67,21 +65,6 @@ export function roundView(
       sideB: match.sideB.map(nameOf),
       score: match.score,
     })),
-    bench: session.roster
-      .filter((entry) => !playing.has(entry.id) && isHereForRound(entry, roundNumber))
-      .map((entry) => entry.name),
+    bench: benchedIn(session, roundNumber).map((entry) => entry.name),
   };
-}
-
-/**
- * Whether this round is one the player is present for — as opposed to one before they arrived or
- * after they went home (decision #5).
- *
- * Somebody who left after round 3 is not "sitting out" round 5; they are at home, and naming them
- * on the bench strip would send one of the other nine looking for them.
- */
-function isHereForRound(entry: RosterEntry, roundNumber: number): boolean {
-  return (
-    (entry.joinedAtRound ?? 1) <= roundNumber && roundNumber <= (entry.leftAfterRound ?? Infinity)
-  );
 }

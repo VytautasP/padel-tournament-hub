@@ -33,6 +33,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Dialog } from '@angular/cdk/dialog';
 import { Overlay } from '@angular/cdk/overlay';
 import { copy } from '../copy/copy';
+import { CourtCard } from './court-card';
 import { roundView } from './round-view';
 import type { CourtView } from './round-view';
 import { openScoreSheet } from '../score/score-sheet';
@@ -40,7 +41,7 @@ import { SessionStore } from '../session/session-store';
 
 @Component({
   selector: 'app-round-tab',
-  imports: [NgTemplateOutlet],
+  imports: [CourtCard, NgTemplateOutlet],
   templateUrl: './round-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

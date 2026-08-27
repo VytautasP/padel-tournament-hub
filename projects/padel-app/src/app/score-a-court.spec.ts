@@ -33,11 +33,15 @@ describe('scoring a court', () => {
       }
     });
 
-    it('shows the Players tab without letting it be opened yet', async () => {
+    it('opens the Players tab from the same bar', async () => {
       const app = await createSession(FOUR);
 
-      expect(app.isOnScreen('Players')).toBe(true);
-      expect(app.canTap('Players')).toBe(false);
+      await app.tap('Players');
+
+      expect(app.shows('Round 1 of 3')).toBe(false);
+      for (const name of FOUR) {
+        expect(app.shows(name)).toBe(true);
+      }
     });
 
     it('leaves the round exactly as it was when the tabs are switched away and back', async () => {
