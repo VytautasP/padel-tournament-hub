@@ -28,6 +28,15 @@ export const MINIMUM_SESSION_NUMBER = 1;
 export const MINIMUM_PLAYERS = 4;
 
 /**
+ * Two players make a team — which is what makes an odd roster unpairable (decision #2a).
+ *
+ * The engine holds the same number and enforces it (`teams.ts`), but does not export it: what it
+ * exports is the rule, in the form of a session it refuses. This is the app asking the question
+ * one screen earlier, where the organizer can still do something about the answer.
+ */
+export const PLAYERS_PER_TEAM = 2;
+
+/**
  * How many rounds it takes for everyone to have partnered everyone — capped.
  *
  * A roster of `n` holds `n(n-1)/2` distinct pairs, and each round consumes two of them per court

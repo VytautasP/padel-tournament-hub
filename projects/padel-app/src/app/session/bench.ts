@@ -34,10 +34,13 @@ export function benchedIn(session: Session, roundNumber: number): readonly Roste
  * Whether this round is one the player is present for — as opposed to one before they arrived or
  * after they went home (decision #5).
  *
+ * Exported because a team is only as present as its two halves (`teams.ts`), and a second reading
+ * of an availability window is a second chance to read it differently.
+ *
  * The window is the engine's, read rather than recomputed: absent bounds mean "since the start"
  * and "still here", which is what a session written before roster changes existed carries.
  */
-function isHereForRound(entry: RosterEntry, roundNumber: number): boolean {
+export function isHereForRound(entry: RosterEntry, roundNumber: number): boolean {
   return (
     (entry.joinedAtRound ?? 1) <= roundNumber && roundNumber <= (entry.leftAfterRound ?? Infinity)
   );

@@ -83,6 +83,10 @@
       <p class="text-sm text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
     }
 
+    @if (view.bye.length > 0) {
+      <p class="text-sm text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
+    }
+
     @if (advanceTo(); as nextRound) {
       <button
         type="button"

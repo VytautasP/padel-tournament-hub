@@ -39,6 +39,11 @@
         {{ copy.wizard.players.genderMissing }}
       </p>
     }
+    @case ('odd-roster') {
+      <p class="text-sm font-medium text-ink">
+        {{ copy.wizard.players.oddRoster }}
+      </p>
+    }
   }
 
   <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">

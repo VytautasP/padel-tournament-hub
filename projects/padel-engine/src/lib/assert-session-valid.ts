@@ -64,18 +64,16 @@ export function assertSessionValid(session: Session): void {
       availableTeams.flatMap((team) => teamLineupIn(team, session.roster, round.number)),
     );
 
-    // The players this round could have put on court. In every mode but Team Americano that is
-    // everyone available; there it is the players of the teams that can field a pair, because
-    // someone whose partner has gone home is not benched — they are flagged `needs partner`, and
-    // there is no court they were kept off (decision #2b).
-    const selectable = play.plays ? available.filter((entry) => onCall.has(entry.id)) : available;
-
     // Everything from here down is a prefix check: it holds after this round, given every
     // round before it, so a session truncated at any point is still valid.
     //
-    // Team Americano's come first, because in that mode the team is the unit the rules are about
-    // (decision #2c): a bye falls on a team, and saying so is more use to whoever is reading the
-    // error than naming one of the two players it also fell on.
+    // Which unit they are asked of is the whole of the difference between the modes (decision
+    // #2c). Team Americano rotates a bye between teams and rotates opponents between teams; the
+    // modes that rotate partners rotate a bench and a partnership between players. Asking both
+    // sets of both would not be twice as strict, it would be wrong: a player of a team on a bye
+    // has not been kept off a court by the scheduler, their team has, and a replacement who
+    // joined in round 3 has sat out exactly as often as the team she plays for — which is not
+    // what a count of her own rounds says, and never can be.
     if (play.plays) {
       // The `needs partner` check first: a stranded player on a court also makes the side wrong
       // for its team, and saying which of the two problems it actually is helps more.
@@ -85,18 +83,16 @@ export function assertSessionValid(session: Session): void {
       countBench(teamsIn(round), availableTeams, teamBenchCounts);
       assertBenchSpread(round, availableTeams, teamBenchCounts, (id) => `team ${play.nameOf(id)}`);
       assertOpponentVariety(round, availableTeams, meetings, play);
-    }
-
-    countBench(playersIn(round), selectable, benchCounts);
-    assertBenchSpread(round, selectable, benchCounts, nameOf);
-    assertMixedPairing(round, available, mixed, sameGenderCounts, nameOf);
-
-    // Partner variety is asked of every mode but Team Americano, where the partnership is the
-    // format rather than something the scheduler chose — exempt for the same reason a Mixicano
-    // same-gender pair is (ADR-0010). What replaces it is `assertOpponentVariety` above.
-    if (!play.plays) {
+    } else {
+      countBench(playersIn(round), available, benchCounts);
+      assertBenchSpread(round, available, benchCounts, nameOf);
+      // Partner variety is asked of every mode but Team Americano, where the partnership is the
+      // format rather than something the scheduler chose — exempt for the same reason a Mixicano
+      // same-gender pair is (ADR-0010). What replaces it is `assertOpponentVariety` above.
       assertPartnerVariety(round, available, partnerCounts, mixed, nameOf);
     }
+
+    assertMixedPairing(round, available, mixed, sameGenderCounts, nameOf);
   }
 }
 

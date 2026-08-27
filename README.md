@@ -49,10 +49,10 @@ tiers mean exactly what they already meant. See
 pair goes home the team keeps its slot and its points and the other half is flagged
 `needs partner`, until a replacement repairs the team or the stranded player leaves too; see
 [ADR-0012](docs/adr/0012-an-orphaned-team-keeps-its-slot-and-the-fixture-ledger-restarts-with-the-field.md).
-**The app runs an Americano evening end to end.** `padel-app` opens on a landing
-page, walks a three-step wizard — mode, names, then a review screen already holding a target of 24,
-one court, a complete rotation capped at 12 and a name per court, pre-filled `Court 1…N` for the
-club that books courts 7 and 8 (ADR-0017 §6) — and generates the schedule. The session is a
+**The app runs an evening end to end, in every format.** `padel-app` opens on a landing page, walks
+a wizard of three steps — mode, names, then a review screen already holding a target of 24, one
+court, a complete rotation capped at 12 and a name per court, pre-filled `Court 1…N` for the club
+that books courts 7 and 8 (ADR-0017 §6) — and generates the schedule. The session is a
 three-tab shell (ADR-0016): the Round tab renders the round the evening is on — every court, both
 sides, whoever is sitting out — and tapping a court opens the score sheet, two views of one number
 bounded by the session's target, which refuses anything larger rather than quietly clamping it
@@ -77,6 +77,17 @@ that would be nearly every line. Its dismissal reads **"Don't change the roster"
 is no state in which the schedule is rejected and the change kept, and there is no reroll: the
 scheduler is deterministic (ADR-0006), and a schedule the organizer shopped for is a fairness claim
 nobody can check. Nothing reaches storage until the preview comes back confirmed.
+
+**Team Americano is the same app one level up** (ADR-0011). The wizard grows a fourth step, in that
+mode and no other, where the organizer assigns the pairs themselves — tap two names and they are a
+team, no draw and no seeding, because the pairs are the ones the group already agreed on. An odd
+roster is held at the Players step with the reason inline, so the pairing screen is never reached
+with somebody left over. From there the team is the unit: teams face teams, the strip under the
+courts names the team on a **bye** rather than two loose players, and the Standings tab is the same
+ladder handed teams instead of players, joint positions and all. When one half of a pair goes home
+the other is flagged **needs partner** on their Players tab row, with **Assign partner** beside it —
+the fix where the problem is displayed — and the repaired team keeps every point it had already won
+(ADR-0012). A repair is a roster change, so it rides the same regeneration preview as the other two.
 
 **End session** is in the Standings footer, because the evening ends when the table is final and
 the table is what the organizer is looking at when they decide that. Behind a confirmation naming

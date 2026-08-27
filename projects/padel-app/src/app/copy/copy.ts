@@ -67,7 +67,6 @@ export const copy = {
     mode: {
       heading: 'Which format?',
       lead: 'Fixed for the evening — pick the one the group agreed on.',
-      notYet: 'Coming soon',
       name: (mode: SessionMode): string => modeNames[mode],
       blurb: (mode: SessionMode): string => modeBlurbs[mode],
     },
@@ -92,6 +91,34 @@ export const copy = {
        * produces a pairing rule the schedule then honours all evening.
        */
       genderMissing: 'Mixicano pairs across gender, so every player needs one.',
+      /**
+       * Why a roster of nine cannot go on to the pairing step (decision #2a, ADR-0017 §4).
+       *
+       * It is said here rather than on the pairing screen because that screen cannot be reached
+       * in a state where it is true: a roster with somebody left over has no pairing to show, and
+       * the honest place to say so is the screen where the odd name is standing.
+       */
+      oddRoster: 'Team Americano plays in fixed pairs, so the roster needs an even number.',
+    },
+
+    /**
+     * The pairing step: Team Americano's fourth screen (decision #2a, ADR-0017 §1).
+     *
+     * The organizer assigns the pairs themselves — there is no draw and no seeding, because the
+     * pairs are the ones the group already agreed on in the car park. So the whole screen is one
+     * gesture repeated: tap a name, tap their partner, they become a team.
+     */
+    pairing: {
+      heading: 'Who plays with whom?',
+      lead: 'Tap two names to pair them. Every player is on a team.',
+      teams: 'Teams',
+      unpaired: 'Not yet paired',
+      /** Tapping the first name of a pair; tapping the second is what makes the team. */
+      choose: (name: string): string => `Pair ${name}`,
+      /** Undoing a pair, which returns both names to the list they came from. */
+      unpair: (team: string): string => `Break up ${team}`,
+      /** Why Next is withheld while somebody is still standing on their own. */
+      unpairedRemain: 'Every player needs a partner before the evening can be created.',
     },
 
     review: {
@@ -141,6 +168,12 @@ export const copy = {
     versus: 'v',
     noScore: 'No score yet',
     bench: (names: readonly string[]): string => `Sitting out: ${names.join(', ')}`,
+    /**
+     * The team-level bench (CONTEXT.md). It names the team rather than its two players, because a
+     * pair that sits out sits out together — two loose names would read as two benched people who
+     * happen to be free at the same time.
+     */
+    bye: (teams: readonly string[]): string => `Bye: ${teams.join(', ')}`,
     /** The result on the court card. An en dash, because it is a scoreline and not a subtraction. */
     score: (sideA: number, sideB: number): string => `${sideA} – ${sideB}`,
     /**
@@ -238,6 +271,41 @@ export const copy = {
      */
     genderMissing: 'Mixicano pairs across gender, so a new player needs one.',
     /**
+     * The flag on the half of a pair whose partner went home (decision #2b, ADR-0012).
+     *
+     * It is a badge on their row rather than a banner on the screen, because the fix belongs
+     * where the problem is displayed — the Assign partner action sits right beside it.
+     */
+    needsPartner: 'Needs partner',
+    /**
+     * Repairing an orphaned team, from the row that is flagged.
+     *
+     * It names the team rather than the stranded player, because what is short a player is the
+     * team: the points the repair keeps are the team's, and the row is only where the team is
+     * visible.
+     */
+    assignPartner: 'Assign partner',
+    /**
+     * What a screen reader announces for that button, and what tells two flagged rows apart.
+     *
+     * Two teams can lose a half on the same evening, and `Assign partner` announced twice says
+     * nothing about which pair is being repaired.
+     */
+    assignPartnerTo: (team: string): string => `Assign partner to ${team}`,
+    partner: {
+      heading: 'Assign a partner',
+      /**
+       * Who can be picked, and why the list is the one it is.
+       *
+       * Everybody already on the roster plays for a team (the engine refuses a session where
+       * anybody does not), so the only player who can be paired with a stranded half is one the
+       * evening has not met yet. That is the whole of "a picker of players not already on a
+       * team" — typing the name is picking from it.
+       */
+      lead: 'Everyone here already has a partner, so a new name joins the team.',
+      dismiss: 'Not now',
+    },
+    /**
      * The preview every roster change opens (ADR-0015).
      *
      * The dismissal is worded for the cause rather than for the schedule, because backing out is
@@ -251,6 +319,8 @@ export const copy = {
       dismiss: "Don't change the roster",
       confirmArrival: (name: string): string => `Add ${name}`,
       confirmDeparture: (name: string): string => `${name} went home`,
+      /** Repairing a team is a roster change, so it rides the same preview (ADR-0015). */
+      confirmPartner: (name: string, team: string): string => `${name} joins ${team}`,
     },
   },
 
@@ -332,6 +402,17 @@ export const copy = {
      */
     choose: (name: string, gender: Gender): string =>
       `${name} is a ${genderNames[gender].toLowerCase()}`,
+  },
+
+  /**
+   * A team, as every screen that names one names it: `Ana & Ben`.
+   *
+   * The same two words the engine's own team standings use, written here because every word the
+   * organizer reads is in this file (decision #20). It is not `round.side` — a side is a pairing
+   * for one round and belongs to nobody, and a team is the competitor (CONTEXT.md).
+   */
+  team: {
+    name: (names: readonly string[]): string => names.join(' & '),
   },
 
   /** The way out of any confirmation, which is the same way out of all of them. */

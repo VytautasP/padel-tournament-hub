@@ -7,7 +7,8 @@
  * checked without rendering one.
  *
  * The bench is derived rather than read: the engine stores who is playing, and whoever the round
- * does not name is sitting out. Deriving it is what keeps it honest when a roster changes under
+ * does not name is sitting out — or, where the competitor is a pair, whichever team the round
+ * does not name is on a bye. Deriving it is what keeps it honest when a roster changes under
  * an already-generated round — and it is derived in `bench.ts` rather than here, so that the strip
  * under the courts and the badges on the Players tab cannot answer the question differently.
  *
@@ -20,6 +21,7 @@ import { sameGenderSides } from 'padel-engine';
 import type { MatchId, MatchScore, PlayerId, Session } from 'padel-engine';
 import { benchedIn } from '../session/bench';
 import { courtNameFor } from '../session/court-names';
+import { playsAsTeams, teamNameIn, teamsOnByeIn } from '../session/teams';
 
 /** One half of a court: who is on it, and whether the roster forced them together. */
 export interface SideView {
@@ -49,8 +51,20 @@ export interface CourtView {
 export interface RoundView {
   readonly number: number;
   readonly courts: readonly CourtView[];
-  /** The players this round does not put on a court. Empty when the roster fits exactly. */
+  /**
+   * The players this round does not put on a court. Empty when the roster fits exactly, and empty
+   * in Team Americano, where nobody sits out on their own: a pair benches together and is named
+   * as one under `bye`.
+   */
   readonly bench: readonly string[];
+  /**
+   * The teams this round benches whole (CONTEXT.md). Empty in every mode that rotates partners.
+   *
+   * A team one player short is in neither list. It is not resting, it is orphaned, and the strip
+   * under the courts is not where that is said — `needs partner` belongs on the row where the
+   * repair is offered (ADR-0012).
+   */
+  readonly bye: readonly string[];
   /**
    * Whether anything in this round carries the mark — which is whether the legend explaining it
    * is worth the line it takes.
@@ -96,10 +110,13 @@ export function roundView(
     };
   });
 
+  const asTeams = playsAsTeams(session);
+
   return {
     number: round.number,
     courts,
-    bench: benchedIn(session, roundNumber).map((entry) => entry.name),
+    bench: asTeams ? [] : benchedIn(session, roundNumber).map((entry) => entry.name),
+    bye: asTeams ? teamsOnByeIn(session, roundNumber).map((team) => teamNameIn(session, team)) : [],
     hasSameGenderPair: courts.some((court) => court.sideA.sameGender || court.sideB.sameGender),
   };
 }

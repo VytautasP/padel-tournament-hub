@@ -9,13 +9,28 @@
             <span class="rounded-full border border-line px-2 py-1 text-xs text-ink-muted">
               {{ copy.players.gone }}
             </span>
+          } @else if (row.needsPartner) {
+            <span class="rounded-full border border-brand px-2 py-1 text-xs text-brand">
+              {{ copy.players.needsPartner }}
+            </span>
           } @else if (row.benched) {
             <span class="rounded-full bg-surface-sunken px-2 py-1 text-xs text-ink-muted">
               {{ copy.players.benched }}
             </span>
           }
 
-          @if (!ended() && !row.gone && canAnybodyGoHome()) {
+          @if (!ended() && row.needsPartner && row.team !== null) {
+            <button
+              type="button"
+              class="rounded-full border border-brand px-3 py-1 text-xs font-medium text-brand"
+              [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
+              (click)="assignPartner(row)"
+            >
+              {{ copy.players.assignPartner }}
+            </button>
+          }
+
+          @if (!ended() && !row.gone && row.canGoHome) {
             <button
               type="button"
               class="rounded-full border border-line px-3 py-1 text-ink-muted"

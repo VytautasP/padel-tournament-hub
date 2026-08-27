@@ -7,6 +7,9 @@
       @case ('players') {
         <app-players-step [draft]="draft" />
       }
+      @case ('pairing') {
+        <app-pairing-step [draft]="draft" />
+      }
       @case ('review') {
         <app-review-step [draft]="draft" (create)="create()" />
       }
@@ -21,7 +24,7 @@
     >
       {{ current() === 'mode' ? copy.wizard.cancel : copy.wizard.back }}
     </button>
-    @if (current() === 'players') {
+    @if (hasNext() && current() !== 'mode') {
       <button
         type="button"
         class="flex-1 rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink disabled:opacity-40"

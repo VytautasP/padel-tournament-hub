@@ -5,8 +5,11 @@
  * non-destructive without any work — stepping back does not unmount anything that was holding
  * what was typed, because the steps never held it.
  *
- * Pairing is the fourth step ADR-0017 describes and it is not here: it belongs to Team Americano,
- * which this slice does not schedule. The step order below is the whole of the Americano path.
+ * The steps are the four ADR-0017 describes, and one of them is conditional: pairing belongs to
+ * Team Americano and appears in no other mode, because there is nothing for it to ask. That is why
+ * the order is derived from the draft rather than written down once — the mode can change under
+ * it, and Back is non-destructive, so a draft that walks into Team Americano and out again has to
+ * find the steps rearranged behind it.
  */
 import {
   ChangeDetectionStrategy,
@@ -18,18 +21,19 @@ import {
 } from '@angular/core';
 import { copy } from '../copy/copy';
 import { ModeStep } from './mode-step';
+import { PairingStep } from './pairing-step';
 import { PlayersStep } from './players-step';
 import { ReviewStep } from './review-step';
 import { SessionStore } from '../session/session-store';
 import { WizardDraft } from './wizard-draft';
 
-const STEPS = ['mode', 'players', 'review'] as const;
+const STEPS = ['mode', 'players', 'pairing', 'review'] as const;
 
 type Step = (typeof STEPS)[number];
 
 @Component({
   selector: 'app-create-wizard',
-  imports: [ModeStep, PlayersStep, ReviewStep],
+  imports: [ModeStep, PairingStep, PlayersStep, ReviewStep],
   templateUrl: './create-wizard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -46,27 +50,48 @@ export class CreateWizard {
   protected readonly current = this.step.asReadonly();
 
   /**
-   * Whether Next is offered at all. Only the Players step can refuse, and it says why inline
-   * (ADR-0017) rather than leaving a dead button to be poked at.
+   * The steps this evening walks: all four in Team Americano, and three in the modes that pair
+   * nobody. Order is the constant's; what the mode decides is only which of them are in it.
    */
-  protected readonly canAdvance = computed(
-    () => this.step() !== 'players' || this.draft.canLeavePlayers(),
+  protected readonly steps = computed<readonly Step[]>(() =>
+    STEPS.filter((step) => step !== 'pairing' || this.draft.asksPairing()),
   );
 
+  /**
+   * Whether Next is offered at all. Two steps can refuse, and both say why inline (ADR-0017)
+   * rather than leaving a dead button to be poked at: the Players step while the roster is not one
+   * the engine could schedule, and the pairing step while anybody is still on their own.
+   */
+  protected readonly canAdvance = computed(() => {
+    switch (this.step()) {
+      case 'players':
+        return this.draft.canLeavePlayers();
+      case 'pairing':
+        return this.draft.canLeavePairing();
+      default:
+        return true;
+    }
+  });
+
+  /** Whether this step is one the organizer walks on from, as opposed to the last one. */
+  protected readonly hasNext = computed(() => this.step() !== 'review');
+
   protected next(): void {
-    this.step.update((step) => STEPS[Math.min(STEPS.indexOf(step) + 1, STEPS.length - 1)]);
+    const steps = this.steps();
+    this.step.update((step) => steps[Math.min(steps.indexOf(step) + 1, steps.length - 1)]);
   }
 
   /** Back off the first step leaves the wizard, dropping the draft with it. */
   protected back(): void {
-    const index = STEPS.indexOf(this.step());
+    const steps = this.steps();
+    const index = steps.indexOf(this.step());
     if (index === 0) {
       this.cancelled.emit();
 
       return;
     }
 
-    this.step.set(STEPS[index - 1]);
+    this.step.set(steps[index - 1]);
   }
 
   protected async create(): Promise<void> {

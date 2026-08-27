@@ -5,27 +5,19 @@
   </header>
 
   <ul class="space-y-3">
-    @for (choice of choices; track choice.mode) {
+    @for (choice of choices; track choice) {
       <li>
         <button
           type="button"
-          class="w-full rounded-2xl border border-line bg-surface-raised p-4 text-left disabled:opacity-50"
-          [disabled]="!choice.available"
-          [attr.aria-label]="copy.wizard.mode.name(choice.mode)"
-          (click)="choose(choice.mode)"
+          class="w-full rounded-2xl border border-line bg-surface-raised p-4 text-left"
+          [attr.aria-label]="copy.wizard.mode.name(choice)"
+          (click)="choose(choice)"
         >
-          <span class="flex items-baseline justify-between gap-3">
-            <span class="text-lg font-semibold text-ink">
-              {{ copy.wizard.mode.name(choice.mode) }}
-            </span>
-            @if (!choice.available) {
-              <span class="text-xs font-medium tracking-wide text-ink-muted uppercase">
-                {{ copy.wizard.mode.notYet }}
-              </span>
-            }
+          <span class="block text-lg font-semibold text-ink">
+            {{ copy.wizard.mode.name(choice) }}
           </span>
           <span class="mt-1 block text-sm text-ink-muted">
-            {{ copy.wizard.mode.blurb(choice.mode) }}
+            {{ copy.wizard.mode.blurb(choice) }}
           </span>
         </button>
       </li>

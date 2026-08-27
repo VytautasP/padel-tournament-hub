@@ -24,9 +24,15 @@
  * dialog asking whether the organizer meant it. Nothing reaches the repository until it comes back
  * confirmed.
  *
+ * **A stranded half is flagged where the organizer is looking, and repaired there too.** When one
+ * half of a Team Americano pair goes home the other cannot play, and the row that says so is the
+ * row that offers Assign partner (decision #2b, ADR-0012): the fix belongs where the problem is
+ * displayed. Repairing a team is a roster change like the other two, so it rides the same preview.
+ *
  * **An evening at the minimum offers nobody the door.** The engine refuses a round it cannot staff
  * (decision #4), so on a four-player evening there is no departure to offer and the overflow is
- * absent rather than disabled — with the sentence that says why, because a control that vanishes
+ * absent rather than disabled — and in Team Americano that is a question per row rather than per
+ * list, because a round needs two teams with both their players (`roster-view.ts`) — with the sentence that says why, because a control that vanishes
  * without explanation is a bug from the outside. A session that has ended is read-only for the
  * same reason it is everywhere else (ADR-0013): the engine takes no operation on it.
  */
@@ -45,6 +51,7 @@ import { MINIMUM_PLAYERS } from '../session/round-defaults';
 import { newPlayer, SessionStore } from '../session/session-store';
 import type { RosterChange } from '../session/session-store';
 import { GenderToggle } from './gender-toggle';
+import { Partner } from './partner-sheet';
 import { RosterPreview } from './roster-preview';
 import { rosterView } from './roster-view';
 import type { PlayerRow } from './roster-view';
@@ -58,6 +65,7 @@ import type { PlayerRow } from './roster-view';
 export class PlayersTab {
   private readonly store = inject(SessionStore);
   private readonly preview = inject(RosterPreview);
+  private readonly partner = inject(Partner);
 
   /** The one row whose overflow is open, if any. One at a time, like the Resume card's. */
   private readonly openRow = signal<PlayerId | null>(null);
@@ -90,7 +98,9 @@ export class PlayersTab {
   protected readonly rows = computed<readonly PlayerRow[]>(() => {
     const session = this.store.openSession();
 
-    return session === null ? [] : rosterView(session, this.store.currentRoundNumber() ?? 1);
+    return session === null
+      ? []
+      : rosterView(session, this.store.currentRoundNumber() ?? 1, this.store.teamsNeedingPartner());
   });
 
   /**
@@ -100,8 +110,8 @@ export class PlayersTab {
    * people are left: the round after the next departure needs four of them, and which four is not
    * a question anybody is asking.
    */
-  protected readonly canAnybodyGoHome = computed(
-    () => this.rows().filter((row) => !row.gone).length > MINIMUM_PLAYERS,
+  protected readonly canAnybodyGoHome = computed(() =>
+    this.rows().some((row) => !row.gone && row.canGoHome),
   );
 
   protected isOpen(playerId: PlayerId): boolean {
@@ -146,6 +156,30 @@ export class PlayersTab {
       this.gender.set(null);
       this.focusField();
     }
+  }
+
+  /**
+   * Repair the team this row is the surviving half of (decision #2b, ADR-0012).
+   *
+   * Two sheets in sequence rather than one, because they ask different things: the first is who,
+   * and the second is the schedule that answer produces. Backing out of either leaves the evening
+   * exactly as it was, and the team keeps its slot and its points either way.
+   */
+  protected async assignPartner(row: PlayerRow): Promise<void> {
+    const { teamId, team } = row;
+    if (teamId === null || team === null) {
+      return;
+    }
+
+    const name = await this.partner.named(team);
+    if (name === null) {
+      return;
+    }
+
+    await this.previewed(
+      this.store.planPartner(teamId, newPlayer(name)),
+      copy.players.preview.confirmPartner(name, team),
+    );
   }
 
   /** Record that this player has gone home, once the organizer has read what it reschedules. */
