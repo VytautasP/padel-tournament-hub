@@ -1,52 +1,129 @@
-<section class="flex flex-col gap-5 px-4 py-6">
-  <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">
-    @for (row of rows(); track row.id) {
-      <li class="space-y-2 px-4 py-3">
-        <div class="flex items-center gap-3">
-          <span class="min-w-0 flex-1 truncate text-row text-ink">{{ row.name }}</span>
+<!--
+  The roster as one card of rows, and the two places a row grows.
 
+  Both openings happen in place rather than in a sheet. What each holds is a single control — the
+  door, or the repair — and a surface lifted over the screen to carry one button is a ceremony
+  around something meant to cost two deliberate taps and no more.
+
+  Width is not decided here. The shell puts every tab inside `page-column` (ADR-0022 §1), and a
+  roster is a column of names in any amount of room, so the widened tier is this same list with
+  more air around it rather than a different arrangement.
+-->
+<section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
+  <h1 class="text-title font-bold text-ink">{{ copy.session.players }}</h1>
+
+  <!--
+    Divided rather than carded, like the standings table: the list is read straight down a column
+    of names, and a gap between every line is a gap the eye has to cross once per player.
+
+    A row that has opened takes a brand outline instead of its divider, which is what makes the
+    control underneath read as belonging to the name above it rather than to the row below.
+  -->
+  <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+    @for (row of rows(); track row.id) {
+      <li
+        class="flex flex-col gap-[10px] py-[9px] pr-[10px] pl-[18px]"
+        [class]="expanded(row) ? 'border border-brand' : 'border-b border-line last:border-b-0'"
+      >
+        <div class="flex items-center gap-[10px]">
+          <!--
+            A player who has gone home is present-but-finished rather than deleted, so their name
+            goes quiet and stays. It is still there because it is still holding their standings
+            line.
+          -->
+          <span
+            class="text-row min-w-0 flex-1 truncate"
+            [class]="row.gone ? 'text-ink-muted' : 'text-ink'"
+          >
+            {{ row.name }}
+          </span>
+
+          <!--
+            What the row has to say about this player, in the order it becomes true: the pairing is
+            the fact that holds all evening, and sitting out is the fact that holds this round.
+
+            The two exceptional states stand alone. `Went home` and `Needs partner` are not another
+            thing that is also true of somebody — they are the whole of what their row is now
+            reporting, and setting a pairing beside either of them dilutes the one line on the
+            screen that has to be noticed.
+          -->
           @if (row.gone) {
-            <span class="rounded-full border border-line px-2 py-1 text-meta text-ink-muted">
+            <span
+              class="text-meta shrink-0 rounded-full border border-line bg-surface-sunken px-[11px] py-[5px] text-ink-muted"
+            >
               {{ copy.players.gone }}
             </span>
           } @else if (row.needsPartner) {
-            <span class="rounded-full border border-brand px-2 py-1 text-meta text-brand">
+            <!--
+              The one warning on this screen, in the one pair of tokens that means warning. It is a
+              problem the organizer has to solve before the evening can field this team again —
+              unlike everything else a row says, which is only a report.
+            -->
+            <span
+              class="text-meta shrink-0 rounded-full border border-warning bg-warning-surface px-[11px] py-[5px] font-bold text-warning"
+            >
               {{ copy.players.needsPartner }}
             </span>
-          } @else if (row.benched) {
-            <span class="rounded-full bg-surface-sunken px-2 py-1 text-meta text-ink-muted">
-              {{ copy.players.benched }}
-            </span>
-          }
+          } @else {
+            @if (row.team !== null) {
+              <span class="text-meta shrink-0 text-ink-muted">{{ row.team }}</span>
+            }
 
-          @if (!ended() && row.needsPartner && row.team !== null) {
-            <button
-              type="button"
-              class="rounded-full border border-brand px-3 py-1 text-meta font-bold text-brand"
-              [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
-              (click)="assignPartner(row)"
-            >
-              {{ copy.players.assignPartner }}
-            </button>
+            @if (row.benched) {
+              <span
+                class="text-meta shrink-0 rounded-full bg-surface-sunken px-[11px] py-[5px] text-ink-muted"
+              >
+                {{ copy.players.benched }}
+              </span>
+            }
           }
 
           @if (!ended() && !row.gone && row.canGoHome) {
+            <!-- The tap target is the full 44px; the ring inside it is what is drawn. -->
             <button
               type="button"
-              class="rounded-full border border-line px-3 py-1 text-ink-muted"
+              class="flex size-11 shrink-0 items-center justify-center"
               [attr.aria-label]="copy.players.options(row.name)"
               [attr.aria-expanded]="isOpen(row.id)"
               (click)="toggleOptions(row.id)"
             >
-              {{ copy.players.optionsGlyph }}
+              <span
+                class="text-control flex size-[34px] items-center justify-center rounded-full border"
+                [class]="isOpen(row.id) ? 'border-brand text-brand' : 'border-line text-ink-muted'"
+              >
+                {{ copy.players.optionsGlyph }}
+              </span>
             </button>
           }
         </div>
 
+        <!--
+          The fix where the problem is displayed (decision #2b, ADR-0012). It is under the flag
+          rather than in line with it because it is a whole control rather than a second badge, and
+          a row asked to carry `Needs partner` and the repair on one line ends up carrying neither
+          at a size that can be read at arm's length.
+        -->
+        @if (canAssignPartner(row) && row.team !== null) {
+          <button
+            type="button"
+            class="text-lead mr-2 flex h-12 items-center justify-center rounded-[14px] bg-brand font-bold text-brand-ink"
+            [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
+            (click)="assignPartner(row)"
+          >
+            {{ copy.players.assignPartner }}
+          </button>
+        }
+
+        <!--
+          Going home is weighted as the ordinary thing it is — the brand, never `danger`. Nothing
+          about the evening so far changes: the player keeps their matches and their standings line
+          and is simply in no later round. A red button would be saying somebody is about to be
+          deleted, which is exactly what this is not (CONTEXT.md, ADR-0015).
+        -->
         @if (isOpen(row.id)) {
           <button
             type="button"
-            class="w-full rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
+            class="text-control mr-2 flex h-12 items-center justify-center rounded-[14px] bg-brand text-brand-ink"
             (click)="wentHome(row)"
           >
             {{ copy.players.wentHome }}
@@ -56,49 +133,66 @@
     }
   </ul>
 
-  @if (!ended()) {
-    @if (!canAnybodyGoHome()) {
-      <p class="text-meta text-ink-muted">
-        {{
-          playsAsTeams()
-            ? copy.players.noTeamCanLose(teamsPerCourt)
-            : copy.players.nobodyCanLeave(minimumPlayers)
-        }}
-      </p>
-    }
+  <!--
+    The notes are footnotes to the list, set together under it: what this evening cannot do, and
+    where the one arrival this format has actually lives. Grouped rather than left as siblings so
+    the pair reads as one aside, and skipped entirely when neither applies rather than taking the
+    section's gap for nothing.
+  -->
+  @if (!ended() && (!canAnybodyGoHome() || playsAsTeams())) {
+    <div class="flex flex-col gap-2">
+      @if (!canAnybodyGoHome()) {
+        <p class="text-meta text-ink-muted">
+          {{
+            playsAsTeams()
+              ? copy.players.noTeamCanLose(teamsPerCourt)
+              : copy.players.nobodyCanLeave(minimumPlayers)
+          }}
+        </p>
+      }
 
-    @if (playsAsTeams()) {
-      <p class="text-meta text-ink-muted">{{ copy.players.arrivalsJoinATeam }}</p>
-    } @else {
-      <form class="space-y-3" (submit)="$event.preventDefault(); add()">
-        <div class="flex gap-2">
-          <input
-            #field
-            type="text"
-            autocomplete="off"
-            class="min-w-0 flex-1 rounded-xl border border-line bg-surface-raised px-4 py-3 text-control text-ink"
-            [placeholder]="copy.players.placeholder"
-            [value]="typed()"
-            (input)="onType($event)"
-          />
-          @if (canAdd()) {
-            <button
-              type="submit"
-              class="rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
-            >
-              {{ copy.players.add }}
-            </button>
-          }
-        </div>
+      @if (playsAsTeams()) {
+        <p class="text-meta text-ink-muted">{{ copy.players.arrivalsJoinATeam }}</p>
+      }
+    </div>
+  }
 
-        @if (asksGender()) {
-          <app-gender-toggle [selected]="gender()" (chose)="setGender($event)" />
+  <!--
+    The arrival field sits at the bottom of the screen rather than under the last note, for the
+    reason the advance card does on the Round tab: a roster longer than the screen scrolls, and the
+    field arrives at the end of the scroll instead of floating over it.
+  -->
+  <div class="flex-1"></div>
 
-          @if (!canAdd()) {
-            <p class="text-meta text-ink-muted">{{ copy.players.genderMissing }}</p>
-          }
+  @if (!ended() && !playsAsTeams()) {
+    <form class="flex flex-col gap-3" (submit)="$event.preventDefault(); add()">
+      <div class="flex gap-[10px]">
+        <input
+          #field
+          type="text"
+          autocomplete="off"
+          class="text-control min-w-0 flex-1 rounded-[15px] border border-line bg-surface-raised px-4 py-[15px] text-ink"
+          [placeholder]="copy.players.placeholder"
+          [value]="typed()"
+          (input)="onType($event)"
+        />
+        @if (canAdd()) {
+          <button
+            type="submit"
+            class="text-control w-[84px] shrink-0 rounded-[15px] bg-brand font-bold text-brand-ink"
+          >
+            {{ copy.players.add }}
+          </button>
         }
-      </form>
-    }
+      </div>
+
+      @if (asksGender()) {
+        <app-gender-toggle [selected]="gender()" (chose)="setGender($event)" />
+
+        @if (!canAdd()) {
+          <p class="text-meta text-ink-muted">{{ copy.players.genderMissing }}</p>
+        }
+      }
+    </form>
   }
 </section>

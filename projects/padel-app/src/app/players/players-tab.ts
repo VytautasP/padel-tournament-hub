@@ -136,6 +136,28 @@ export class PlayersTab {
     return this.openRow() === playerId;
   }
 
+  /**
+   * Whether this row is offering the repair for the team it is the surviving half of.
+   *
+   * Asked as one question rather than spelled out at each of the two places the answer is needed —
+   * the button itself and the outline the row wears while it is showing one — because those two
+   * disagreeing is a row drawn as open with nothing open in it.
+   */
+  protected canAssignPartner(row: PlayerRow): boolean {
+    return !this.ended() && row.needsPartner && row.team !== null;
+  }
+
+  /**
+   * Whether this row is currently carrying a control under its name.
+   *
+   * That is the whole of what the outline means: not "this player is interesting", but "what is
+   * below this line belongs to this line". Both openings are the same fact to a reader, so both
+   * are the same fact here.
+   */
+  protected expanded(row: PlayerRow): boolean {
+    return this.isOpen(row.id) || this.canAssignPartner(row);
+  }
+
   protected toggleOptions(playerId: PlayerId): void {
     this.openRow.update((open) => (open === playerId ? null : playerId));
   }
