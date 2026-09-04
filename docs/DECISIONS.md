@@ -66,6 +66,8 @@ Outcome of the design interview. Each entry is a decision, not a suggestion.
 ## Open questions
 
 - Number of courts: assumed organizer-set at creation; court naming/numbering convention undecided.
-- Visual identity: colours, typography, dark mode — undecided.
+- ~~Visual identity: colours, typography, dark mode — undecided.~~ Settled by
+  [ADR-0021](adr/0021-the-identity-is-court-at-dusk-and-verdana-carries-the-text.md); the widths it
+  is drawn at are [ADR-0022](adr/0022-three-tiers-and-only-the-navigation-knows-about-width.md).
 - Verify current Firebase Spark free-tier limits before relying on the numbers discussed.
 - `git init` — this is not yet a repository.
