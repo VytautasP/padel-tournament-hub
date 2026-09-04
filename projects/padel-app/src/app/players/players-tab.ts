@@ -154,7 +154,7 @@ export class PlayersTab {
    * below this line belongs to this line". Both openings are the same fact to a reader, so both
    * are the same fact here.
    */
-  protected expanded(row: PlayerRow): boolean {
+  protected isExpanded(row: PlayerRow): boolean {
     return this.isOpen(row.id) || this.canAssignPartner(row);
   }
 

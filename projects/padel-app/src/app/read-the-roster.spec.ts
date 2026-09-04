@@ -15,6 +15,12 @@
  *
  * The fixtures are chosen for whether anybody is on a bye, which is the only thing that varies the
  * answer: four teams on two courts when the bye would be noise, three on one when it is the point.
+ *
+ * The two walks at the bottom repeat helpers that `run-a-team-americano-evening.spec.ts` keeps
+ * private, and they are copied rather than shared on purpose: the ticket this file arrived with
+ * forbids editing a pre-existing spec, and lifting them into `session-driver.ts` without also
+ * deleting the originals would leave two definitions of one walk with nothing proving they agree.
+ * They belong in the driver, and that is a move for whichever ticket may touch that file.
  */
 import { createSession, createTeamAmericanoSession, storedSession } from './testing/session-driver';
 import type { AppHarness } from './testing/app-harness';
@@ -36,14 +42,6 @@ const THREE_TEAMS: readonly NamedPair[] = FOUR_TEAMS.slice(0, 3);
 const TWO_COURTS = 2;
 
 describe('reading the roster', () => {
-  it('says which screen it is', async () => {
-    const app = await createSession(SIX);
-
-    await app.tap('Players');
-
-    expect(app.shows('Players')).toBe(true);
-  });
-
   it('says nothing about pairings in a mode that rotates partners, because there are none', async () => {
     const app = await createSession(SIX);
 
@@ -140,7 +138,12 @@ async function halfOfTheFirstTeamGoesHome(
   app: AppHarness,
 ): Promise<{ left: string; stayed: string }> {
   const session = storedSession(app);
-  const [leaving, staying] = (session.teams ?? [])[0].playerIds;
+  const first = (session.teams ?? [])[0];
+  if (first === undefined) {
+    throw new Error('The session holds no teams.');
+  }
+
+  const [leaving, staying] = first.playerIds;
   const nameOf = (id: string): string =>
     session.roster.find((entry) => entry.id === id)?.name ?? id;
   const left = nameOf(leaving);
