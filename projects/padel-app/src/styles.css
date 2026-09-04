@@ -122,6 +122,30 @@
   }
 }
 
+/*
+ * The one type role that is a different size at the desk.
+ *
+ * The scale (`docs/design/canvas/TypeScale.dc.html`) writes Display as `32/54px`: one role, one
+ * face, one tracking, and two sizes — the phone board sets the app's name at 32 and the desk board
+ * at 54. It is a size on the existing role rather than a role of its own, so it is expressed the
+ * way the palette expresses a theme: the value moves underneath, and `text-display` goes on being
+ * the whole decision wherever it is written.
+ *
+ * A media query rather than a `xl:` variant on the one template that uses it, because a variant
+ * would make the desk size something a screen has to remember to ask for — which is exactly the
+ * drift the roles exist to prevent. The breakpoint is ADR-0022's upper line, written in the same
+ * `rem` the `page-column` utility below writes its own in.
+ */
+:root {
+  --scale-display: 32px;
+}
+
+@media (width >= 80rem) {
+  :root {
+    --scale-display: 54px;
+  }
+}
+
 @theme inline {
   --color-surface: var(--palette-surface);
   --color-surface-raised: var(--palette-surface-raised);
@@ -164,7 +188,7 @@
    * 19px paging glyph — and they take the nearest role rather than earning one. A scale with a
    * step per drawing is not a scale.
    */
-  --text-display: 32px;
+  --text-display: var(--scale-display);
   --text-display--line-height: 1.05;
   --text-display--letter-spacing: -0.03em;
 
@@ -236,9 +260,14 @@
  * screen that got it wrong looks fine on both of the pictures anybody checks against. What a
  * screen still decides for itself is what it does with the room, not how much of it there is.
  *
- * The session shell uses it. The landing page and the wizard still write `mx-auto max-w-md`
- * inline and adopt this when their own tickets rebuild them — those two are the outstanding
- * users, not an exception to the rule.
+ * The session shell and the landing page use it. The wizard still writes `mx-auto max-w-md`
+ * inline and adopts this when its own ticket rebuilds it — the one outstanding user, not an
+ * exception to the rule.
+ *
+ * The landing page is also the one screen that takes the cap back off again, at the desk tier and
+ * nowhere else. The desk board gives the front door the whole page, and there is no shell standing
+ * over it to take the width over the way ADR-0022 §1 expects one to — so the page says so in one
+ * utility rather than this file growing a branch for its only exception.
  */
 @utility page-column {
   margin-inline: auto;
