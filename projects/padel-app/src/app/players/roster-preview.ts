@@ -21,14 +21,13 @@
  * roster change kept, so backing out is backing out of the cause.
  */
 import { ChangeDetectionStrategy, Component, computed, inject, Injectable } from '@angular/core';
-import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import type { Session } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { CourtCard } from '../round/court-card';
 import { roundView } from '../round/round-view';
 import type { RoundView } from '../round/round-view';
-import { openBottomSheet } from '../sheet/bottom-sheet';
+import { Sheets } from '../sheet/sheets';
 
 export interface RosterPreviewData {
   /** The evening as it would be. Stored by the caller if this sheet closes with `true`. */
@@ -82,15 +81,13 @@ export class RosterPreviewSheet {
 /**
  * Asking the question, from the screen where the roster moves.
  *
- * A service rather than a function taking `Dialog` and `Overlay` for the reason `Confirm` is one:
- * those two always travel together and neither is anything the Players tab has an opinion about. A
- * screen holding both would be holding the machinery of a bottom sheet in order to show a
- * schedule.
+ * A service rather than a function for the reason `Confirm` is one: opening a sheet is machinery
+ * the Players tab has no opinion about, and a screen holding it would be holding it in order to
+ * show a schedule.
  */
 @Injectable({ providedIn: 'root' })
 export class RosterPreview {
-  private readonly dialog = inject(Dialog);
-  private readonly overlay = inject(Overlay);
+  private readonly sheets = inject(Sheets);
 
   /**
    * Show the regenerated remainder, and answer whether the organizer caused it.
@@ -100,12 +97,7 @@ export class RosterPreview {
    * on nothing else.
    */
   async granted(data: RosterPreviewData): Promise<boolean> {
-    const confirmed = await openBottomSheet<boolean, RosterPreviewData>(
-      this.dialog,
-      this.overlay,
-      RosterPreviewSheet,
-      data,
-    );
+    const confirmed = await this.sheets.open<boolean, RosterPreviewData>(RosterPreviewSheet, data);
 
     return confirmed === true;
   }

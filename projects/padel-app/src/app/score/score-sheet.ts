@@ -23,12 +23,11 @@
  * silently break every evening played to anything else.
  */
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import type { ScoreEntry, Side } from 'padel-engine';
 import { copy } from '../copy/copy';
 import type { CourtView } from '../round/round-view';
-import { openBottomSheet } from '../sheet/bottom-sheet';
+import { Sheets } from '../sheet/sheets';
 
 /** The court that was tapped, and the total its two numbers have to add up to. */
 export interface ScoreSheetData {
@@ -86,6 +85,17 @@ export class ScoreSheet {
     return `score-${this.sheetId}-${side}`;
   }
 
+  /**
+   * Whether this is the side the number was typed into — the one of the two that is real.
+   *
+   * The card marks it in brand the way the Round tab marks a scored court, so that a glance at a
+   * reopened sheet says which direction the result was entered in. Both fields are the same field
+   * either way: what differs is a border, never what can be done to them.
+   */
+  protected isTyped(side: Side): boolean {
+    return this.typed().side === side;
+  }
+
   protected valueFor(side: Side): string {
     const typed = this.typed();
     if (typed.side === side) {
@@ -133,16 +143,15 @@ export class ScoreSheet {
 /**
  * Open the sheet for one court and wait for the number, or for nothing.
  *
- * Opening it lives here rather than at the call site because where it opens is a fact about this
- * component rather than about the screen that asked for it (ADR-0014 §1). A caller that had to say
- * so would be a caller that could forget to.
+ * Opening it lives here rather than at the call site because which component the Round tab is
+ * asking for is a fact about scoring, not about the screen. Where the sheet lands is a fact about
+ * neither, and `Sheets` is the only thing that knows it (ADR-0022 §4).
  */
 export function openScoreSheet(
-  dialog: Dialog,
-  overlay: Overlay,
+  sheets: Sheets,
   data: ScoreSheetData,
 ): Promise<ScoreEntry | undefined> {
-  return openBottomSheet<ScoreEntry, ScoreSheetData>(dialog, overlay, ScoreSheet, data);
+  return sheets.open<ScoreEntry, ScoreSheetData>(ScoreSheet, data);
 }
 
 /**

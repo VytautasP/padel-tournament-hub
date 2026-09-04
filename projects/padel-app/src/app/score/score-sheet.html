@@ -1,43 +1,66 @@
-<section class="space-y-5 rounded-t-3xl border border-line bg-surface-raised p-5 shadow-sheet">
-  <h2 class="text-micro font-bold text-ink-muted uppercase">
-    {{ data.court.name }}
-  </h2>
+<!--
+  The sheet's own chrome — where it sits, how its corners are cut, which way its shadow falls — is
+  not here. `Sheets` decides that and `styles.css` draws it, because it is the same answer for
+  every focused surface in the app and a different answer at the desk (ADR-0022 §4). What is here
+  is one court and the two numbers it can hold.
+-->
+<section class="flex flex-col gap-[22px] px-5 pt-[22px] pb-[34px]">
+  <div class="flex flex-col gap-3 rounded-[18px] border-[1.5px] border-brand px-[18px] py-4">
+    <h2 class="text-micro font-bold text-ink-muted uppercase">
+      {{ data.court.name }}
+    </h2>
 
-  @for (entry of sides; track entry.side) {
-    <div class="flex items-center justify-between gap-4">
-      <label class="min-w-0 flex-1 truncate text-row text-ink" [attr.for]="fieldId(entry.side)">
-        {{ copy.round.side(entry.names) }}
-      </label>
-      <div class="flex items-baseline gap-2">
-        <input
-          type="text"
-          inputmode="numeric"
-          autocomplete="off"
-          class="w-20 rounded-xl border border-line bg-surface px-3 py-2 text-right text-name text-ink"
-          [id]="fieldId(entry.side)"
-          [value]="valueFor(entry.side)"
-          (input)="onInput(entry.side, $event)"
-        />
-        <span class="text-meta text-ink-muted">{{ copy.score.outOf(data.targetScore) }}</span>
+    @for (entry of sides; track entry.side) {
+      @if (!$first) {
+        <span class="text-micro font-bold text-ink-muted uppercase">{{ copy.round.versus }}</span>
+      }
+
+      <div class="flex items-center gap-[14px]">
+        <label class="text-name min-w-0 flex-1 truncate text-ink" [attr.for]="fieldId(entry.side)">
+          {{ copy.round.side(entry.names) }}
+        </label>
+        <div class="flex items-baseline gap-2">
+          <input
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            class="text-score h-[60px] w-[92px] rounded-[15px] bg-surface px-[14px] text-right font-bold text-ink"
+            [class]="isTyped(entry.side) ? 'border-[1.5px] border-brand' : 'border border-line'"
+            [id]="fieldId(entry.side)"
+            [value]="valueFor(entry.side)"
+            (input)="onInput(entry.side, $event)"
+          />
+          <span class="text-meta text-ink-muted">{{ copy.score.outOf(data.targetScore) }}</span>
+        </div>
       </div>
-    </div>
-  }
+    }
+  </div>
 
+  <!--
+    A correction, not an alarm. Nothing has gone wrong with the evening — a number was typed that
+    the match cannot hold — so it is the warning token rather than the danger one, and it is set at
+    the weight of the sentences everywhere else rather than shouted in bold.
+  -->
   @if (tooHigh()) {
-    <p class="text-meta font-bold text-ink">{{ copy.score.tooHigh(data.targetScore) }}</p>
+    <p class="text-meta text-warning">{{ copy.score.tooHigh(data.targetScore) }}</p>
   }
 
+  <!--
+    Save is the button this sheet exists for and it is weighted accordingly: filled, bold, and on
+    the side a right thumb reaches without moving the phone. Cancel is the same size — it has to
+    stay easy to hit by intention — and nothing else.
+  -->
   <div class="flex gap-3">
     <button
       type="button"
-      class="flex-1 rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
+      class="text-control h-[54px] flex-1 rounded-[15px] border border-line text-ink"
       (click)="cancel()"
     >
       {{ copy.score.cancel }}
     </button>
     <button
       type="button"
-      class="flex-1 rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink disabled:opacity-40"
+      class="text-control h-[54px] flex-1 rounded-[15px] bg-brand font-bold text-brand-ink disabled:opacity-40"
       [disabled]="!canSave()"
       (click)="save()"
     >

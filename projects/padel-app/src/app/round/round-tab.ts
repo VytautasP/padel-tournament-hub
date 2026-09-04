@@ -30,14 +30,13 @@
  */
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { Dialog } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
 import { copy } from '../copy/copy';
 import { CourtCard } from './court-card';
 import { roundView } from './round-view';
 import type { CourtView } from './round-view';
 import { openScoreSheet } from '../score/score-sheet';
 import { SessionStore } from '../session/session-store';
+import { Sheets } from '../sheet/sheets';
 
 @Component({
   selector: 'app-round-tab',
@@ -47,8 +46,7 @@ import { SessionStore } from '../session/session-store';
 })
 export class RoundTab {
   private readonly store = inject(SessionStore);
-  private readonly dialog = inject(Dialog);
-  private readonly overlay = inject(Overlay);
+  private readonly sheets = inject(Sheets);
 
   /**
    * The page the organizer has asked for. Set when the tab opens, moved only by them, and never by
@@ -169,7 +167,7 @@ export class RoundTab {
       return;
     }
 
-    const entry = await openScoreSheet(this.dialog, this.overlay, {
+    const entry = await openScoreSheet(this.sheets, {
       court,
       targetScore: session.targetScore,
     });

@@ -32,6 +32,8 @@ import { LAYOUT } from '../layout/layout';
 import type { Tier } from '../layout/layout';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
+import { SHEET_PANEL } from '../sheet/sheets';
+import type { SheetPosition } from '../sheet/sheets';
 
 /** What a launch can be told. Everything here has a default, and most launches take all of them. */
 export interface LaunchOptions {
@@ -206,6 +208,37 @@ export class AppHarness {
     }
 
     assertSessionValid(record.session);
+  }
+
+  /**
+   * Where the focused surface currently on screen is anchored.
+   *
+   * The one thing about a sheet a spec cannot read as words. Everything else here goes through
+   * labels and rendered text, and position deliberately does not have any — a bottom sheet and a
+   * centered dialog say the same sentences, which is the point of ADR-0022 §4. So it is read off
+   * the class `Sheets` gave the overlay panel, named by the constant that file exports rather than
+   * spelled out again here.
+   *
+   * jsdom does no layout, so there is nothing else to read: the panel's own geometry is zero at
+   * every width.
+   */
+  sheetPosition(): SheetPosition {
+    const positions = Object.entries(SHEET_PANEL) as [SheetPosition, string][];
+    const found = this.roots()
+      .flatMap((root) => [...root.querySelectorAll('.cdk-overlay-pane')])
+      .flatMap((panel) =>
+        positions.filter(([, panelClass]) => panel.classList.contains(panelClass)),
+      )
+      .map(([position]) => position);
+
+    if (found.length === 0) {
+      throw new Error('No sheet is on screen.');
+    }
+    if (found.length > 1) {
+      throw new Error(`${found.length} sheets are on screen at once.`);
+    }
+
+    return found[0];
   }
 
   private appRoot(): HTMLElement {

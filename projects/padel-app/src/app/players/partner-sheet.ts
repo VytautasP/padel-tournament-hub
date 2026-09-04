@@ -18,10 +18,9 @@
  * regenerated schedule before any of it commits (ADR-0015).
  */
 import { ChangeDetectionStrategy, Component, inject, Injectable, signal } from '@angular/core';
-import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { copy } from '../copy/copy';
-import { openBottomSheet } from '../sheet/bottom-sheet';
+import { Sheets } from '../sheet/sheets';
 
 /** The team being repaired, as the organizer reads it: `Ana & Ben`. */
 export interface PartnerData {
@@ -68,17 +67,11 @@ export class PartnerSheet {
 /** Asking for the name, from the row that is flagged `needs partner`. */
 @Injectable({ providedIn: 'root' })
 export class Partner {
-  private readonly dialog = inject(Dialog);
-  private readonly overlay = inject(Overlay);
+  private readonly sheets = inject(Sheets);
 
   /** The name the organizer gave, or `null` if they left the sheet any other way. */
   async named(team: string): Promise<string | null> {
-    const name = await openBottomSheet<string, PartnerData>(
-      this.dialog,
-      this.overlay,
-      PartnerSheet,
-      { team },
-    );
+    const name = await this.sheets.open<string, PartnerData>(PartnerSheet, { team });
 
     return name ?? null;
   }
