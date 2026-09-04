@@ -71,6 +71,10 @@
   --palette-brand: #0e6f87;
   --palette-brand-strong: #0a5568;
   --palette-brand-ink: #ffffff;
+  /* The brand at a whisper: the ground the podium block sits on, and nothing else so far. It is a
+     token rather than an opacity modifier because the two themes do not agree on the strength —
+     5% carries on the light ramp and disappears on the dark one. */
+  --palette-brand-wash: #0e6f870d;
   --palette-podium-gold: #8a6113;
   --palette-podium-silver: #5c6672;
   --palette-podium-bronze: #8a4b22;
@@ -99,6 +103,7 @@
     --palette-brand: #3fa8c4;
     --palette-brand-strong: #63c1d8;
     --palette-brand-ink: #04161c;
+    --palette-brand-wash: #3fa8c41a;
     --palette-podium-gold: #e0a44a;
     --palette-podium-silver: #b3bfcc;
     --palette-podium-bronze: #d08a56;
@@ -127,6 +132,7 @@
   --color-brand: var(--palette-brand);
   --color-brand-strong: var(--palette-brand-strong);
   --color-brand-ink: var(--palette-brand-ink);
+  --color-brand-wash: var(--palette-brand-wash);
   --color-podium-gold: var(--palette-podium-gold);
   --color-podium-silver: var(--palette-podium-silver);
   --color-podium-bronze: var(--palette-podium-bronze);
