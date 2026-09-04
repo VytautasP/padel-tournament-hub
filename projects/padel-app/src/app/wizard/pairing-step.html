@@ -31,11 +31,21 @@
             </span>
             <button
               type="button"
-              class="text-name flex size-11 shrink-0 items-center justify-center text-ink-muted"
+              class="flex size-11 shrink-0 items-center justify-center text-ink-muted"
               [attr.aria-label]="copy.wizard.pairing.unpair(copy.team.name(team.names))"
               (click)="unpair(team.key)"
             >
-              {{ copy.wizard.pairing.unpairGlyph }}
+              <svg
+                class="size-4"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M3 3 L13 13 M13 3 L3 13" />
+              </svg>
             </button>
           </li>
         }

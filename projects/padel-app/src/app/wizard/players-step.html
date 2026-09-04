@@ -6,9 +6,9 @@
   the reason the step is being held sit between the two, which is where somebody who has just
   committed a name is already looking.
 
-  The row is the name, the way to correct it and the way to remove it — three targets rather than
-  a name that is secretly a button, because in Mixicano a fourth control shares the row and a row
-  where everything is tappable says nothing about which tap does what.
+  Tapping a name is what corrects it (ADR-0017 §3), and the pencil the board draws at the end of
+  the row is inside that same button rather than beside it — an affordance on the target rather
+  than a second control doing what the first one already does.
 -->
 <section class="flex flex-col gap-[22px]">
   <header class="flex flex-col gap-[6px]">
@@ -66,27 +66,15 @@
         <li
           class="flex items-center gap-1 border-b border-line py-[5px] pr-2 pl-[18px] last:border-b-0"
         >
-          <span class="text-row min-w-0 flex-1 truncate text-ink">{{ player.name }}</span>
-
-          @if (asksGender()) {
-            <app-gender-toggle
-              class="shrink-0"
-              [selected]="player.gender ?? null"
-              [owner]="player.name"
-              (chose)="setGender(player.id, $event)"
-            />
-          }
-
-          <!-- A pencil rather than the name itself: it says the row can be corrected, on a row that
-               already answers to three other taps. -->
           <button
             type="button"
-            class="flex size-11 shrink-0 items-center justify-center text-ink-muted"
+            class="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
             [attr.aria-label]="copy.wizard.players.edit(player.name)"
             (click)="edit(player.id, player.name)"
           >
+            <span class="text-row min-w-0 flex-1 truncate text-ink">{{ player.name }}</span>
             <svg
-              class="size-[19px]"
+              class="size-[19px] shrink-0 text-ink-muted"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -99,13 +87,32 @@
             </svg>
           </button>
 
+          @if (asksGender()) {
+            <app-gender-toggle
+              class="shrink-0"
+              [selected]="player.gender ?? null"
+              [owner]="player.name"
+              (chose)="setGender(player.id, $event)"
+            />
+          }
+
           <button
             type="button"
-            class="text-name flex size-11 shrink-0 items-center justify-center text-ink-muted"
+            class="flex size-11 shrink-0 items-center justify-center text-ink-muted"
             [attr.aria-label]="copy.wizard.players.remove(player.name)"
             (click)="remove(player.id)"
           >
-            {{ copy.wizard.players.removeGlyph }}
+            <svg
+              class="size-4"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M3 3 L13 13 M13 3 L3 13" />
+            </svg>
           </button>
         </li>
       }

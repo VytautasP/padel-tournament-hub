@@ -11,9 +11,9 @@
  * one whose club booked courts 7 and 8 does not have to send four people to the wrong end of the
  * building.
  *
- * The button that commits the evening is not here. It is the wizard's, in the place every step's
- * primary button has been, because a way on that moved to the bottom of the content on the one
- * screen where the act is irreversible is the worst screen to move it on.
+ * The button that commits the evening is not here. It belongs to the wizard, in the place every
+ * step's primary button has stood since the first one — and the last step, where the act is
+ * irreversible, is the worst possible screen on which to move it somewhere new.
  */
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { copy, modeNames } from '../copy/copy';

@@ -108,7 +108,7 @@ async function stepsAt(tier: Tier): Promise<Record<string, string>> {
   const players = app.text();
 
   await app.tap('Next');
-  await pairEveryone(app);
+  await pairEveryone(app, ROSTER);
   const pairing = app.text();
 
   await app.tap('Next');
@@ -125,7 +125,7 @@ async function atReview(mode: string, names: readonly string[], tier?: Tier): Pr
   await app.tap('Next');
 
   if (app.shows('Who plays with whom?')) {
-    await pairEveryone(app);
+    await pairEveryone(app, names);
     await app.tap('Next');
   }
 
@@ -140,8 +140,8 @@ async function enterRoster(app: AppHarness, names: readonly string[]): Promise<v
 }
 
 /** The roster in the order it was typed, paired off two at a time. */
-async function pairEveryone(app: AppHarness): Promise<void> {
-  for (const name of ROSTER) {
+async function pairEveryone(app: AppHarness, names: readonly string[]): Promise<void> {
+  for (const name of names) {
     await app.tap(`Pair ${name}`);
   }
 }

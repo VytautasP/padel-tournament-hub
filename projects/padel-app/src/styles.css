@@ -262,7 +262,7 @@
  *
  * The session shell and the landing page use it. The wizard does not, and that is the one place
  * the rule is genuinely declined rather than not yet applied: it is a single centred column at
- * every width by design (ADR-0022 §4), so the room the widened tier hands over is room it has
+ * every width by design (ADR-0022 §4 and decision 14 of #33), so the room the widened tier hands over is room it has
  * nothing to do with — a court-naming field stretched across 56rem is worse than the same field
  * at the width it was drawn. It keeps its own `max-w-md` and centres in whatever is left.
  *
