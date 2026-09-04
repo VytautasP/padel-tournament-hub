@@ -73,25 +73,38 @@ export class CreateWizard {
     }
   });
 
-  /** Whether this step is one the organizer walks on from, as opposed to the last one. */
-  protected readonly hasNext = computed(() => this.step() !== 'review');
+  /**
+   * The bar per step at the top, and how far along it the organizer is (`Wizard.dc.html`).
+   *
+   * It is derived from the same list the walk is, so a Team Americano evening shows four and
+   * everything else shows three without either number being written down. A wizard whose progress
+   * counted steps the mode does not have would be promising a screen that never arrives.
+   */
+  protected readonly progress = computed(() => {
+    const steps = this.steps();
+    const reached = steps.indexOf(this.step());
+
+    return steps.map((name, index) => ({ name, reached: index <= reached }));
+  });
+
+  /** Whether there is a screen behind this one. There is not, on the first one. */
+  protected readonly canGoBack = computed(() => this.steps().indexOf(this.step()) > 0);
 
   protected next(): void {
     const steps = this.steps();
     this.step.update((step) => steps[Math.min(steps.indexOf(step) + 1, steps.length - 1)]);
   }
 
-  /** Back off the first step leaves the wizard, dropping the draft with it. */
+  /** One screen back, over any step this mode does not ask (the pairing step in two of three). */
   protected back(): void {
     const steps = this.steps();
     const index = steps.indexOf(this.step());
-    if (index === 0) {
-      this.cancelled.emit();
+    this.step.set(steps[Math.max(index - 1, 0)]);
+  }
 
-      return;
-    }
-
-    this.step.set(steps[index - 1]);
+  /** Leave the wizard, dropping the draft with it. Nothing has been written to say otherwise. */
+  protected cancel(): void {
+    this.cancelled.emit();
   }
 
   protected async create(): Promise<void> {

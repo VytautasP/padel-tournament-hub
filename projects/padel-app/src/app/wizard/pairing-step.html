@@ -1,41 +1,41 @@
-<section class="space-y-5">
-  <header class="space-y-1">
-    <h1 class="text-title font-bold text-ink">
-      {{ copy.wizard.pairing.heading }}
-    </h1>
-    <p class="text-meta text-ink-muted">{{ copy.wizard.pairing.lead }}</p>
+<!--
+  Team Americano's own step: tap a name, tap their partner, they are a team.
+
+  Two lists, and which one a name is in is the whole state of the screen. A formed team is a row on
+  a card reading as one thing — both names on one line, one control to break it up — while everyone
+  still on their own is a loose pill in the list underneath. The held pill wears the brand fill, so
+  what the next tap is about to do is visible before it happens rather than explained afterwards.
+
+  The teams come first because they are the answer being built. The unpaired list shortens as the
+  screen is used and is empty by the end, which is what makes the step's own end obvious without
+  reading the sentence under it.
+-->
+<section class="flex flex-col gap-[22px]">
+  <header class="flex flex-col gap-[6px]">
+    <h1 class="text-title font-bold text-ink">{{ copy.wizard.pairing.heading }}</h1>
+    <p class="text-lead text-pretty text-ink-muted">{{ copy.wizard.pairing.lead }}</p>
   </header>
 
   @if (draft().teams().length > 0) {
-    <div class="space-y-3">
+    <div class="flex flex-col gap-3">
       <h2 class="text-micro font-bold text-ink-muted uppercase">
         {{ copy.wizard.pairing.teams }}
       </h2>
-      <ul
-        class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised"
-      >
+      <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
         @for (team of draft().teams(); track team.key) {
-          <li class="flex items-center">
-            <span class="min-w-0 flex-1 truncate px-4 py-3 text-control text-ink">
+          <li
+            class="flex items-center gap-1 border-b border-line py-[5px] pr-2 pl-[18px] last:border-b-0"
+          >
+            <span class="text-row min-w-0 flex-1 truncate text-ink">
               {{ copy.team.name(team.names) }}
             </span>
             <button
               type="button"
-              class="px-4 py-3 text-ink-muted"
+              class="text-name flex size-11 shrink-0 items-center justify-center text-ink-muted"
               [attr.aria-label]="copy.wizard.pairing.unpair(copy.team.name(team.names))"
               (click)="unpair(team.key)"
             >
-              <svg
-                class="size-4"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                aria-hidden="true"
-              >
-                <path d="M3 3 L13 13 M13 3 L3 13" />
-              </svg>
+              {{ copy.wizard.pairing.unpairGlyph }}
             </button>
           </li>
         }
@@ -44,7 +44,7 @@
   }
 
   @if (choices().length > 0) {
-    <div class="space-y-3">
+    <div class="flex flex-col gap-3">
       <h2 class="text-micro font-bold text-ink-muted uppercase">
         {{ copy.wizard.pairing.unpaired }}
       </h2>
@@ -53,7 +53,7 @@
           <li>
             <button
               type="button"
-              class="rounded-full border px-4 py-2 text-control font-bold"
+              class="text-control rounded-full border px-4 py-[10px] font-bold"
               [class]="
                 choice.waiting ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink'
               "
@@ -66,6 +66,7 @@
           </li>
         }
       </ul>
+      <!-- Why Next is withheld, on the screen that is holding it. -->
       <p class="text-meta font-bold text-ink">{{ copy.wizard.pairing.unpairedRemain }}</p>
     </div>
   }

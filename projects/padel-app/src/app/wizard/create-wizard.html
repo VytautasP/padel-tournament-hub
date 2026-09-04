@@ -1,38 +1,99 @@
-<main class="mx-auto flex min-h-screen max-w-md flex-col gap-6 px-6 py-8">
-  <div class="flex-1">
-    @switch (current()) {
-      @case ('mode') {
-        <app-mode-step [draft]="draft" (chosen)="next()" />
-      }
-      @case ('players') {
-        <app-players-step [draft]="draft" />
-      }
-      @case ('pairing') {
-        <app-pairing-step [draft]="draft" />
-      }
-      @case ('review') {
-        <app-review-step [draft]="draft" (create)="create()" />
-      }
-    }
-  </div>
+<!--
+  The wizard's chrome, drawn once around whichever step is on screen (`Wizard.dc.html`).
 
-  <nav class="flex gap-3">
-    <button
-      type="button"
-      class="flex-1 rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
-      (click)="back()"
-    >
-      {{ current() === 'mode' ? copy.wizard.cancel : copy.wizard.back }}
-    </button>
-    @if (hasNext() && current() !== 'mode') {
+  Three bands: the way out at the top, one question in the middle, the way on at the bottom. The
+  step in the middle is the only thing that changes, which is the whole point of a wizard — the
+  organizer is never looking for the button, because it has not moved since the last screen.
+
+  **Leaving and stepping back are two different acts, so they are two different controls.** Cancel
+  drops the draft and is on screen the whole way through; Back moves one screen and is absent on
+  the first, where there is nothing behind it. The board puts them at opposite ends of the same
+  line with the progress between them, and the ends are what tells them apart at a glance.
+
+  **Single column at every width** (ADR-0022 §4, decision 14 of #33). Nothing here reads the tier
+  and nothing here is duplicated behind a breakpoint: one question at a time is the right shape at
+  a desk as well, so above the phone the column stops filling the viewport and simply centres in
+  it, sized to what the step is asking. `page-column` is deliberately not used — it exists to give
+  the widened tier the measure that courts two-up need, and a wizard has nothing to do with the
+  extra room.
+-->
+<main class="flex min-h-screen justify-center px-5 pt-[22px] pb-[22px] md:items-center md:py-12">
+  <div class="flex w-full max-w-md flex-1 flex-col md:flex-none">
+    <!--
+      A three-column grid rather than a row spaced apart, so the progress stays centred on the
+      first step, where the right-hand end carries nothing.
+    -->
+    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+      <button type="button" class="text-lead justify-self-start text-ink-muted" (click)="cancel()">
+        {{ copy.wizard.cancel }}
+      </button>
+
+      <!--
+        How far in the organizer is, as a bar per step. It is read rather than announced: the
+        step's own heading is what says where this is, and a screen reader counting anonymous
+        pills over the top of it would be saying the same thing twice, worse.
+      -->
+      <div class="flex gap-[6px]" aria-hidden="true">
+        @for (step of progress(); track step.name) {
+          <span
+            class="h-1 w-[26px] rounded-full"
+            [class]="step.reached ? 'bg-brand' : 'bg-line'"
+          ></span>
+        }
+      </div>
+
+      @if (canGoBack()) {
+        <button type="button" class="text-lead justify-self-end text-brand" (click)="back()">
+          {{ copy.wizard.back }}
+        </button>
+      }
+    </div>
+
+    <!--
+      The question. It takes the room left over on a phone so the button below it sits on the
+      bottom edge under the thumb, and hugs its content above the phone, where there is no thumb
+      and a button stranded at the foot of a tall window is just far away.
+    -->
+    <div class="flex flex-1 flex-col pt-[26px] pb-[22px] md:flex-none">
+      @switch (current()) {
+        @case ('mode') {
+          <app-mode-step [draft]="draft" (chosen)="next()" />
+        }
+        @case ('players') {
+          <app-players-step [draft]="draft" />
+        }
+        @case ('pairing') {
+          <app-pairing-step [draft]="draft" />
+        }
+        @case ('review') {
+          <app-review-step [draft]="draft" />
+        }
+      }
+    </div>
+
+    <!--
+      One primary button, in one place, all the way through: Next, and on the last step the one
+      that commits the evening. The mode step has neither, because picking a format is what
+      advances it and a Next beside three cards would be a second way to do the thing that has
+      already been done.
+    -->
+    @if (current() === 'review') {
       <button
         type="button"
-        class="flex-1 rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink disabled:opacity-40"
+        class="text-control h-[54px] w-full rounded-[15px] bg-brand font-bold text-brand-ink"
+        (click)="create()"
+      >
+        {{ copy.wizard.review.create }}
+      </button>
+    } @else if (current() !== 'mode') {
+      <button
+        type="button"
+        class="text-control h-[54px] w-full rounded-[15px] bg-brand font-bold text-brand-ink disabled:opacity-40"
         [disabled]="!canAdvance()"
         (click)="next()"
       >
         {{ copy.wizard.next }}
       </button>
     }
-  </nav>
+  </div>
 </main>

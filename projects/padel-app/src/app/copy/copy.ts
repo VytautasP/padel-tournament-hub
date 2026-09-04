@@ -79,6 +79,14 @@ export const copy = {
       save: 'Save',
       edit: (name: string): string => `Edit ${name}`,
       remove: (name: string): string => `Remove ${name}`,
+      /**
+       * The × on a row, which is a glyph on screen and a sentence to a screen reader.
+       *
+       * The same arrangement as the one beside a history row, and for the same reason: beside a
+       * name the organizer just typed, the cross is all a thumb needs, and "Remove" alone would
+       * not say remove *whom* to somebody who cannot see the row it sits on.
+       */
+      removeGlyph: '×',
       count: (playerCount: number): string =>
         playerCount === 1 ? '1 player' : `${playerCount} players`,
       tooFew: (minimum: number): string => `A session needs at least ${minimum} players.`,
@@ -117,6 +125,8 @@ export const copy = {
       choose: (name: string): string => `Pair ${name}`,
       /** Undoing a pair, which returns both names to the list they came from. */
       unpair: (team: string): string => `Break up ${team}`,
+      /** The glyph that does it, beside a team the way the roster's × sits beside a name. */
+      unpairGlyph: '×',
       /** Why Next is withheld while somebody is still standing on their own. */
       unpairedRemain: 'Every player needs a partner before the evening can be created.',
     },

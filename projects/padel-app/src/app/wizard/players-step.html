@@ -1,90 +1,114 @@
-<section class="space-y-5">
-  <header class="space-y-1">
-    <h1 class="text-title font-bold text-ink">
-      {{ copy.wizard.players.heading }}
-    </h1>
-    <p class="text-meta text-ink-muted">{{ copy.wizard.players.lead }}</p>
+<!--
+  The roster, typed one name at a time (`Wizard.dc.html`).
+
+  Everything on this screen is arranged around the field keeping the keyboard: it sits directly
+  under the question with Add beside it, and the list grows downwards away from it. The count and
+  the reason the step is being held sit between the two, which is where somebody who has just
+  committed a name is already looking.
+
+  The row is the name, the way to correct it and the way to remove it — three targets rather than
+  a name that is secretly a button, because in Mixicano a fourth control shares the row and a row
+  where everything is tappable says nothing about which tap does what.
+-->
+<section class="flex flex-col gap-[22px]">
+  <header class="flex flex-col gap-[6px]">
+    <h1 class="text-title font-bold text-ink">{{ copy.wizard.players.heading }}</h1>
+    <p class="text-lead text-pretty text-ink-muted">{{ copy.wizard.players.lead }}</p>
   </header>
 
-  <form class="flex gap-2" (submit)="$event.preventDefault(); commit()">
+  <form class="flex gap-[10px]" (submit)="$event.preventDefault(); commit()">
     <input
       #field
       type="text"
       autocomplete="off"
-      class="min-w-0 flex-1 rounded-xl border border-line bg-surface-raised px-4 py-3 text-control text-ink"
+      class="text-control h-[52px] min-w-0 flex-1 rounded-[15px] border border-line bg-surface-raised px-4 text-ink focus:border-brand focus:outline-none"
       [placeholder]="copy.wizard.players.placeholder"
       [value]="typed()"
       (input)="onType($event)"
     />
     <button
       type="submit"
-      class="rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
+      class="text-control h-[52px] w-[84px] shrink-0 rounded-[15px] bg-brand font-bold text-brand-ink"
     >
       {{ isEditing() ? copy.wizard.players.save : copy.wizard.players.add }}
     </button>
   </form>
 
-  <p class="text-meta text-ink-muted">
-    {{ copy.wizard.players.count(draft().players().length) }}
-  </p>
+  <div class="flex flex-col gap-2">
+    <span class="text-micro font-bold text-ink-muted uppercase">
+      {{ copy.wizard.players.count(draft().players().length) }}
+    </span>
 
-  @switch (draft().playersProblem()) {
-    @case ('too-few') {
-      <p class="text-meta font-bold text-ink">
-        {{ copy.wizard.players.tooFew(minimumPlayers) }}
-      </p>
+    <!--
+      Why the step is being held, said where the roster it is about is standing. One at a time:
+      each of these is a different problem with a different fix, and two of them on screen at once
+      would leave the organizer picking which sentence to believe.
+    -->
+    @switch (draft().playersProblem()) {
+      @case ('too-few') {
+        <p class="text-meta font-bold text-ink">
+          {{ copy.wizard.players.tooFew(minimumPlayers) }}
+        </p>
+      }
+      @case ('gender-missing') {
+        <p class="text-meta font-bold text-ink">{{ copy.wizard.players.genderMissing }}</p>
+      }
+      @case ('odd-roster') {
+        <p class="text-meta font-bold text-ink">{{ copy.wizard.players.oddRoster }}</p>
+      }
     }
-    @case ('gender-missing') {
-      <p class="text-meta font-bold text-ink">
-        {{ copy.wizard.players.genderMissing }}
-      </p>
-    }
-    @case ('odd-roster') {
-      <p class="text-meta font-bold text-ink">
-        {{ copy.wizard.players.oddRoster }}
-      </p>
-    }
-  }
+  </div>
 
-  <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">
-    @for (player of draft().players(); track player.id) {
-      <li class="flex items-center">
-        <button
-          type="button"
-          class="min-w-0 flex-1 truncate px-4 py-3 text-left text-row text-ink"
-          [attr.aria-label]="copy.wizard.players.edit(player.name)"
-          (click)="edit(player.id, player.name)"
+  <!-- Absent until there is a roster: an empty card is a box with nothing in it saying nothing. -->
+  @if (draft().players().length > 0) {
+    <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+      @for (player of draft().players(); track player.id) {
+        <li
+          class="flex items-center gap-1 border-b border-line py-[5px] pr-2 pl-[18px] last:border-b-0"
         >
-          {{ player.name }}
-        </button>
-        @if (asksGender()) {
-          <app-gender-toggle
-            class="shrink-0"
-            [selected]="player.gender ?? null"
-            [owner]="player.name"
-            (chose)="setGender(player.id, $event)"
-          />
-        }
+          <span class="text-row min-w-0 flex-1 truncate text-ink">{{ player.name }}</span>
 
-        <button
-          type="button"
-          class="px-4 py-3 text-ink-muted"
-          [attr.aria-label]="copy.wizard.players.remove(player.name)"
-          (click)="remove(player.id)"
-        >
-          <svg
-            class="size-4"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            aria-hidden="true"
+          @if (asksGender()) {
+            <app-gender-toggle
+              class="shrink-0"
+              [selected]="player.gender ?? null"
+              [owner]="player.name"
+              (chose)="setGender(player.id, $event)"
+            />
+          }
+
+          <!-- A pencil rather than the name itself: it says the row can be corrected, on a row that
+               already answers to three other taps. -->
+          <button
+            type="button"
+            class="flex size-11 shrink-0 items-center justify-center text-ink-muted"
+            [attr.aria-label]="copy.wizard.players.edit(player.name)"
+            (click)="edit(player.id, player.name)"
           >
-            <path d="M3 3 L13 13 M13 3 L3 13" />
-          </svg>
-        </button>
-      </li>
-    }
-  </ul>
+            <svg
+              class="size-[19px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            class="text-name flex size-11 shrink-0 items-center justify-center text-ink-muted"
+            [attr.aria-label]="copy.wizard.players.remove(player.name)"
+            (click)="remove(player.id)"
+          >
+            {{ copy.wizard.players.removeGlyph }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
 </section>
