@@ -79,10 +79,13 @@
   --palette-danger: #a8322b;
 
   /*
-   * Two roles, not a scale: a card resting on the page, and a sheet lifted over a scrim.
+   * Three roles, not a scale: a card resting on the page, a sheet lifted over a scrim from the
+   * bottom edge, and the same sheet floating free in the middle of a desk (ADR-0022 §4). The
+   * sheet's shadow only rises, because nothing is under it; the dialog's falls all round.
    */
   --palette-shadow-raised: 0 2px 6px rgba(16, 23, 32, 0.06);
   --palette-shadow-sheet: 0 -8px 30px rgba(16, 23, 32, 0.25);
+  --palette-shadow-dialog: 0 18px 50px rgba(16, 23, 32, 0.28);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -110,6 +113,7 @@
      */
     --palette-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.45);
     --palette-shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.6);
+    --palette-shadow-dialog: 0 18px 50px rgba(0, 0, 0, 0.65);
   }
 }
 
@@ -132,6 +136,7 @@
 
   --shadow-raised: var(--palette-shadow-raised);
   --shadow-sheet: var(--palette-shadow-sheet);
+  --shadow-dialog: var(--palette-shadow-dialog);
 
   /*
    * Two faces. Verdana carries every word that is read — it was drawn for small sizes on screen
@@ -237,6 +242,58 @@
   @media (width >= 48rem) {
     max-width: 56rem;
   }
+}
+
+/*
+ * The two shapes a focused surface wears, and the whole of what changes between them.
+ *
+ * A sheet's own template says nothing about where it is — `sheet/sheets.ts` picks one of these two
+ * classes for the overlay panel and the sheet inherits it without knowing (ADR-0022 §4). So
+ * everything that is a fact about position rather than about content lives here: the surface and
+ * its line, which corners are cut, which way the shadow falls, and the drag handle.
+ *
+ * `overflow: hidden` is what makes the radius real. The panel's child is CDK's dialog container
+ * and the sheet's own `<section>` is inside that, so a square corner two levels down would
+ * otherwise paint straight over a rounded one up here.
+ */
+.sheet-at-the-bottom,
+.sheet-in-the-middle {
+  /* CDK lays the panel out as a flex row holding the dialog container. Turning it into a column
+     is what lets the handle below sit above the sheet rather than beside it. */
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--palette-surface-raised);
+}
+
+.sheet-at-the-bottom {
+  border-top: 1px solid var(--palette-line);
+  border-radius: 26px 26px 0 0;
+  box-shadow: var(--palette-shadow-sheet);
+}
+
+/*
+ * The handle: a phone affordance, drawn by the only thing that knows it is on a phone.
+ *
+ * It says the surface came up from the edge and can be pushed back down. On a desk it would be
+ * saying something untrue about a dialog nailed to the middle of the screen, which is exactly why
+ * it is here and not in a sheet's template.
+ */
+.sheet-at-the-bottom::before {
+  content: '';
+  /* The panel is a flex container, so the handle centres itself across the column rather than
+     being centred by auto margins — which silently do nothing here and leave it at the edge. */
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin-top: 14px;
+  border-radius: 999px;
+  background-color: var(--palette-line);
+}
+
+.sheet-in-the-middle {
+  border: 1px solid var(--palette-line);
+  border-radius: 26px;
+  box-shadow: var(--palette-shadow-dialog);
 }
 
 html,

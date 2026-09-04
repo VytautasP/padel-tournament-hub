@@ -23,12 +23,11 @@
  * silently break every evening played to anything else.
  */
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import type { ScoreEntry, Side } from 'padel-engine';
 import { copy } from '../copy/copy';
 import type { CourtView } from '../round/round-view';
-import { openBottomSheet } from '../sheet/bottom-sheet';
+import { Sheets } from '../sheet/sheets';
 
 /** The court that was tapped, and the total its two numbers have to add up to. */
 export interface ScoreSheetData {
@@ -86,6 +85,26 @@ export class ScoreSheet {
     return `score-${this.sheetId}-${side}`;
   }
 
+  /**
+   * Whether this field is holding the number rather than showing one derived from it.
+   *
+   * The card marks that one in brand, the way the Round tab marks a scored court, so the pair on
+   * screen says which of the two is the fact and which is `target - fact`. Both fields are the
+   * same field either way: what differs is a border, never what can be done to them.
+   *
+   * An empty sheet marks neither. Nothing has been typed yet, so there is no number for a border
+   * to be pointing at — and pre-marking a side would be the sheet having an opinion about which
+   * one to use, which is the one thing ADR-0014 §2 says it must not have.
+   *
+   * It is not a record of which side the organizer originally typed into. That is not stored
+   * (ADR-0007 keeps a pair, not a keystroke), so a court scored from side B reopens marked on A.
+   */
+  protected holdsTheNumber(side: Side): boolean {
+    const typed = this.typed();
+
+    return typed.side === side && typed.text !== '';
+  }
+
   protected valueFor(side: Side): string {
     const typed = this.typed();
     if (typed.side === side) {
@@ -133,16 +152,15 @@ export class ScoreSheet {
 /**
  * Open the sheet for one court and wait for the number, or for nothing.
  *
- * Opening it lives here rather than at the call site because where it opens is a fact about this
- * component rather than about the screen that asked for it (ADR-0014 §1). A caller that had to say
- * so would be a caller that could forget to.
+ * Opening it lives here rather than at the call site because which component the Round tab is
+ * asking for is a fact about scoring, not about the screen. Where the sheet lands is a fact about
+ * neither, and `Sheets` is the only thing that knows it (ADR-0022 §4).
  */
 export function openScoreSheet(
-  dialog: Dialog,
-  overlay: Overlay,
+  sheets: Sheets,
   data: ScoreSheetData,
 ): Promise<ScoreEntry | undefined> {
-  return openBottomSheet<ScoreEntry, ScoreSheetData>(dialog, overlay, ScoreSheet, data);
+  return sheets.open<ScoreEntry, ScoreSheetData>(ScoreSheet, data);
 }
 
 /**

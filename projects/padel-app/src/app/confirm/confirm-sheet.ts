@@ -10,15 +10,14 @@
  * about to happen, what it costs, and the two ways out. What differs is the words, and the words
  * come from the dictionary at the call site.
  *
- * A bottom sheet for the same reason the score sheet is one (ADR-0014 §1): it opens under the
- * thumb that asked for it, and the confirming tap is the one that has to be comfortable — a dialog
- * in the middle of the screen puts Cancel where the thumb already is.
+ * It opens wherever `Sheets` puts a focused surface, which on a phone is under the thumb that
+ * asked for it (ADR-0014 §1) and at the desk is the middle of the screen (ADR-0022 §4). This file
+ * has no opinion on that and is not supposed to acquire one.
  */
 import { ChangeDetectionStrategy, Component, inject, Injectable } from '@angular/core';
-import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { Overlay } from '@angular/cdk/overlay';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { copy } from '../copy/copy';
-import { openBottomSheet } from '../sheet/bottom-sheet';
+import { Sheets } from '../sheet/sheets';
 
 /** What is being confirmed, in the organizer's words. */
 export interface ConfirmData {
@@ -53,14 +52,13 @@ export class ConfirmSheet {
 /**
  * Asking the question, from wherever the irreversible thing is offered.
  *
- * A service rather than a function taking `Dialog` and `Overlay`, because those two always travel
- * together and neither is anything the calling screen has an opinion about — a screen that had to
- * hold both would be holding the machinery of a bottom sheet in order to ask a question.
+ * A service rather than a function, because opening a sheet is machinery and asking a question is
+ * not — a screen that had to hold the first in order to do the second would be holding the wrong
+ * thing.
  */
 @Injectable({ providedIn: 'root' })
 export class Confirm {
-  private readonly dialog = inject(Dialog);
-  private readonly overlay = inject(Overlay);
+  private readonly sheets = inject(Sheets);
 
   /**
    * Ask, and answer `true` only if the organizer said so.
@@ -70,12 +68,7 @@ export class Confirm {
    * sheet that is not the button leaves the evening exactly as it was.
    */
   async granted(data: ConfirmData): Promise<boolean> {
-    const confirmed = await openBottomSheet<boolean, ConfirmData>(
-      this.dialog,
-      this.overlay,
-      ConfirmSheet,
-      data,
-    );
+    const confirmed = await this.sheets.open<boolean, ConfirmData>(ConfirmSheet, data);
 
     return confirmed === true;
   }
