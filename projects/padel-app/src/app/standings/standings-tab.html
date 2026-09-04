@@ -32,12 +32,16 @@
                 <polygon points="3,1 11,1 21,24 13,24" class="fill-brand-strong" />
                 <polygon points="29,1 21,1 11,24 19,24" class="fill-brand" />
                 <circle cx="16" cy="31" r="13" fill="currentColor" />
-                <!-- The ring is the surface showing through the disc, not a colour of its own. -->
+                <!--
+                  The ring is the page's own ground showing through the disc rather than a colour
+                  of its own, which is what `surface` is: exactly what the dark board draws, and
+                  a whisker off white on the light one where nothing at 45% can tell.
+                -->
                 <circle
                   cx="16"
                   cy="31"
                   r="8.6"
-                  class="stroke-surface-raised"
+                  class="stroke-surface"
                   stroke-width="1"
                   opacity="0.45"
                 />

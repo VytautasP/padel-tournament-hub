@@ -11,45 +11,46 @@
  * (decision #8), so nothing on this screen is silver.
  */
 import { podiumOf } from './podium';
+import type { Metal, PodiumPlace } from './podium';
 import type { StandingRow } from './standing-row';
 
 describe('the podium', () => {
   describe('who stands on it', () => {
     it('is everybody the engine placed third or better', () => {
-      const podium = podiumOf(table([1, 2, 3, 4, 5]));
+      const podium = podiumOf(standingsOf([1, 2, 3, 4, 5]));
 
       expect(namesOn(podium)).toEqual(['P1', 'P2', 'P3']);
     });
 
     it('keeps a whole joint third rather than the first three rows', () => {
-      const podium = podiumOf(table([1, 2, 3, 3, 5]));
+      const podium = podiumOf(standingsOf([1, 2, 3, 3, 5]));
 
       expect(namesOn(podium)).toEqual(['P1', 'P2', 'P3', 'P4']);
     });
 
     it('is empty before anybody has been on a scored court', () => {
-      expect(podiumOf(table([1, 1, 1, 1], 0))).toEqual([]);
+      expect(podiumOf(standingsOf([1, 1, 1, 1], 0))).toEqual([]);
     });
   });
 
   describe('the metal a place carries', () => {
     it('is gold, silver and bronze down the three places', () => {
-      expect(metalsOn(podiumOf(table([1, 2, 3])))).toEqual(['gold', 'silver', 'bronze']);
+      expect(metalsOn(podiumOf(standingsOf([1, 2, 3])))).toEqual(['gold', 'silver', 'bronze']);
     });
 
     it('is gold twice for a joint first, and bronze for the place that follows', () => {
       // Second is used up by the tie, so no silver is awarded (decision #8).
-      expect(metalsOn(podiumOf(table([1, 1, 3])))).toEqual(['gold', 'gold', 'bronze']);
+      expect(metalsOn(podiumOf(standingsOf([1, 1, 3])))).toEqual(['gold', 'gold', 'bronze']);
     });
 
     it('is silver twice for a joint second', () => {
-      expect(metalsOn(podiumOf(table([1, 2, 2])))).toEqual(['gold', 'silver', 'silver']);
+      expect(metalsOn(podiumOf(standingsOf([1, 2, 2])))).toEqual(['gold', 'silver', 'silver']);
     });
   });
 });
 
-/** A table of the given positions, one row apiece, named for where each row sits in it. */
-function table(positions: readonly number[], matchesPlayed = 4): readonly StandingRow[] {
+/** Standings at the given positions, one row apiece, each named for where it sits. */
+function standingsOf(positions: readonly number[], matchesPlayed = 4): readonly StandingRow[] {
   return positions.map((position, index) => ({
     id: `p${index + 1}`,
     name: `P${index + 1}`,
@@ -61,10 +62,10 @@ function table(positions: readonly number[], matchesPlayed = 4): readonly Standi
   }));
 }
 
-function namesOn(podium: readonly { standing: StandingRow }[]): string[] {
+function namesOn(podium: readonly PodiumPlace[]): string[] {
   return podium.map((place) => place.standing.name);
 }
 
-function metalsOn(podium: readonly { metal: string }[]): string[] {
+function metalsOn(podium: readonly PodiumPlace[]): Metal[] {
   return podium.map((place) => place.metal);
 }
