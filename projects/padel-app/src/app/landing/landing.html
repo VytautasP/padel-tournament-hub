@@ -64,9 +64,9 @@
         it on its own line under the row at the desk instead of landing next to the button the
         organizer actually wants.
 
-        It stays neutral. `danger` is spent on the confirming button the entry opens, not on the
-        entry — a menu that shouts before the organizer has asked for anything teaches them to
-        stop reading it (ADR-0021 §3).
+        It stays neutral, and so does the × beside a history row. ADR-0021 §3 spends `danger` on
+        the confirming button an entry like this opens and never on the entry itself — a menu that
+        shouts before the organizer has asked for anything teaches them to stop reading it.
       -->
       @if (optionsOpen()) {
         <button
