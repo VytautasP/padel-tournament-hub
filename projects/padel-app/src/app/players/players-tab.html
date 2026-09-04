@@ -6,15 +6,15 @@
           <span class="min-w-0 flex-1 truncate text-row text-ink">{{ row.name }}</span>
 
           @if (row.gone) {
-            <span class="rounded-full border border-line px-2 py-1 text-micro text-ink-muted">
+            <span class="rounded-full border border-line px-2 py-1 text-meta text-ink-muted">
               {{ copy.players.gone }}
             </span>
           } @else if (row.needsPartner) {
-            <span class="rounded-full border border-brand px-2 py-1 text-micro text-brand">
+            <span class="rounded-full border border-brand px-2 py-1 text-meta text-brand">
               {{ copy.players.needsPartner }}
             </span>
           } @else if (row.benched) {
-            <span class="rounded-full bg-surface-sunken px-2 py-1 text-micro text-ink-muted">
+            <span class="rounded-full bg-surface-sunken px-2 py-1 text-meta text-ink-muted">
               {{ copy.players.benched }}
             </span>
           }
@@ -22,7 +22,7 @@
           @if (!ended() && row.needsPartner && row.team !== null) {
             <button
               type="button"
-              class="rounded-full border border-brand px-3 py-1 text-micro font-bold text-brand"
+              class="rounded-full border border-brand px-3 py-1 text-meta font-bold text-brand"
               [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
               (click)="assignPartner(row)"
             >

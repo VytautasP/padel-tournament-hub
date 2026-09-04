@@ -13,7 +13,7 @@
  *   2. **No component names a colour.** Colour is expressed only as tokens defined in
  *      `styles.css`, which is the one file exempt from the rule because it is where the tokens
  *      live (ADR-0018).
- *   3. **No template names a type size.** Type is expressed only as the named roles defined in
+ *   3. **No component names a type size.** Type is expressed only as the named roles defined in
  *      `styles.css` — `text-header`, `text-name`, `text-meta` — never Tailwind's default
  *      measurement scale (`text-sm`, `text-2xl`), an arbitrary `text-[17px]`, or a raw
  *      `font-size`. This is rule 2's argument applied to the axis that would drift next: the
@@ -60,8 +60,14 @@ const COLOUR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|color-m
  */
 const TYPE_SCALE = 'xs|sm|base|lg|xl|[2-9]xl';
 
+/*
+ * Any variant may precede the utility, matched as a shape rather than as a list. The colour rule
+ * above names its variants one by one, which is a list somebody has to remember to grow —
+ * `2xl:text-sm` is a size the app can already write, and `group-hover:` is one Tailwind adds
+ * without asking. A size behind a variant is still a size.
+ */
 const TYPE_UTILITY = new RegExp(
-  `(?:^|[\\s"'])(?:hover:|focus:|active:|disabled:|dark:|sm:|md:|lg:|xl:)*` +
+  `(?:^|[\\s"'])(?:[a-z0-9@-]+(?:\\[[^\\]]*\\])?:)*` +
     `text-(?:(?:${TYPE_SCALE})(?:/\\S+)?|\\[[^\\]]*\\])(?:$|[\\s"'])`,
 );
 
@@ -222,9 +228,14 @@ for (const file of sourceFiles(appSource, ['.css'])) {
     continue;
   }
 
+  const stylesheet = fs.readFileSync(file, 'utf8');
   checkedFiles.styles += 1;
-  for (const colour of colourNamesIn(fs.readFileSync(file, 'utf8'))) {
+
+  for (const colour of colourNamesIn(stylesheet)) {
     failures.push(`${relative} names a colour: "${colour}" — use a token from styles.css.`);
+  }
+  for (const size of typeSizesIn(stylesheet)) {
+    failures.push(`${relative} names a type size: "${size}" — use a role from styles.css.`);
   }
 }
 
@@ -239,9 +250,11 @@ const violations = [
   ['a scale type size', 'template', '<p class="text-sm text-ink-muted">{{ x }}</p>'],
   ['a large scale type size', 'template', '<h1 class="text-2xl">{{ x }}</h1>'],
   ['a responsive type size', 'template', '<p class="md:text-lg">{{ x }}</p>'],
+  ['a type size behind an unlisted variant', 'template', '<p class="2xl:text-sm">{{ x }}</p>'],
   ['an arbitrary type size', 'template', '<p class="text-[17px]">{{ x }}</p>'],
   ['an inline font-size', 'template', '<p style="font-size: 17px">{{ x }}</p>'],
   ['a bound font-size', 'template', '<p [style.font-size]="x">{{ y }}</p>'],
+  ['a stylesheet font-size', 'style', '.score { font-size: 30px; }'],
 ];
 
 // ...and allow these, or they are a wall rather than a rule.
@@ -277,7 +290,7 @@ const rejects = (kind, source) =>
       literalAttributesIn(source).length > 0 ||
       colourNamesIn(source).length > 0 ||
       typeSizesIn(source).length > 0
-    : colourNamesIn(source).length > 0;
+    : colourNamesIn(source).length > 0 || typeSizesIn(source).length > 0;
 
 for (const [label, kind, source] of violations) {
   if (rejects(kind, source)) {

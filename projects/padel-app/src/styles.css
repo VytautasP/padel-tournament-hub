@@ -148,6 +148,10 @@
    * browser to fake.
    *
    * Nothing here falls below 13px except `micro`, which is caps-only and never a sentence.
+   *
+   * The canvas draws two sizes that are not steps on this scale — a 12px navigation label and a
+   * 19px paging glyph — and they take the nearest role rather than earning one. A scale with a
+   * step per drawing is not a scale.
    */
   --text-display: 32px;
   --text-display--line-height: 1.05;
@@ -192,25 +196,38 @@
  * two class names is how three of the four quietly drift apart. Their figures are even-width, so a
  * scoreline does not shift as it is typed; Verdana rows that also line up in a column ask for
  * `tabular-nums` themselves, because there the face is not the reason.
+ *
+ * Matched by substring rather than by exact class, so that a role behind a variant —
+ * `md:text-header` — is still the whole decision and not just the size. An exact selector reads
+ * more carefully and is wrong in the one case nobody would test.
  */
 @layer components {
-  .text-display,
-  .text-title,
-  .text-header,
-  .text-score {
+  [class*='text-display'],
+  [class*='text-title'],
+  [class*='text-header'],
+  [class*='text-score'] {
     font-family: var(--font-display);
     font-variant-numeric: tabular-nums;
   }
 }
 
 /*
- * The shared container, and the only width rule a screen writes for itself (ADR-0022 §1).
+ * The shared container: the width rule every screen is to use instead of writing its own
+ * (ADR-0022 §1).
  *
- * Below 768px it is the phone column exactly as drawn. From 768px it widens to the measure the
- * middle tier needs for courts two-up, and stays centered rather than growing without limit — at
- * 1280px and above the desktop shell takes the width over and this cap is what stops the main
- * area sprawling. Every screen uses this one utility so the widened tier cannot drift screen by
- * screen; what a screen decides for itself is what it does with the room, not how much there is.
+ * Below 768px it is the phone column exactly as drawn — the same 28rem the screens already pin
+ * themselves to. From 768px it widens to the measure the middle tier needs for courts two-up, and
+ * stays centered rather than growing without limit; at 1280px and above the desktop shell takes
+ * the width over, and this cap is what stops the main area sprawling in the meantime.
+ *
+ * One utility rather than a string of classes each screen repeats, because the widened tier is
+ * the thing most likely to drift: neither the phone boards nor the desktop boards draw it, so a
+ * screen that got it wrong looks fine on both of the pictures anybody checks against. What a
+ * screen still decides for itself is what it does with the room, not how much of it there is.
+ *
+ * The session shell uses it. The landing page and the wizard still write `mx-auto max-w-md`
+ * inline and adopt this when their own tickets rebuild them — those two are the outstanding
+ * users, not an exception to the rule.
  */
 @utility page-column {
   margin-inline: auto;

@@ -1,4 +1,4 @@
-<section class="flex flex-col gap-5 px-4 pt-7 pb-3">
+<section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
   <header class="flex items-center justify-between gap-3">
     <button
       type="button"
@@ -76,17 +76,35 @@
       }
     </ul>
 
-    @if (view.hasSameGenderPair) {
-      <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+    <!--
+      The three notes are one group rather than three siblings, because that is what they are on
+      the artboard: footnotes to the courts, set close together, and one step further from the
+      courts than they are from each other. The outer `@if` is what keeps that true when none of
+      them applies — an empty group would still take the section's gap on both sides.
+    -->
+    @if (view.hasSameGenderPair || view.bench.length > 0 || view.bye.length > 0) {
+      <div class="flex flex-col gap-2">
+        @if (view.hasSameGenderPair) {
+          <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+        }
+
+        @if (view.bench.length > 0) {
+          <p class="text-meta text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
+        }
+
+        @if (view.bye.length > 0) {
+          <p class="text-meta text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
+        }
+      </div>
     }
 
-    @if (view.bench.length > 0) {
-      <p class="text-meta text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
-    }
-
-    @if (view.bye.length > 0) {
-      <p class="text-meta text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
-    }
+    <!--
+      The advance card sits at the bottom of the screen, not under the last note. `min-h-full`
+      above plus this spacer is what puts it there without pinning it: a round with more courts
+      than fit simply scrolls, and the button arrives at the end of the scroll rather than
+      floating over it.
+    -->
+    <div class="flex-1"></div>
 
     @if (advanceTo(); as nextRound) {
       <button
