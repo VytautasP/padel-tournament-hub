@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Narrow:wght@600;700&display=swap">
+  <style>
+    body { margin: 0; background: #0a0b0a; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #c6f24a; } a:hover { color: #d8ff6e; }
+    .cond { font-family: 'Archivo Narrow', 'Arial Narrow', 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 420px; min-height: 620px; display: flex; flex-direction: column; gap: 18px; padding: 26px; background: #0a0b0a; color: #f2f4ef">
+
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #c6f24a">Direction C</span>
+    <span class="cond" style="font-size: 32px; font-weight: 700; letter-spacing: -0.01em; text-transform: uppercase">Scoreboard</span>
+    <span style="font-size: 13px; line-height: 1.5; color: #9aa094; text-wrap: pretty">Near-black ground, one high-vis accent, condensed numerals at stadium scale. Built to be read from the far side of the court.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 2px; border: 2px solid #262a24">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #262a24">
+      <span class="cond" style="font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em">Round 3 / 7</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #14170f">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px">
+        <span style="font-size: 15px; font-weight: 500">Ana &amp; Ben</span>
+        <span style="font-size: 15px; font-weight: 500">Cara &amp; Dan</span>
+      </div>
+      <span class="cond" style="font-size: 34px; font-weight: 700; color: #c6f24a; line-height: 1">24&ndash;18</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #121412">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px">
+        <span style="font-size: 15px; font-weight: 500">Eva &amp; Finn</span>
+        <span style="font-size: 15px; font-weight: 500">Gita &amp; Hugo</span>
+      </div>
+      <span class="cond" style="font-size: 15px; font-weight: 600; color: #9aa094; text-transform: uppercase">No score</span>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; height: 46px; background: #c6f24a; color: #0a0b0a; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em">Round 4 &rarr;</div>
+  </div>
+
+  <div style="display: flex; gap: 8px">
+    <div style="width: 36px; height: 36px; background: #c6f24a"></div>
+    <div style="width: 36px; height: 36px; background: #ff7a45"></div>
+    <div style="width: 36px; height: 36px; background: #f2f4ef"></div>
+    <div style="width: 36px; height: 36px; background: #262a24"></div>
+    <div style="width: 36px; height: 36px; background: #0a0b0a; border: 1px solid #262a24"></div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; background: #14170f; border: 1px solid #262a24">
+    <span style="font-size: 12px; font-weight: 600; color: #f2f4ef">Trade-off</span>
+    <span style="font-size: 12px; line-height: 1.5; color: #9aa094; text-wrap: pretty">Unbeatable at distance and in sunlight, and the most distinctive. But it is a dark design at heart &mdash; its light theme would be an inversion rather than an equal, which is a harder promise to keep than the other two.</span>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

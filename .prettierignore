@@ -5,3 +5,6 @@ dist/
 .angular/
 coverage/
 package-lock.json
+
+# The design canvas is a captured artefact — reformatting it would make it a paraphrase.
+docs/design/canvas/

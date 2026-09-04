@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap">
+  <style>
+    body { margin: 0; background: #0d1117; font-family: Verdana, Geneva, 'DejaVu Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    html, body { height: 100%; overflow: hidden; }
+    x-dc { display: block; height: 100%; }
+    a { color: #3fa8c4; } a:hover { color: #63c1d8; }
+    .num { font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #0d1117; color: #e6ebf2; overflow: hidden">
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 18px; padding: 28px 16px 12px; overflow: hidden">
+
+    <h1 class="num" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #e6ebf2">Standings</h1>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 20px; background: #3fa8c41a; border: 1px solid #3fa8c4">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #3fa8c4">Podium</span>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span class="num" style="width: 16px; font-size: 19px; font-weight: 700; color: #e0a44a">1</span>
+          <svg width="22" height="32" viewBox="0 0 32 46" fill="none" aria-hidden="true" style="flex-shrink: 0; display: block">
+            <polygon points="3,1 11,1 21,24 13,24" fill="#63c1d8"></polygon>
+            <polygon points="29,1 21,1 11,24 19,24" fill="#3fa8c4"></polygon>
+            <circle cx="16" cy="31" r="13" fill="#e0a44a"></circle>
+            <circle cx="16" cy="31" r="8.6" stroke="#0d1117" stroke-width="1" opacity="0.45"></circle>
+          </svg>
+          <span style="flex-grow: 1; min-width: 0; font-size: 19px; color: #e6ebf2">Iris</span>
+          <span class="num" style="font-size: 19px; font-weight: 700; color: #e6ebf2">18.5</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span class="num" style="width: 16px; font-size: 19px; font-weight: 700; color: #e0a44a">1</span>
+          <svg width="22" height="32" viewBox="0 0 32 46" fill="none" aria-hidden="true" style="flex-shrink: 0; display: block">
+            <polygon points="3,1 11,1 21,24 13,24" fill="#63c1d8"></polygon>
+            <polygon points="29,1 21,1 11,24 19,24" fill="#3fa8c4"></polygon>
+            <circle cx="16" cy="31" r="13" fill="#e0a44a"></circle>
+            <circle cx="16" cy="31" r="8.6" stroke="#0d1117" stroke-width="1" opacity="0.45"></circle>
+          </svg>
+          <span style="flex-grow: 1; min-width: 0; font-size: 19px; color: #e6ebf2">Ana</span>
+          <span class="num" style="font-size: 19px; font-weight: 700; color: #e6ebf2">18.5</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span class="num" style="width: 16px; font-size: 19px; font-weight: 700; color: #d08a56">3</span>
+          <svg width="22" height="32" viewBox="0 0 32 46" fill="none" aria-hidden="true" style="flex-shrink: 0; display: block">
+            <polygon points="3,1 11,1 21,24 13,24" fill="#63c1d8"></polygon>
+            <polygon points="29,1 21,1 11,24 19,24" fill="#3fa8c4"></polygon>
+            <circle cx="16" cy="31" r="13" fill="#d08a56"></circle>
+            <circle cx="16" cy="31" r="8.6" stroke="#0d1117" stroke-width="1" opacity="0.45"></circle>
+          </svg>
+          <span style="flex-grow: 1; min-width: 0; font-size: 19px; color: #e6ebf2">Luka</span>
+          <span class="num" style="font-size: 19px; font-weight: 700; color: #e6ebf2">17.2</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; border-radius: 20px; background: #151b23; border: 1px solid #28313d; overflow: hidden">
+
+      <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 18px; border: 1px solid #3fa8c4eb; background: #151b23">
+        <div style="display: flex; align-items: baseline; gap: 14px">
+          <span class="num" style="width: 22px; font-size: 14px; color: #93a1b5">1</span>
+          <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #e6ebf2">Iris</span>
+          <span class="num" style="font-size: 17px; font-weight: 700; color: #e6ebf2">18.5</span>
+        </div>
+        <div style="display: flex; gap: 22px; padding-left: 36px">
+          <div style="display: flex; gap: 8px">
+            <span style="font-size: 13px; color: #93a1b5">Matches played</span>
+            <span class="num" style="font-size: 13px; color: #e6ebf2">6</span>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <span style="font-size: 13px; color: #93a1b5">Total points</span>
+            <span class="num" style="font-size: 13px; color: #e6ebf2">111</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: baseline; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #28313d">
+        <span class="num" style="width: 22px; font-size: 14px; color: #93a1b5">1</span>
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #e6ebf2">Ana</span>
+        <span class="num" style="font-size: 17px; font-weight: 700; color: #e6ebf2">18.5</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #28313d">
+        <span class="num" style="width: 22px; font-size: 14px; color: #93a1b5">3</span>
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #e6ebf2">Luka</span>
+        <span class="num" style="font-size: 17px; font-weight: 700; color: #e6ebf2">17.2</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #28313d">
+        <span class="num" style="width: 22px; font-size: 14px; color: #93a1b5">4</span>
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #e6ebf2">Ben</span>
+        <span class="num" style="font-size: 17px; font-weight: 700; color: #e6ebf2">16.8</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #28313d">
+        <span class="num" style="width: 22px; font-size: 14px; color: #93a1b5">5</span>
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #e6ebf2">Cara</span>
+        <span class="num" style="font-size: 17px; font-weight: 700; color: #e6ebf2">15.0</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #28313d">
+        <span class="num" style="width: 22px; font-size: 14px; color: #93a1b5">6</span>
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #e6ebf2">Mara</span>
+        <span class="num" style="font-size: 17px; font-weight: 700; color: #93a1b5">&ndash;</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 14px; padding: 15px 18px">
+        <span class="num" style="width: 22px; font-size: 14px; color: #93a1b5">7</span>
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #e6ebf2">Nils</span>
+        <span class="num" style="font-size: 17px; font-weight: 700; color: #93a1b5">&ndash;</span>
+      </div>
+
+    </div>
+
+    <div style="flex-grow: 1"></div>
+
+    <div style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 15px; border: 1px solid #28313d; background: #151b23; font-size: 16px; font-weight: 700; color: #e6ebf2">End session</div>
+
+  </div>
+
+  <div style="display: flex; border-top: 1px solid #28313d; background: #151b23; padding-bottom: 22px">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: #93a1b5">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M12 4v16M3 12h18"></path></svg>
+      <span style="font-size: 12px; font-weight: 400">Round</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: #3fa8c4">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg>
+      <span style="font-size: 12px; font-weight: 700">Standings</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: #93a1b5">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M3 19a6 6 0 0 1 12 0"></path><path d="M16 6.5a3 3 0 0 1 0 5.8M18 19a5.5 5.5 0 0 0-2-4.2"></path></svg>
+      <span style="font-size: 12px; font-weight: 400">Players</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

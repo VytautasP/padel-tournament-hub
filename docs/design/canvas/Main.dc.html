@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Verdana, Geneva, 'DejaVu Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    html, body { height: 100%; overflow: hidden; }
+    x-dc { display: block; height: 100%; }
+    a { color: #0e6f87; } a:hover { color: #0a5568; }
+    .num { font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; background: {{t.surface}}; color: {{t.ink}}; overflow: hidden">
+
+  <sc-if value="{{ended}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; justify-content: flex-end; padding: 10px 16px; border-bottom: 1px solid {{t.line}}; background: {{t.raised}}">
+      <span style="font-size: 15px; font-weight: 700; color: {{t.brand}}">Done</span>
+    </div>
+  </sc-if>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 16px 12px; overflow: hidden">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="width: 46px; height: 46px; border: 1px solid {{t.line}}; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: {{t.inkMuted}}; font-size: 19px; background: {{t.raised}}">&larr;</div>
+      <h1 class="num" style="margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.015em; color: {{t.ink}}">Round 3 of 7</h1>
+      <div style="width: 46px; height: 46px; border: 1px solid {{t.line}}; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: {{t.inkMuted}}; font-size: 19px; background: {{t.raised}}">&rarr;</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+
+      <div style="display: flex; align-items: center; gap: 16px; padding: 16px 18px; border-radius: 18px; background: {{t.raised}}; border: 1.5px solid {{t.brand}}">
+        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{t.inkMuted}}">Far end</span>
+          <span style="font-size: 17px; line-height: 1.25; color: {{t.ink}}">Ana &amp; Ben</span>
+          <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{t.inkMuted}}">v</span>
+          <span style="font-size: 17px; line-height: 1.25; color: {{t.ink}}">Cara &amp; Dan</span>
+        </div>
+        <span class="num" style="font-size: 30px; font-weight: 700; color: {{t.brand}}; white-space: nowrap">24 &ndash; 18</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 16px; padding: 16px 18px; border-radius: 18px; background: {{t.raised}}; border: 1px solid {{t.line}}">
+        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{t.inkMuted}}">Court 2</span>
+          <span style="font-size: 17px; line-height: 1.25; color: {{t.ink}}">Eva &amp; Finn<sc-if value="{{isMixicano}}" hint-placeholder-val="{{ true }}"><span style="color: {{t.inkMuted}}">*</span></sc-if></span>
+          <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{t.inkMuted}}">v</span>
+          <span style="font-size: 17px; line-height: 1.25; color: {{t.ink}}">Gita &amp; Hugo</span>
+        </div>
+        <span style="font-size: 13px; color: {{t.inkMuted}}; white-space: nowrap">No score yet</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 16px; padding: 16px 18px; border-radius: 18px; background: {{t.raised}}; border: 1px solid {{t.line}}">
+        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{t.inkMuted}}">Court 3</span>
+          <span style="font-size: 17px; line-height: 1.25; color: {{t.ink}}">Iris &amp; Jonas</span>
+          <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{t.inkMuted}}">v</span>
+          <span style="font-size: 17px; line-height: 1.25; color: {{t.ink}}">Kira &amp; Luka</span>
+        </div>
+        <span style="font-size: 13px; color: {{t.inkMuted}}; white-space: nowrap">No score yet</span>
+      </div>
+
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <sc-if value="{{isMixicano}}" hint-placeholder-val="{{ true }}">
+        <p style="margin: 0; font-size: 13px; line-height: 1.45; color: {{t.inkMuted}}">* Same-gender pair: the roster left nobody of the other gender to partner.</p>
+      </sc-if>
+      <sc-if value="{{notTeam}}" hint-placeholder-val="{{ true }}">
+        <p style="margin: 0; font-size: 13px; line-height: 1.45; color: {{t.inkMuted}}">Sitting out: Mara, Nils</p>
+      </sc-if>
+      <sc-if value="{{isTeam}}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; font-size: 13px; line-height: 1.45; color: {{t.inkMuted}}">Bye: Mara &amp; Nils</p>
+      </sc-if>
+    </div>
+
+    <div style="flex-grow: 1"></div>
+
+    <sc-if value="{{running}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 15px; background: {{t.brand}}; color: {{t.brandInk}}; font-size: 16px; font-weight: 700">Round 4 &rarr;</div>
+    </sc-if>
+
+  </div>
+
+  <div style="display: flex; border-top: 1px solid {{t.line}}; background: {{t.raised}}; padding-bottom: 22px">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: {{t.brand}}">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M12 4v16M3 12h18"></path></svg>
+      <span style="font-size: 12px; font-weight: 700">Round</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: {{t.inkMuted}}">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg>
+      <span style="font-size: 12px; font-weight: 400">Standings</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: {{t.inkMuted}}">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M3 19a6 6 0 0 1 12 0"></path><path d="M16 6.5a3 3 0 0 1 0 5.8M18 19a5.5 5.5 0 0 0-2-4.2"></path></svg>
+      <span style="font-size: 12px; font-weight: 400">Players</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light","section":"Theme"},"brand":{"editor":"color","default":"#0e6f87","options":["#0e6f87","#1f7a5a","#9c4a2a","#c6f24a"],"section":"Theme"},"mode":{"editor":"enum","options":["americano","mixicano","team-americano"],"default":"mixicano","section":"Session"},"ended":{"editor":"boolean","default":false,"section":"Session"},"$preview":{"width":390,"height":844}}'>
+function srgbToLin(c) {
+  const v = c / 255;
+  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}
+function linToSrgb(c) {
+  const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  return Math.max(0, Math.min(255, Math.round(v * 255)));
+}
+function hexToRgb(hex) {
+  const s = String(hex).replace('#', '');
+  const n = s.length === 3 ? s.split('').map(function (x) { return x + x; }).join('') : s;
+  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+}
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+}
+function toOklch(hex) {
+  const rgb = hexToRgb(hex);
+  const R = srgbToLin(rgb[0]), G = srgbToLin(rgb[1]), B = srgbToLin(rgb[2]);
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  const L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+  const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+  const b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+  return { L: L, C: Math.sqrt(a * a + b * b), H: Math.atan2(b, a) };
+}
+function fromOklch(o) {
+  const a = o.C * Math.cos(o.H), b = o.C * Math.sin(o.H);
+  const l = Math.pow(o.L + 0.3963377774 * a + 0.2158037573 * b, 3);
+  const m = Math.pow(o.L - 0.1055613458 * a - 0.0638541728 * b, 3);
+  const s = Math.pow(o.L - 0.0894841775 * a - 1.2914855480 * b, 3);
+  return rgbToHex(
+    linToSrgb(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+    linToSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+    linToSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s));
+}
+function luminance(hex) {
+  const rgb = hexToRgb(hex);
+  return 0.2126 * srgbToLin(rgb[0]) + 0.7152 * srgbToLin(rgb[1]) + 0.0722 * srgbToLin(rgb[2]);
+}
+function contrast(a, b) {
+  const la = luminance(a), lb = luminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function palette(dark, brandHex) {
+  const o = toOklch(brandHex);
+  const brand = dark ? fromOklch({ L: 0.72, C: Math.min(o.C, 0.11), H: o.H }) : brandHex;
+  const brandInk = dark
+    ? fromOklch({ L: 0.16, C: Math.min(o.C, 0.06), H: o.H })
+    : (contrast('#ffffff', brand) >= contrast('#0b0f14', brand) ? '#ffffff' : '#0b0f14');
+  const base = dark
+    ? { surface: '#0d1117', raised: '#151b23', sunken: '#080b0f', line: '#28313d', ink: '#e6ebf2', inkMuted: '#93a1b5' }
+    : { surface: '#f4f6f8', raised: '#ffffff', sunken: '#e6eaef', line: '#ccd4dd', ink: '#101720', inkMuted: '#55637a' };
+  base.brand = brand;
+  base.brandInk = brandInk;
+  return base;
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const dark = (p.theme ?? 'light') === 'dark';
+    const mode = p.mode ?? 'mixicano';
+    const ended = p.ended === true;
+    return {
+      t: palette(dark, p.brand ?? '#0e6f87'),
+      isMixicano: mode === 'mixicano',
+      isTeam: mode === 'team-americano',
+      notTeam: mode !== 'team-americano',
+      ended: ended,
+      running: !ended,
+    };
+  }
+}
+</script>
+</body>
+</html>

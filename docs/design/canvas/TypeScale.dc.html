@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400&display=swap">
+  <style>
+    body { margin: 0; background: #f4f6f8; font-family: Verdana, Geneva, 'DejaVu Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0e6f87; } a:hover { color: #0a5568; }
+    .num { font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+    .mono { font-family: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12px; color: #55637a; }
+    .step { display: flex; align-items: baseline; gap: 20px; padding: 13px 0; border-bottom: 1px solid #ccd4dd; }
+    .meta { width: 210px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; }
+  </style>
+</helmet>
+
+<div style="width: 820px; min-height: 880px; display: flex; flex-direction: column; gap: 28px; padding: 44px 48px; background: #f4f6f8; color: #101720">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h1 class="num" style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.03em">Type scale</h1>
+    <p style="margin: 0; max-width: 640px; font-size: 15px; line-height: 1.55; color: #55637a; text-wrap: pretty">Two faces. <strong style="font-weight: 700; color: #101720">Space Grotesk</strong> carries titles and every number &mdash; its figures are even-width, so a scoreline does not shift as it is typed. <strong style="font-weight: 700; color: #101720">Verdana</strong> carries names, rows and controls: it was drawn for small sizes on screen, and it is the one face here that needs no network to arrive.</p>
+  </div>
+
+  <div style="display: flex; align-items: baseline; gap: 12px; padding: 12px 16px; border-radius: 12px; background: #ffffff; border: 1px solid #ccd4dd">
+    <span style="font-size: 13px; color: #55637a">Scale</span>
+    <span class="num" style="font-size: 14px; font-weight: 700; color: #101720">{{s.label}}</span>
+    <span style="flex-grow: 1"></span>
+    <span style="font-size: 13px; color: #55637a">Smallest sentence on a phone</span>
+    <span class="num" style="font-size: 14px; font-weight: 700; color: {{s.floorTone}}">{{s.floorLabel}}</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column">
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Display</span><span class="mono">Space Grotesk 700 &middot; 32/54px &middot; -0.03em</span></div>
+      <span class="num" style="font-size: {{s.display}}px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05">Padel Tournament Hub</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Screen title</span><span class="mono">Space Grotesk 700 &middot; 26px &middot; -0.02em</span></div>
+      <span class="num" style="font-size: {{s.title}}px; font-weight: 700; letter-spacing: -0.02em">Who is playing?</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Round header</span><span class="mono">Space Grotesk 700 &middot; 21px</span></div>
+      <span class="num" style="font-size: {{s.header}}px; font-weight: 700; letter-spacing: -0.015em">Round 3 of 7</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Scoreline</span><span class="mono">Space Grotesk 700 &middot; 30px &middot; tabular</span></div>
+      <span class="num" style="font-size: {{s.score}}px; font-weight: 700; color: #0e6f87">24 &ndash; 18</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Side / name, large</span><span class="mono">Verdana 400 &middot; 17px</span></div>
+      <span style="font-size: {{s.name}}px">Ana &amp; Ben</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Row</span><span class="mono">Verdana 400 &middot; 16px</span></div>
+      <span style="font-size: {{s.row}}px">Wed 26 Aug &middot; Mixicano &middot; 8 players</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Control</span><span class="mono">Verdana 700 &middot; 16px</span></div>
+      <span style="font-size: {{s.control}}px; font-weight: 700">Create session</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Lead</span><span class="mono">Verdana 400 &middot; 15px &middot; 1.45</span></div>
+      <span style="font-size: {{s.lead}}px; line-height: 1.45; color: #55637a">First names. Type one, hit add, type the next.</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Meta</span><span class="mono">Verdana 400 &middot; 13px &middot; 1.45</span></div>
+      <span style="font-size: {{s.metaSize}}px; line-height: 1.45; color: #55637a">Sitting out: Mara, Nils</span>
+    </div>
+
+    <div class="step" style="border-bottom: none">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Micro label</span><span class="mono">Verdana 700 &middot; 11px &middot; 0.09em caps</span></div>
+      <span style="font-size: {{s.micro}}px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #55637a">Session in progress</span>
+    </div>
+
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 7px; padding: 18px 20px; border-radius: 16px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 14px; font-weight: 700">Verdana has two weights</span>
+      <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #55637a; text-wrap: pretty">Regular and bold, nothing between. So the ramp uses 400 and 700 only &mdash; the old 500 and 600 steps are gone rather than left to the browser to fake. Rows stepped down a size too: Verdana sets wider, and a history row at the old size ran past the edge of a phone.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; padding: 18px 20px; border-radius: 16px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 14px; font-weight: 700">Numbers are always tabular</span>
+      <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #55637a; text-wrap: pretty">Positions, points per match, scorelines and player counts all set <span class="mono" style="font-size: 12px">font-variant-numeric: tabular-nums</span>, so a standings column stays a column and a score does not jump between 9 and 10.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 7px; padding: 18px 20px; border-radius: 16px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 14px; font-weight: 700">Nothing on a phone below 13px</span>
+      <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #55637a; text-wrap: pretty">The 11px step is caps-only and short &mdash; a court name, a section label. Every sentence the organizer has to read outdoors sits at 13px or above, and every tap target at 44px or above. The readout above turns red when a scale breaks that floor.</p>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"textScale":{"editor":"range","default":1,"min":0.85,"max":1.3,"step":0.05,"unit":"×","section":"Type"},"$preview":{"width":820,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const k = Number(this.props.textScale ?? 1);
+    const at = function (base) { return Math.round(base * k); };
+    const meta = at(13);
+    return {
+      s: {
+        label: k.toFixed(2) + '×',
+        display: at(32),
+        title: at(26),
+        header: at(21),
+        score: at(30),
+        name: at(17),
+        row: at(16),
+        control: at(16),
+        lead: at(15),
+        metaSize: meta,
+        micro: at(11),
+        floorLabel: meta + 'px',
+        floorTone: meta >= 13 ? '#0e6f87' : '#a8322b',
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

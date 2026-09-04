@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f4f6f8; font-family: Verdana, Geneva, 'DejaVu Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    html, body { height: 100%; overflow: hidden; }
+    x-dc { display: block; height: 100%; }
+    a { color: #0e6f87; } a:hover { color: #0a5568; }
+    .num { font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #f4f6f8; color: #101720; overflow: hidden">
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 18px; padding: 28px 16px 12px; overflow: hidden">
+
+    <h1 class="num" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #101720">Players</h1>
+
+    <div style="display: flex; flex-direction: column; border-radius: 20px; background: #ffffff; border: 1px solid #ccd4dd; overflow: hidden">
+
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #ccd4dd">
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #101720">Ana</span>
+        <span class="num" style="font-size: 12px; letter-spacing: 0.04em; color: #55637a">Ana &amp; Ben</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #ccd4dd">
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #101720">Ben</span>
+        <span class="num" style="font-size: 12px; letter-spacing: 0.04em; color: #55637a">Ana &amp; Ben</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 14px 18px; margin-top: -1px; border: 1px solid #0E6F87EB; background: #ffffff">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #101720">Cara</span>
+          <span style="padding: 5px 11px; border-radius: 999px; border: 1px solid #9a5b00; font-size: 12px; font-weight: 700; color: #9a5b00; background: #fdf0e1">Needs partner</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 14px; background: #0e6f87; color: #ffffff; font-size: 15px; font-weight: 700">Assign partner</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #ccd4dd">
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #55637a">Dan</span>
+        <span style="padding: 5px 11px; border-radius: 999px; border: 1px solid #ccd4dd; font-size: 12px; font-weight: 400; color: #55637a; background-color: #E6EAEF">Went home</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #ccd4dd">
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #101720">Eva</span>
+        <span class="num" style="font-size: 12px; letter-spacing: 0.04em; color: #55637a">Eva &amp; Finn</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px">
+        <span style="flex-grow: 1; min-width: 0; font-size: 16px; color: #101720">Finn</span>
+        <span class="num" style="font-size: 12px; letter-spacing: 0.04em; color: #55637a">Eva &amp; Finn</span>
+      </div>
+
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #55637a">A round needs 2 teams with both their players, so nobody can go home from this one.</p>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #55637a">Team Americano plays in fixed pairs, so a new player joins a team that needs a partner.</p>
+    </div>
+
+    <div style="flex-grow: 1"></div>
+
+  </div>
+
+  <div style="display: flex; border-top: 1px solid #ccd4dd; background: #ffffff; padding-bottom: 22px">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: #55637a">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M12 4v16M3 12h18"></path></svg>
+      <span style="font-size: 12px; font-weight: 400">Round</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: #55637a">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg>
+      <span style="font-size: 12px; font-weight: 400">Standings</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 9px; color: #0e6f87">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M3 19a6 6 0 0 1 12 0"></path><path d="M16 6.5a3 3 0 0 1 0 5.8M18 19a5.5 5.5 0 0 0-2-4.2"></path></svg>
+      <span style="font-size: 12px; font-weight: 700">Players</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

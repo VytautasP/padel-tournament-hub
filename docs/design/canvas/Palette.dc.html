@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #f4f6f8; font-family: Verdana, Geneva, 'DejaVu Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0e6f87; } a:hover { color: #0a5568; }
+    .num { font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+    .mono { font-family: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace; }
+    .row { display: flex; align-items: center; gap: 14px; padding: 9px 0; }
+    .sw { width: 44px; height: 32px; border-radius: 8px; flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div style="width: 1060px; min-height: 1260px; display: flex; flex-direction: column; gap: 30px; padding: 44px 48px; background: #f4f6f8; color: #101720">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h1 class="num" style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.03em">Colour tokens</h1>
+    <p style="margin: 0; max-width: 720px; font-size: 15px; line-height: 1.55; color: #55637a; text-wrap: pretty">A proposal for the top half of <span class="mono" style="font-size: 14px">styles.css</span>. Nine existing tokens are re-valued; eight are new. Everything below is a raw palette value &mdash; components keep naming only the Tailwind utilities the <span class="mono" style="font-size: 14px">@theme inline</span> block maps them to. The brand is a lever: change it and every value derived from it, in both themes, moves with it.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+    <div style="display: flex; flex-direction: column; gap: 4px; padding: 24px 26px; border-radius: 20px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #55637a; padding-bottom: 8px">Light &mdash; :root</span>
+
+      <div class="row"><div class="sw" style="background: #f4f6f8; border: 1px solid #ccd4dd"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-surface</span><span class="mono" style="font-size: 13px; color: #55637a">#f4f6f8</span></div>
+      <div class="row"><div class="sw" style="background: #ffffff; border: 1px solid #ccd4dd"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-surface-raised</span><span class="mono" style="font-size: 13px; color: #55637a">#ffffff</span></div>
+      <div class="row"><div class="sw" style="background: #e6eaef"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-surface-sunken</span><span class="mono" style="font-size: 13px; color: #55637a">#e6eaef</span></div>
+      <div class="row"><div class="sw" style="background: #ccd4dd"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-line</span><span class="mono" style="font-size: 13px; color: #55637a">#ccd4dd</span></div>
+      <div class="row"><div class="sw" style="background: #101720"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-ink</span><span class="mono" style="font-size: 13px; color: #55637a">#101720</span></div>
+      <div class="row"><div class="sw" style="background: #55637a"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-ink-muted</span><span class="mono" style="font-size: 13px; color: #55637a">#55637a</span></div>
+      <div class="row"><div class="sw" style="background: {{c.lightBrand}}"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-brand</span><span class="mono" style="font-size: 13px; color: #55637a">{{c.lightBrand}}</span></div>
+      <div class="row"><div class="sw" style="background: {{c.lightBrandStrong}}"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-brand-strong</span><span class="mono" style="font-size: 13px; color: #55637a">{{c.lightBrandStrong}}</span></div>
+      <div class="row"><div class="sw" style="background: {{c.lightBrandInk}}; border: 1px solid #ccd4dd"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-brand-ink</span><span class="mono" style="font-size: 13px; color: #55637a">{{c.lightBrandInk}}</span></div>
+      <div class="row"><div class="sw" style="background: #8a6113"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-podium-gold</span><span class="mono" style="font-size: 13px; color: #55637a">#8a6113</span></div>
+      <div class="row"><div class="sw" style="background: #5c6672"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-podium-silver</span><span class="mono" style="font-size: 13px; color: #55637a">#5c6672</span></div>
+      <div class="row"><div class="sw" style="background: #8a4b22"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-podium-bronze</span><span class="mono" style="font-size: 13px; color: #55637a">#8a4b22</span></div>
+      <div class="row"><div class="sw" style="background: #9a5b00"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-warning</span><span class="mono" style="font-size: 13px; color: #55637a">#9a5b00</span></div>
+      <div class="row"><div class="sw" style="background: #fdf0e1; border: 1px solid #f0dcc0"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-warning-surface</span><span class="mono" style="font-size: 13px; color: #55637a">#fdf0e1</span></div>
+      <div class="row"><div class="sw" style="background: #a8322b"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #101720">--palette-danger</span><span class="mono" style="font-size: 13px; color: #55637a">#a8322b</span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px; padding: 24px 26px; border-radius: 20px; background: #0d1117; border: 1px solid #28313d">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #93a1b5; padding-bottom: 8px">Dark &mdash; prefers-color-scheme: dark</span>
+
+      <div class="row"><div class="sw" style="background: #0d1117; border: 1px solid #28313d"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-surface</span><span class="mono" style="font-size: 13px; color: #93a1b5">#0d1117</span></div>
+      <div class="row"><div class="sw" style="background: #151b23; border: 1px solid #28313d"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-surface-raised</span><span class="mono" style="font-size: 13px; color: #93a1b5">#151b23</span></div>
+      <div class="row"><div class="sw" style="background: #080b0f; border: 1px solid #28313d"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-surface-sunken</span><span class="mono" style="font-size: 13px; color: #93a1b5">#080b0f</span></div>
+      <div class="row"><div class="sw" style="background: #28313d"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-line</span><span class="mono" style="font-size: 13px; color: #93a1b5">#28313d</span></div>
+      <div class="row"><div class="sw" style="background: #e6ebf2"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-ink</span><span class="mono" style="font-size: 13px; color: #93a1b5">#e6ebf2</span></div>
+      <div class="row"><div class="sw" style="background: #93a1b5"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-ink-muted</span><span class="mono" style="font-size: 13px; color: #93a1b5">#93a1b5</span></div>
+      <div class="row"><div class="sw" style="background: {{c.darkBrand}}"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-brand</span><span class="mono" style="font-size: 13px; color: #93a1b5">{{c.darkBrand}}</span></div>
+      <div class="row"><div class="sw" style="background: {{c.darkBrandStrong}}"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-brand-strong</span><span class="mono" style="font-size: 13px; color: #93a1b5">{{c.darkBrandStrong}}</span></div>
+      <div class="row"><div class="sw" style="background: {{c.darkBrandInk}}; border: 1px solid #28313d"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-brand-ink</span><span class="mono" style="font-size: 13px; color: #93a1b5">{{c.darkBrandInk}}</span></div>
+      <div class="row"><div class="sw" style="background: #e0a44a"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-podium-gold</span><span class="mono" style="font-size: 13px; color: #93a1b5">#e0a44a</span></div>
+      <div class="row"><div class="sw" style="background: #b3bfcc"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-podium-silver</span><span class="mono" style="font-size: 13px; color: #93a1b5">#b3bfcc</span></div>
+      <div class="row"><div class="sw" style="background: #d08a56"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-podium-bronze</span><span class="mono" style="font-size: 13px; color: #93a1b5">#d08a56</span></div>
+      <div class="row"><div class="sw" style="background: #f2a94e"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-warning</span><span class="mono" style="font-size: 13px; color: #93a1b5">#f2a94e</span></div>
+      <div class="row"><div class="sw" style="background: #2a1d0c; border: 1px solid #4a3418"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-warning-surface</span><span class="mono" style="font-size: 13px; color: #93a1b5">#2a1d0c</span></div>
+      <div class="row"><div class="sw" style="background: #e2736a"></div><span class="mono" style="flex-grow: 1; font-size: 13px; color: #e6ebf2">--palette-danger</span><span class="mono" style="font-size: 13px; color: #93a1b5">#e2736a</span></div>
+    </div>
+
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+    <div style="display: flex; flex-direction: column; gap: 16px; padding: 24px 26px; border-radius: 20px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #55637a">Elevation &mdash; light</span>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <div style="width: 96px; height: 56px; flex-shrink: 0; border-radius: 14px; background: #ffffff; border: 1px solid #ccd4dd; box-shadow: 0 2px 6px rgba(16, 23, 32, 0.06)"></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+          <span class="mono" style="font-size: 13px; color: #101720">--palette-shadow-raised</span>
+          <span class="mono" style="font-size: 12px; color: #55637a">0 2px 6px rgba(16, 23, 32, 0.06)</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <div style="width: 96px; height: 56px; flex-shrink: 0; border-radius: 14px 14px 0 0; background: #ffffff; border-top: 1px solid #ccd4dd; box-shadow: 0 -8px 30px rgba(16, 23, 32, 0.25)"></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+          <span class="mono" style="font-size: 13px; color: #101720">--palette-shadow-sheet</span>
+          <span class="mono" style="font-size: 12px; color: #55637a">0 -8px 30px rgba(16, 23, 32, 0.25)</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; padding: 24px 26px; border-radius: 20px; background: #0d1117; border: 1px solid #28313d">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #93a1b5">Elevation &mdash; dark</span>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <div style="width: 96px; height: 56px; flex-shrink: 0; border-radius: 14px; background: #151b23; border: 1px solid #28313d; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45)"></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+          <span class="mono" style="font-size: 13px; color: #e6ebf2">--palette-shadow-raised</span>
+          <span class="mono" style="font-size: 12px; color: #93a1b5">0 2px 6px rgba(0, 0, 0, 0.45)</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px">
+        <div style="width: 96px; height: 56px; flex-shrink: 0; border-radius: 14px 14px 0 0; background: #151b23; border-top: 1px solid #28313d; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6)"></div>
+        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+          <span class="mono" style="font-size: 13px; color: #e6ebf2">--palette-shadow-sheet</span>
+          <span class="mono" style="font-size: 12px; color: #93a1b5">0 -8px 30px rgba(0, 0, 0, 0.6)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p style="margin: 0; max-width: 900px; font-size: 13px; line-height: 1.55; color: #55637a; text-wrap: pretty">Two roles, not a scale: a card resting on the page, and a sheet lifted over a scrim. The dark values are not the light ones dimmed &mdash; ink at 6% is invisible on a dark surface, so dark shadows go black and much stronger, and lean on <span class="mono" style="font-size: 12px">surface-raised</span> being lighter than <span class="mono" style="font-size: 12px">surface</span> to do half the separating.</p>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; border-radius: 16px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 14px; font-weight: 700">Contrast, as you change it</span>
+      <div style="display: flex; align-items: baseline; gap: 10px">
+        <span style="flex-grow: 1; font-size: 13px; color: #55637a">Brand on surface</span>
+        <span class="num" style="font-size: 13px; font-weight: 700; color: {{c.brandOnSurfaceTone}}">{{c.brandOnSurface}}</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 10px">
+        <span style="flex-grow: 1; font-size: 13px; color: #55637a">Brand ink on brand</span>
+        <span class="num" style="font-size: 13px; font-weight: 700; color: {{c.inkOnBrandTone}}">{{c.inkOnBrand}}</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 10px">
+        <span style="flex-grow: 1; font-size: 13px; color: #55637a">Dark brand on dark surface</span>
+        <span class="num" style="font-size: 13px; font-weight: 700; color: {{c.darkBrandOnSurfaceTone}}">{{c.darkBrandOnSurface}}</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 10px">
+        <span style="flex-grow: 1; font-size: 13px; color: #55637a">Dark ink on dark brand</span>
+        <span class="num" style="font-size: 13px; font-weight: 700; color: {{c.darkInkOnBrandTone}}">{{c.darkInkOnBrand}}</span>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #55637a; text-wrap: pretty">A scoreline and a primary button both ride the brand, so 4.5:1 is the floor on all four. Red means the hue does not carry it.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 7px; padding: 18px 20px; border-radius: 16px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 14px; font-weight: 700">Three metals, no panel</span>
+      <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #55637a; text-wrap: pretty">The celebration lives on the medals, not on the panel. The block itself is just brand at 5% with a brand border &mdash; so gold, silver and bronze are the only warm colour on the screen, and the podium no longer needs a surface and line of its own. The medal tracks the <em>position</em>, so a joint first shows gold, gold, bronze &mdash; and no silver at all (decision #8). It sits beside the position, never replacing it: the number is the fact, the medal is the decoration, and only one of them needs reading aloud.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 7px; padding: 18px 20px; border-radius: 16px; background: #ffffff; border: 1px solid #ccd4dd">
+      <span style="font-size: 14px; font-weight: 700">Warning, then danger</span>
+      <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #55637a; text-wrap: pretty">Two tones, two jobs. <strong style="font-weight: 700; color: #101720">Warning</strong> marks a team that is short a player &mdash; something to fix, not something that went wrong. <strong style="font-weight: 700; color: #101720">Danger</strong> is for the three sentences that cannot be undone: discard a session, delete a history row, end a session. Neither appears in a running round.</p>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"brand":{"editor":"color","default":"#0e6f87","options":["#0e6f87","#1f7a5a","#9c4a2a","#c6f24a"],"section":"Theme"},"$preview":{"width":1060,"height":1280}}'>
+function srgbToLin(c) {
+  const v = c / 255;
+  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}
+function linToSrgb(c) {
+  const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  return Math.max(0, Math.min(255, Math.round(v * 255)));
+}
+function hexToRgb(hex) {
+  const s = String(hex).replace('#', '');
+  const n = s.length === 3 ? s.split('').map(function (x) { return x + x; }).join('') : s;
+  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+}
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+}
+function toOklch(hex) {
+  const rgb = hexToRgb(hex);
+  const R = srgbToLin(rgb[0]), G = srgbToLin(rgb[1]), B = srgbToLin(rgb[2]);
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  const L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+  const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+  const b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+  return { L: L, C: Math.sqrt(a * a + b * b), H: Math.atan2(b, a) };
+}
+function fromOklch(o) {
+  const a = o.C * Math.cos(o.H), b = o.C * Math.sin(o.H);
+  const l = Math.pow(o.L + 0.3963377774 * a + 0.2158037573 * b, 3);
+  const m = Math.pow(o.L - 0.1055613458 * a - 0.0638541728 * b, 3);
+  const s = Math.pow(o.L - 0.0894841775 * a - 1.2914855480 * b, 3);
+  return rgbToHex(
+    linToSrgb(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+    linToSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+    linToSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s));
+}
+function luminance(hex) {
+  const rgb = hexToRgb(hex);
+  return 0.2126 * srgbToLin(rgb[0]) + 0.7152 * srgbToLin(rgb[1]) + 0.0722 * srgbToLin(rgb[2]);
+}
+function contrast(a, b) {
+  const la = luminance(a), lb = luminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function reading(a, b) {
+  return contrast(a, b).toFixed(2) + ':1';
+}
+function tone(a, b) {
+  return contrast(a, b) >= 4.5 ? '#0e6f87' : '#a8322b';
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const brand = this.props.brand ?? '#0e6f87';
+    const o = toOklch(brand);
+    const lightStrong = fromOklch({ L: Math.max(0.15, o.L - 0.07), C: o.C, H: o.H });
+    const lightInk = contrast('#ffffff', brand) >= contrast('#0b0f14', brand) ? '#ffffff' : '#0b0f14';
+    const darkBrand = fromOklch({ L: 0.72, C: Math.min(o.C, 0.11), H: o.H });
+    const darkStrong = fromOklch({ L: 0.80, C: Math.min(o.C, 0.10), H: o.H });
+    const darkInk = fromOklch({ L: 0.16, C: Math.min(o.C, 0.06), H: o.H });
+    return {
+      c: {
+        lightBrand: brand,
+        lightBrandStrong: lightStrong,
+        lightBrandInk: lightInk,
+        darkBrand: darkBrand,
+        darkBrandStrong: darkStrong,
+        darkBrandInk: darkInk,
+        brandOnSurface: reading(brand, '#f4f6f8'),
+        brandOnSurfaceTone: tone(brand, '#f4f6f8'),
+        inkOnBrand: reading(lightInk, brand),
+        inkOnBrandTone: tone(lightInk, brand),
+        darkBrandOnSurface: reading(darkBrand, '#0d1117'),
+        darkBrandOnSurfaceTone: tone(darkBrand, '#0d1117'),
+        darkInkOnBrand: reading(darkInk, darkBrand),
+        darkInkOnBrandTone: tone(darkInk, darkBrand),
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
