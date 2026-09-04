@@ -25,7 +25,9 @@
             inputmode="numeric"
             autocomplete="off"
             class="text-score h-[60px] w-[92px] rounded-[15px] bg-surface px-[14px] text-right font-bold text-ink"
-            [class]="isTyped(entry.side) ? 'border-[1.5px] border-brand' : 'border border-line'"
+            [class]="
+              holdsTheNumber(entry.side) ? 'border-[1.5px] border-brand' : 'border border-line'
+            "
             [id]="fieldId(entry.side)"
             [value]="valueFor(entry.side)"
             (input)="onInput(entry.side, $event)"

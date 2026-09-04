@@ -62,8 +62,9 @@ in the main area; a roster list two-up is harder to scan, not easier.
 That covers the score sheet, the confirmations, the partner sheet and the roster preview. ADR-0014
 §1 put them at the bottom because "the tap that matters has to land under the thumb that asked for
 it" — an argument explicitly about a phone. Above the breakpoint there is no thumb, and keeping the
-position would be cargo-culting a conclusion past its premise. `sheet/bottom-sheet.ts` is already
-the one place that decides this, so it stays one place.
+position would be cargo-culting a conclusion past its premise. The helper every sheet opens through
+is already the one place that decides this, so it stays one place — it is `sheet/sheets.ts`, named
+for the two answers it now gives rather than for the one it used to.
 
 **5. CSS expresses every width change that does not duplicate a label. A `layout()` signal
 expresses the two that do.** Courts going two-up is a grid utility and involves no JavaScript.

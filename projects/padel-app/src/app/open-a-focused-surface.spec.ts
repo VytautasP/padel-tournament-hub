@@ -22,6 +22,7 @@ import {
 } from './testing/session-driver';
 import { AppHarness } from './testing/app-harness';
 import type { Tier } from './layout/layout';
+import type { SheetPosition } from './sheet/sheets';
 import type { InMemorySessionRepository } from './session/in-memory-session-repository';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
@@ -145,7 +146,7 @@ describe('opening a focused surface', () => {
 });
 
 /** Where the end-of-evening confirmation lands at one tier. */
-async function positionOfEndingConfirmation(tier: 'phone' | 'desk'): Promise<string> {
+async function positionOfEndingConfirmation(tier: Tier): Promise<SheetPosition> {
   const app = await createSession(FOUR, 1, 24, tier);
   await app.tap('Standings');
   await app.tap('End session');

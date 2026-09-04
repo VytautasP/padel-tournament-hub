@@ -86,14 +86,23 @@ export class ScoreSheet {
   }
 
   /**
-   * Whether this is the side the number was typed into — the one of the two that is real.
+   * Whether this field is holding the number rather than showing one derived from it.
    *
-   * The card marks it in brand the way the Round tab marks a scored court, so that a glance at a
-   * reopened sheet says which direction the result was entered in. Both fields are the same field
-   * either way: what differs is a border, never what can be done to them.
+   * The card marks that one in brand, the way the Round tab marks a scored court, so the pair on
+   * screen says which of the two is the fact and which is `target - fact`. Both fields are the
+   * same field either way: what differs is a border, never what can be done to them.
+   *
+   * An empty sheet marks neither. Nothing has been typed yet, so there is no number for a border
+   * to be pointing at — and pre-marking a side would be the sheet having an opinion about which
+   * one to use, which is the one thing ADR-0014 §2 says it must not have.
+   *
+   * It is not a record of which side the organizer originally typed into. That is not stored
+   * (ADR-0007 keeps a pair, not a keystroke), so a court scored from side B reopens marked on A.
    */
-  protected isTyped(side: Side): boolean {
-    return this.typed().side === side;
+  protected holdsTheNumber(side: Side): boolean {
+    const typed = this.typed();
+
+    return typed.side === side && typed.text !== '';
   }
 
   protected valueFor(side: Side): string {
