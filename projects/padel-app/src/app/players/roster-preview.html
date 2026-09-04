@@ -1,36 +1,38 @@
-<section class="flex max-h-[85vh] flex-col rounded-t-3xl border border-line bg-surface-raised">
+<section
+  class="flex max-h-[85vh] flex-col rounded-t-3xl border border-line bg-surface-raised shadow-sheet"
+>
   <header class="space-y-1 border-b border-line p-5">
-    <h2 class="text-lg font-semibold tracking-tight text-ink">
+    <h2 class="text-name font-bold text-ink">
       {{ copy.players.preview.heading }}
     </h2>
-    <p class="text-sm text-ink-muted">{{ copy.players.preview.lead }}</p>
+    <p class="text-meta text-ink-muted">{{ copy.players.preview.lead }}</p>
   </header>
 
   <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
     @for (round of rounds(); track round.number) {
       <section class="space-y-2">
-        <h3 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+        <h3 class="text-micro font-bold text-ink-muted uppercase">
           {{ copy.round.heading(round.number, roundCount()) }}
         </h3>
 
         <ul class="space-y-2">
           @for (court of round.courts; track court.courtNumber) {
             <li class="rounded-xl border border-line bg-surface-sunken p-3">
-              <app-court-card class="block space-y-1" [court]="court" />
+              <app-court-card [court]="court" />
             </li>
           }
         </ul>
 
         @if (round.hasSameGenderPair) {
-          <p class="text-sm text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+          <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
         }
 
         @if (round.bench.length > 0) {
-          <p class="text-sm text-ink-muted">{{ copy.round.bench(round.bench) }}</p>
+          <p class="text-meta text-ink-muted">{{ copy.round.bench(round.bench) }}</p>
         }
 
         @if (round.bye.length > 0) {
-          <p class="text-sm text-ink-muted">{{ copy.round.bye(round.bye) }}</p>
+          <p class="text-meta text-ink-muted">{{ copy.round.bye(round.bye) }}</p>
         }
       </section>
     }
@@ -39,14 +41,14 @@
   <div class="flex gap-3 border-t border-line p-5">
     <button
       type="button"
-      class="flex-1 rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
+      class="flex-1 rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
       (click)="dismiss()"
     >
       {{ copy.players.preview.dismiss }}
     </button>
     <button
       type="button"
-      class="flex-1 rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+      class="flex-1 rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
       (click)="commit()"
     >
       {{ data.action }}

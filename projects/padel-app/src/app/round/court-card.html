@@ -1,23 +1,25 @@
-<span class="block text-xs font-medium tracking-wide text-ink-muted uppercase">
-  {{ court().name }}
-</span>
-<span class="block text-lg text-ink">
-  {{ copy.round.side(court().sideA.names) }}
-  @if (court().sideA.sameGender) {
-    <span class="text-ink-muted" [attr.aria-label]="copy.round.sameGender.markLabel">{{
-      copy.round.sameGender.mark
-    }}</span>
-  }
-</span>
-<span class="block text-xs tracking-wide text-ink-muted uppercase">
-  {{ copy.round.versus }}
-</span>
-<span class="block text-lg text-ink">
-  {{ copy.round.side(court().sideB.names) }}
-  @if (court().sideB.sameGender) {
-    <span class="text-ink-muted" [attr.aria-label]="copy.round.sameGender.markLabel">{{
-      copy.round.sameGender.mark
-    }}</span>
-  }
+<span class="flex min-w-0 flex-1 flex-col gap-1">
+  <span class="text-micro font-bold text-ink-muted uppercase">
+    {{ court().name }}
+  </span>
+  <span class="text-name text-ink">
+    {{ copy.round.side(court().sideA.names) }}
+    @if (court().sideA.sameGender) {
+      <span class="text-ink-muted" [attr.aria-label]="copy.round.sameGender.markLabel">{{
+        copy.round.sameGender.mark
+      }}</span>
+    }
+  </span>
+  <span class="text-micro font-bold text-ink-muted uppercase">
+    {{ copy.round.versus }}
+  </span>
+  <span class="text-name text-ink">
+    {{ copy.round.side(court().sideB.names) }}
+    @if (court().sideB.sameGender) {
+      <span class="text-ink-muted" [attr.aria-label]="copy.round.sameGender.markLabel">{{
+        copy.round.sameGender.mark
+      }}</span>
+    }
+  </span>
 </span>
 <ng-content />

@@ -1,19 +1,19 @@
 <section class="flex flex-col gap-5 px-4 py-6">
-  <h1 class="text-2xl font-semibold tracking-tight text-ink">{{ copy.session.standings }}</h1>
+  <h1 class="text-title font-bold text-ink">{{ copy.session.standings }}</h1>
 
   @if (podium().length > 0) {
     <section class="space-y-3 rounded-2xl border border-brand bg-surface-sunken p-4">
-      <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+      <h2 class="text-micro font-bold text-ink-muted uppercase">
         {{ copy.standings.podium }}
       </h2>
       <ol class="space-y-2">
         @for (standing of podium(); track standing.id) {
           <li class="flex items-baseline gap-3">
-            <span class="w-6 text-base font-semibold tabular-nums text-brand">
+            <span class="w-6 text-row font-bold tabular-nums text-brand">
               {{ standing.position }}
             </span>
-            <span class="min-w-0 flex-1 truncate text-lg text-ink">{{ standing.name }}</span>
-            <span class="text-base font-semibold tabular-nums text-ink">
+            <span class="min-w-0 flex-1 truncate text-name text-ink">{{ standing.name }}</span>
+            <span class="text-row font-bold tabular-nums text-ink">
               {{ copy.standings.rate(standing.pointsPerMatch, standing.matchesPlayed) }}
             </span>
           </li>
@@ -31,15 +31,15 @@
           [attr.aria-expanded]="isExpanded(standing.id)"
           (click)="toggle(standing.id)"
         >
-          <span class="w-6 text-sm tabular-nums text-ink-muted">{{ standing.position }}</span>
-          <span class="min-w-0 flex-1 truncate text-base text-ink">{{ standing.name }}</span>
-          <span class="text-base font-semibold tabular-nums text-ink">
+          <span class="w-6 text-meta tabular-nums text-ink-muted">{{ standing.position }}</span>
+          <span class="min-w-0 flex-1 truncate text-row text-ink">{{ standing.name }}</span>
+          <span class="text-row font-bold tabular-nums text-ink">
             {{ copy.standings.rate(standing.pointsPerMatch, standing.matchesPlayed) }}
           </span>
         </button>
 
         @if (isExpanded(standing.id)) {
-          <dl class="flex gap-6 px-4 pb-3 text-sm text-ink-muted">
+          <dl class="flex gap-6 px-4 pb-3 text-meta text-ink-muted">
             <div class="flex gap-2">
               <dt>{{ copy.standings.matchesPlayed }}</dt>
               <dd class="tabular-nums text-ink">{{ standing.matchesPlayed }}</dd>
@@ -57,7 +57,7 @@
   @if (!ended()) {
     <button
       type="button"
-      class="rounded-xl border border-line px-4 py-3 text-base font-semibold text-ink"
+      class="rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
       (click)="end()"
     >
       {{ copy.standings.end }}

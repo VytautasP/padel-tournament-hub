@@ -1,44 +1,115 @@
 /*
- * The app's colour, in one file (ADR-0018).
+ * The app's colour and type, in one file (ADR-0018, ADR-0021).
  *
- * Two layers, deliberately. The raw palette below is a neutral scale plus a single brand hue,
- * declared twice — once for light and once for dark — and it is the only place in the app a
- * colour value is written down. The `@theme inline` block underneath turns those into Tailwind
- * utilities (`bg-surface`, `text-ink`, `border-line`), which is all a component is ever allowed
- * to name. Re-skinning the app is editing the top half of this file.
+ * Two layers, deliberately. The raw palette below is a cool blue-grey neutral ramp, a teal brand,
+ * three podium metals, a warning pair, a danger and two shadows — declared twice, once for light
+ * and once for dark — and it is the only place in the app a colour value is written down. The
+ * `@theme inline` block underneath turns those into Tailwind utilities (`bg-surface`, `text-ink`,
+ * `border-line`, `bg-podium-gold`, `shadow-sheet`), which is all a component is ever allowed to
+ * name. Re-skinning the app is editing the top half of this file.
  *
- * The values themselves are provisional: ADR-0018 defers the visual identity until after the
- * first real padel night, and settles only that both themes exist from the first component.
- * `prefers-color-scheme` switches them, and there is no in-app toggle.
+ * The type scale gets the same treatment, for the same reason. The canvas needs sizes Tailwind's
+ * default scale does not carry, so the scale is expressed as named roles — `text-header`,
+ * `text-score`, `text-meta` — and a component names the role rather than a measurement. A role
+ * carries its face as well as its size: `text-score` is Space Grotesk 700 at 30px with tabular
+ * figures, which is one decision rather than three for a template to get individually wrong.
  *
- * `tools/verify-app-conventions.mjs` proves no component names a colour of its own.
+ * The identity is direction A, *Court at dusk*, and every value here comes from the design canvas
+ * (`docs/design/canvas/Palette.dc.html` and `TypeScale.dc.html`) rather than from this file's
+ * author. It is a starting position, not a monument: ADR-0021 §6 expects a real padel night to
+ * revise it, and this is the one file that has to change when it does.
+ *
+ * `prefers-color-scheme` switches the two themes, and there is no in-app toggle.
+ *
+ * `tools/verify-app-conventions.mjs` proves no component names a colour or a type size of its own.
  */
 @import 'tailwindcss';
 @import '@angular/cdk/overlay-prebuilt.css';
 
+/*
+ * Space Grotesk, served by the app rather than fetched from a font host.
+ *
+ * Decision #15 commits this app to working offline, and a scoreline is exactly the text that
+ * matters at exactly the moment — a court, bad signal — when a third-party fetch fails
+ * (ADR-0021 §5). Two subsets, as Google's own CSS serves them: latin covers the copy, latin-ext
+ * covers the accented names an organizer might put in a session title. Only the bold is here,
+ * because 700 is the only weight the identity uses.
+ *
+ * `swap` rather than `block`: Verdana is already on the device, so the words arrive immediately
+ * and only their face changes when the file lands.
+ */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/space-grotesk-700-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/space-grotesk-700-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
 :root {
-  --palette-surface: #f7f8fa;
+  --palette-surface: #f4f6f8;
   --palette-surface-raised: #ffffff;
-  --palette-surface-sunken: #eceef2;
-  --palette-line: #d5d9e0;
-  --palette-ink: #16191f;
-  --palette-ink-muted: #5b6472;
-  --palette-brand: #1f7a5a;
-  --palette-brand-strong: #176046;
+  --palette-surface-sunken: #e6eaef;
+  --palette-line: #ccd4dd;
+  --palette-ink: #101720;
+  --palette-ink-muted: #55637a;
+  --palette-brand: #0e6f87;
+  --palette-brand-strong: #0a5568;
   --palette-brand-ink: #ffffff;
+  --palette-podium-gold: #8a6113;
+  --palette-podium-silver: #5c6672;
+  --palette-podium-bronze: #8a4b22;
+  --palette-warning: #9a5b00;
+  --palette-warning-surface: #fdf0e1;
+  --palette-danger: #a8322b;
+
+  /*
+   * Two roles, not a scale: a card resting on the page, and a sheet lifted over a scrim.
+   */
+  --palette-shadow-raised: 0 2px 6px rgba(16, 23, 32, 0.06);
+  --palette-shadow-sheet: 0 -8px 30px rgba(16, 23, 32, 0.25);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --palette-surface: #0e1116;
-    --palette-surface-raised: #171b22;
-    --palette-surface-sunken: #090b0f;
-    --palette-line: #2b313b;
-    --palette-ink: #e9ecf1;
-    --palette-ink-muted: #98a2b3;
-    --palette-brand: #3fae86;
-    --palette-brand-strong: #58c39c;
-    --palette-brand-ink: #07120d;
+    --palette-surface: #0d1117;
+    --palette-surface-raised: #151b23;
+    --palette-surface-sunken: #080b0f;
+    --palette-line: #28313d;
+    --palette-ink: #e6ebf2;
+    --palette-ink-muted: #93a1b5;
+    --palette-brand: #3fa8c4;
+    --palette-brand-strong: #63c1d8;
+    --palette-brand-ink: #04161c;
+    --palette-podium-gold: #e0a44a;
+    --palette-podium-silver: #b3bfcc;
+    --palette-podium-bronze: #d08a56;
+    --palette-warning: #f2a94e;
+    --palette-warning-surface: #2a1d0c;
+    --palette-danger: #e2736a;
+
+    /*
+     * Not the light shadows dimmed. Ink at 6% is invisible on a dark surface, so these go black
+     * and much stronger, and lean on `surface-raised` being lighter than `surface` to do half the
+     * separating.
+     */
+    --palette-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.45);
+    --palette-shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -52,6 +123,120 @@
   --color-brand: var(--palette-brand);
   --color-brand-strong: var(--palette-brand-strong);
   --color-brand-ink: var(--palette-brand-ink);
+  --color-podium-gold: var(--palette-podium-gold);
+  --color-podium-silver: var(--palette-podium-silver);
+  --color-podium-bronze: var(--palette-podium-bronze);
+  --color-warning: var(--palette-warning);
+  --color-warning-surface: var(--palette-warning-surface);
+  --color-danger: var(--palette-danger);
+
+  --shadow-raised: var(--palette-shadow-raised);
+  --shadow-sheet: var(--palette-shadow-sheet);
+
+  /*
+   * Two faces. Verdana carries every word that is read — it was drawn for small sizes on screen
+   * and is installed everywhere, so the text the organizer needs at a court arrives with no
+   * network in the path. Space Grotesk 700 carries titles, round headers and scorelines.
+   */
+  --font-sans:
+    Verdana, Geneva, 'DejaVu Sans', 'Bitstream Vera Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+
+  /*
+   * The type scale, as roles. Verdana has two weights and nothing between them, so a template
+   * says `font-bold` or says nothing; the 500 and 600 steps are gone rather than left to the
+   * browser to fake.
+   *
+   * Nothing here falls below 13px except `micro`, which is caps-only and never a sentence.
+   *
+   * The canvas draws two sizes that are not steps on this scale — a 12px navigation label and a
+   * 19px paging glyph — and they take the nearest role rather than earning one. A scale with a
+   * step per drawing is not a scale.
+   */
+  --text-display: 32px;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+
+  --text-title: 26px;
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.02em;
+
+  --text-header: 21px;
+  --text-header--line-height: 1.2;
+  --text-header--letter-spacing: -0.015em;
+
+  --text-score: 30px;
+  --text-score--line-height: 1.1;
+
+  --text-name: 17px;
+  --text-name--line-height: 1.25;
+
+  --text-row: 16px;
+  --text-row--line-height: 1.4;
+
+  --text-control: 16px;
+  --text-control--line-height: 1.25;
+
+  --text-lead: 15px;
+  --text-lead--line-height: 1.45;
+
+  --text-meta: 13px;
+  --text-meta--line-height: 1.45;
+
+  --text-micro: 11px;
+  --text-micro--line-height: 1.3;
+  --text-micro--letter-spacing: 0.09em;
+}
+
+/*
+ * The four roles Space Grotesk carries, bound to the face here rather than in every template that
+ * uses one.
+ *
+ * A role is a whole typographic decision — face, size, tracking, figures — and splitting it across
+ * two class names is how three of the four quietly drift apart. Their figures are even-width, so a
+ * scoreline does not shift as it is typed; Verdana rows that also line up in a column ask for
+ * `tabular-nums` themselves, because there the face is not the reason.
+ *
+ * Matched by substring rather than by exact class, so that a role behind a variant —
+ * `md:text-header` — is still the whole decision and not just the size. An exact selector reads
+ * more carefully and is wrong in the one case nobody would test.
+ */
+@layer components {
+  [class*='text-display'],
+  [class*='text-title'],
+  [class*='text-header'],
+  [class*='text-score'] {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/*
+ * The shared container: the width rule every screen is to use instead of writing its own
+ * (ADR-0022 §1).
+ *
+ * Below 768px it is the phone column exactly as drawn — the same 28rem the screens already pin
+ * themselves to. From 768px it widens to the measure the middle tier needs for courts two-up, and
+ * stays centered rather than growing without limit; at 1280px and above the desktop shell takes
+ * the width over, and this cap is what stops the main area sprawling in the meantime.
+ *
+ * One utility rather than a string of classes each screen repeats, because the widened tier is
+ * the thing most likely to drift: neither the phone boards nor the desktop boards draw it, so a
+ * screen that got it wrong looks fine on both of the pictures anybody checks against. What a
+ * screen still decides for itself is what it does with the room, not how much of it there is.
+ *
+ * The session shell uses it. The landing page and the wizard still write `mx-auto max-w-md`
+ * inline and adopt this when their own tickets rebuild them — those two are the outstanding
+ * users, not an exception to the rule.
+ */
+@utility page-column {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 28rem;
+
+  @media (width >= 48rem) {
+    max-width: 56rem;
+  }
 }
 
 html,
@@ -63,10 +248,6 @@ body {
   margin: 0;
   background-color: var(--color-surface);
   color: var(--color-ink);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }

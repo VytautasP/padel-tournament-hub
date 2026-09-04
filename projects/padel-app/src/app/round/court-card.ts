@@ -16,6 +16,12 @@
  * The frame is not here either — the border, the padding, whether it is a button — because that is
  * what differs between the three, and it is the one thing each screen genuinely has an opinion
  * about.
+ *
+ * What the card does own is the shape the canvas draws: the names in a column, and the result
+ * beside them rather than under them, so a court is one line of sight from the court name to the
+ * score. That row is a host class rather than something each screen remembers to apply, because a
+ * card whose two halves only sit side by side when the screen says so is a card that renders wrong
+ * the first time somebody adds a fourth screen.
  */
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { copy } from '../copy/copy';
@@ -24,6 +30,7 @@ import type { CourtView } from './round-view';
 @Component({
   selector: 'app-court-card',
   templateUrl: './court-card.html',
+  host: { class: 'flex items-center gap-4' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CourtCard {
