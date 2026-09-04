@@ -24,23 +24,23 @@ import type { Layout, Tier } from './layout';
 const WIDE_FROM = 768;
 const DESK_FROM = 1280;
 
-const WIDE = `(min-width: ${WIDE_FROM}px)`;
-const DESK = `(min-width: ${DESK_FROM}px)`;
+const WIDE_QUERY = `(min-width: ${WIDE_FROM}px)`;
+const DESK_QUERY = `(min-width: ${DESK_FROM}px)`;
 
 @Injectable()
 export class BreakpointLayout implements Layout {
   readonly tier = toSignal(
     inject(BreakpointObserver)
-      .observe([WIDE, DESK])
+      .observe([WIDE_QUERY, DESK_QUERY])
       .pipe(map(({ breakpoints }) => tierOf(breakpoints))),
     { requireSync: true },
   );
 }
 
 function tierOf(breakpoints: Record<string, boolean>): Tier {
-  if (breakpoints[DESK]) {
+  if (breakpoints[DESK_QUERY]) {
     return 'desk';
   }
 
-  return breakpoints[WIDE] ? 'wide' : 'phone';
+  return breakpoints[WIDE_QUERY] ? 'wide' : 'phone';
 }

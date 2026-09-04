@@ -13,8 +13,8 @@
  * schedule a test cannot spell out in advance, and it is what the score sheet's field labels are
  * going to say.
  *
- * Each driver takes the tier last and passes it straight through, defaulting to the phone the way
- * the harness does (ADR-0022). Walking the wizard is the same walk at every width, so a spec about
+ * Each driver takes the tier last and passes it straight through, leaving the default where the
+ * harness put it (ADR-0022). Walking the wizard is the same walk at every width, so a spec about
  * the desk says so once, in the call that opens the evening.
  */
 import type { Gender, Match, MatchScore, Session } from 'padel-engine';
@@ -43,7 +43,7 @@ export async function createSession(
   names: readonly string[],
   courtCount = 1,
   targetScore = 24,
-  tier: Tier = 'phone',
+  tier?: Tier,
 ): Promise<AppHarness> {
   const app = await AppHarness.launch({ tier });
   await app.tap('New session');
@@ -68,7 +68,7 @@ export async function createMixicanoSession(
   players: readonly MixicanoPlayer[],
   courtCount = 1,
   targetScore = 24,
-  tier: Tier = 'phone',
+  tier?: Tier,
 ): Promise<AppHarness> {
   const app = await AppHarness.launch({ tier });
   await app.tap('New session');
@@ -102,7 +102,7 @@ export async function createTeamAmericanoSession(
   pairs: readonly NamedPair[],
   courtCount = 1,
   targetScore = 24,
-  tier: Tier = 'phone',
+  tier?: Tier,
 ): Promise<AppHarness> {
   const app = await AppHarness.launch({ tier });
   await app.tap('New session');
