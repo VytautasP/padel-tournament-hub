@@ -26,6 +26,19 @@ export interface ConfirmData {
   readonly lead: string;
   /** The label on the button that does it. It names the act rather than agreeing with a question. */
   readonly action: string;
+  /**
+   * Whether the act on the other side of this button cannot be got back.
+   *
+   * The one thing that changes how the sheet looks rather than what it says, and the whole of what
+   * `danger` is spent on (ADR-0021 §3). It is asked of the act rather than of the screen because
+   * the two unrecoverable ones — discarding an evening, deleting one out of history — are the
+   * exceptions among the questions this component asks: ending a session is how every evening is
+   * supposed to finish, and colouring that as a hazard would teach the organizer to fear the happy
+   * path.
+   *
+   * Left off is a no. A question that has not said it destroys something is one that does not.
+   */
+  readonly unrecoverable?: boolean;
 }
 
 @Component({

@@ -1,26 +1,55 @@
+<!--
+  The front door, drawn twice and built once (`Landing.dc.html`, `DesktopLanding.dc.html`).
+
+  On a phone it is one column: the app's name, the evening in progress, and every evening already
+  played beneath it. At the desk tier it splits — the name and the tagline hold a panel on the
+  left, the Resume card runs across the top of the right, and history becomes a two-column grid
+  under it.
+
+  **The split is CSS and nothing else.** Same elements, same order, same words: the name is the
+  first child and spans both rows of the grid, so the two items after it fall into the second
+  column in the order they are already in. Nothing here reads the `LAYOUT` token, and nothing here
+  renders a label twice — which is what the seam in `app-harness.ts` would catch if it did
+  (ADR-0022 §5). The token is for the two places that genuinely restructure, and this is not one of
+  them.
+-->
 <main
-  class="mx-auto flex min-h-screen max-w-md flex-col gap-8 px-6 py-12"
-  [class.justify-center]="history().length === 0"
+  class="page-column flex min-h-screen flex-col gap-8 px-6 pt-14 pb-8 xl:grid xl:max-w-none xl:grid-cols-[520px_minmax(0,1fr)] xl:grid-rows-[auto_1fr] xl:gap-x-[72px] xl:gap-y-[34px] xl:px-24 xl:pt-24"
+  [class]="history().length === 0 ? 'max-xl:justify-center' : ''"
 >
-  <header class="space-y-2">
+  <!--
+    The masthead, and the whole of the desk tier's left panel. `text-display` is 32px on a phone
+    and 54px at the desk on its own (`styles.css`), so the one thing that changes here is how much
+    room it is given.
+  -->
+  <header class="flex flex-col gap-2 xl:row-span-2 xl:gap-[14px] xl:self-start xl:pt-3">
     <h1 class="text-display font-bold text-ink">{{ copy.appName }}</h1>
-    <p class="text-ink-muted">{{ copy.landing.tagline }}</p>
+    <p class="text-lead text-pretty text-ink-muted xl:max-w-[400px]">{{ copy.landing.tagline }}</p>
   </header>
 
   @if (session(); as active) {
-    <section class="space-y-4 rounded-2xl border border-line bg-surface-raised p-5 shadow-raised">
-      <div class="flex items-start justify-between gap-3">
-        <div class="space-y-1">
-          <h2 class="text-micro font-bold text-ink-muted uppercase">
+    <!--
+      The most prominent thing on the page, because reopening the app is nearly always reopening
+      the evening. At the desk it lies down: the summary takes the room, the overflow and Resume sit
+      at the end of the same line.
+    -->
+    <section
+      class="flex flex-col gap-[18px] rounded-[22px] border border-line bg-surface-raised p-5 shadow-raised xl:flex-row xl:flex-wrap xl:items-center xl:gap-[26px] xl:px-7 xl:py-[26px]"
+    >
+      <div class="flex items-start justify-between gap-3 xl:min-w-0 xl:flex-1">
+        <div class="flex min-w-0 flex-col gap-[6px]">
+          <!-- The brand carries this label, not the muted ink: it is the one line on the page
+               saying an evening is still open. -->
+          <h2 class="text-micro font-bold text-brand uppercase">
             {{ copy.landing.resumeHeading }}
           </h2>
-          <p class="text-name text-ink">
+          <p class="text-row text-ink">
             {{ copy.landing.resumeSummary(active.mode, active.roster.length, roundNumber()) }}
           </p>
         </div>
         <button
           type="button"
-          class="rounded-full border border-line px-3 py-1 text-ink-muted"
+          class="text-name flex size-11 shrink-0 items-center justify-center rounded-full border border-line text-ink-muted"
           [attr.aria-label]="copy.landing.options"
           [attr.aria-expanded]="optionsOpen()"
           (click)="toggleOptions()"
@@ -29,10 +58,20 @@
         </button>
       </div>
 
+      <!--
+        Discard stays one deliberate tap away from Resume rather than beside it (ADR-0013 §3), and
+        that has to survive the card lying down. `order-last` on a full-width basis is what keeps
+        it on its own line under the row at the desk instead of landing next to the button the
+        organizer actually wants.
+
+        It stays neutral. `danger` is spent on the confirming button the entry opens, not on the
+        entry — a menu that shouts before the organizer has asked for anything teaches them to
+        stop reading it (ADR-0021 §3).
+      -->
       @if (optionsOpen()) {
         <button
           type="button"
-          class="w-full rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
+          class="text-control h-12 rounded-[15px] border border-line px-4 font-bold text-ink xl:order-last xl:basis-full"
           (click)="discard()"
         >
           {{ copy.landing.discard }}
@@ -41,16 +80,21 @@
 
       <button
         type="button"
-        class="w-full rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
+        class="text-control h-[54px] rounded-[15px] bg-brand font-bold text-brand-ink xl:h-13 xl:shrink-0 xl:rounded-[14px] xl:px-10"
         (click)="opened.emit(active.id)"
       >
         {{ copy.landing.resume }}
       </button>
     </section>
   } @else {
+    <!--
+      New session is *absent* while an evening is in progress rather than disabled — the app cannot
+      honour a second one, and a greyed button invites the tap and explains nothing (ADR-0013).
+      Which is why it is the other half of this branch rather than a button standing under the card.
+    -->
     <button
       type="button"
-      class="w-full rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
+      class="text-control h-[54px] rounded-[15px] bg-brand font-bold text-brand-ink xl:h-13 xl:justify-self-start xl:rounded-[14px] xl:px-10"
       (click)="started.emit()"
     >
       {{ copy.landing.newSession }}
@@ -58,31 +102,44 @@
   }
 
   @if (history().length > 0) {
-    <section class="space-y-3">
+    <section class="flex flex-col gap-3 xl:gap-[14px]">
       <h2 class="text-micro font-bold text-ink-muted uppercase">
         {{ copy.history.heading }}
       </h2>
 
+      <!--
+        One divided card on a phone, separate cards two-up at the desk. The same list either way:
+        the divider and the border trade places, which is a set of utilities rather than a second
+        arrangement.
+      -->
       <ul
-        class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised"
+        class="divide-y divide-line overflow-hidden rounded-[20px] border border-line bg-surface-raised xl:grid xl:grid-cols-2 xl:gap-[14px] xl:divide-y-0 xl:overflow-visible xl:rounded-none xl:border-0 xl:bg-transparent"
       >
         @for (past of history(); track past.sessionId) {
-          <li class="flex items-center">
+          <li
+            class="flex items-center xl:rounded-[18px] xl:border xl:border-line xl:bg-surface-raised"
+          >
+            <!--
+              A row names itself by day, mode and size, with who won it underneath (ADR-0013 §4).
+              Both lines are inside the button, so the whole row is the tap that opens the evening.
+            -->
             <button
               type="button"
-              class="min-w-0 flex-1 space-y-1 px-4 py-3 text-left"
+              class="flex min-w-0 flex-1 flex-col gap-[3px] py-[14px] pr-2 pl-[18px] text-left xl:py-[18px] xl:pl-5"
               (click)="opened.emit(past.sessionId)"
             >
-              <span class="block truncate text-row text-ink">{{ past.title }}</span>
+              <span class="text-lead truncate text-ink xl:text-row">{{ past.title }}</span>
               @if (past.winners.length > 0) {
-                <span class="block truncate text-meta text-ink-muted">
+                <span class="text-meta truncate text-ink-muted">
                   {{ copy.history.winner(past.winners) }}
                 </span>
               }
             </button>
+            <!-- Neutral, for the same reason Discard's entry is: what it opens is the thing that
+                 cannot be got back, and this is only the way to ask. -->
             <button
               type="button"
-              class="px-4 py-3 text-name text-ink-muted"
+              class="text-name mr-2 flex size-11 shrink-0 items-center justify-center text-ink-muted xl:mr-3"
               [attr.aria-label]="copy.history.delete(past.title)"
               (click)="remove(past.sessionId)"
             >

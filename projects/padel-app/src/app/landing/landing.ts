@@ -67,9 +67,16 @@ export class Landing {
     this.overflow.set(false);
   }
 
-  /** Forget one ended evening, permanently (decision #10). */
+  /**
+   * Forget one ended evening, permanently (decision #10).
+   *
+   * The confirmation is told the act cannot be got back, which is what puts `danger` on the button
+   * that performs it and on nothing else in this app but the one beside Discard (ADR-0021 §3). It
+   * is said here rather than in the dictionary because it is a weight rather than a word, and
+   * `copy.ts` holds only what the organizer reads.
+   */
   protected async remove(sessionId: string): Promise<void> {
-    if (await this.confirm.granted(copy.history.deleteConfirm)) {
+    if (await this.confirm.granted({ ...copy.history.deleteConfirm, unrecoverable: true })) {
       await this.store.deleteFromHistory(sessionId);
     }
   }
