@@ -1,20 +1,57 @@
-<section class="flex flex-col gap-5 px-4 py-6">
+<section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
   <h1 class="text-title font-bold text-ink">{{ copy.session.standings }}</h1>
 
+  <!--
+    The podium is a block rather than three lighter rows at the top of the table. It is the one
+    warm thing on the screen — the three metals are the only colour in the app that is not the
+    teal or the neutral ramp — and it is the whole reason the evening was played.
+  -->
   @if (podium().length > 0) {
-    <section class="space-y-3 rounded-2xl border border-brand bg-surface-sunken p-4">
-      <h2 class="text-micro font-bold text-ink-muted uppercase">
-        {{ copy.standings.podium }}
-      </h2>
-      <ol class="space-y-2">
-        @for (standing of podium(); track standing.id) {
-          <li class="flex items-baseline gap-3">
-            <span class="w-6 text-row font-bold tabular-nums text-brand">
-              {{ standing.position }}
+    <section class="flex flex-col gap-3 rounded-[20px] border border-brand bg-brand-wash p-[18px]">
+      <h2 class="text-micro font-bold text-brand uppercase">{{ copy.standings.podium }}</h2>
+      <ol class="flex flex-col gap-[10px]">
+        @for (place of podium(); track place.standing.id) {
+          <li class="flex items-center gap-3">
+            <!--
+              The position and its medal are one thing wearing one colour, so the metal is set
+              once here and the medal takes it as `currentColor`. Two bindings for one fact is how
+              a bronze number ends up beside a silver medal.
+            -->
+            <span class="flex items-center gap-3" [class]="metalInk[place.metal]">
+              <span class="text-name w-4 font-bold tabular-nums">{{
+                place.standing.position
+              }}</span>
+              <svg
+                class="block shrink-0"
+                width="22"
+                height="32"
+                viewBox="0 0 32 46"
+                fill="none"
+                aria-hidden="true"
+              >
+                <polygon points="3,1 11,1 21,24 13,24" class="fill-brand-strong" />
+                <polygon points="29,1 21,1 11,24 19,24" class="fill-brand" />
+                <circle cx="16" cy="31" r="13" fill="currentColor" />
+                <!--
+                  The ring is the page's own ground showing through the disc rather than a colour
+                  of its own, which is what `surface` is: exactly what the dark board draws, and
+                  a whisker off white on the light one where nothing at 45% can tell.
+                -->
+                <circle
+                  cx="16"
+                  cy="31"
+                  r="8.6"
+                  class="stroke-surface"
+                  stroke-width="1"
+                  opacity="0.45"
+                />
+              </svg>
             </span>
-            <span class="min-w-0 flex-1 truncate text-name text-ink">{{ standing.name }}</span>
-            <span class="text-row font-bold tabular-nums text-ink">
-              {{ copy.standings.rate(standing.pointsPerMatch, standing.matchesPlayed) }}
+            <span class="text-name min-w-0 flex-1 truncate text-ink">{{
+              place.standing.name
+            }}</span>
+            <span class="text-name font-bold tabular-nums text-ink">
+              {{ copy.standings.rate(place.standing.pointsPerMatch, place.standing.matchesPlayed) }}
             </span>
           </li>
         }
@@ -22,24 +59,43 @@
     </section>
   }
 
-  <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised">
+  <!--
+    One row per competitor, divided rather than carded: the table is read down a column of rates,
+    and a gap between every line is a gap the eye has to cross seven times.
+
+    An expanded row takes a brand outline instead of its divider, which is what makes the two
+    figures underneath read as belonging to the name above them rather than to the row below.
+  -->
+  <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
     @for (standing of standings(); track standing.id) {
-      <li>
+      <li
+        [class]="
+          isExpanded(standing.id) ? 'border border-brand' : 'border-b border-line last:border-b-0'
+        "
+      >
         <button
           type="button"
-          class="flex w-full items-baseline gap-3 px-4 py-3 text-left"
+          class="flex w-full items-baseline gap-[14px] px-[18px] pt-[15px] text-left"
+          [class]="isExpanded(standing.id) ? 'pb-2' : 'pb-[15px]'"
           [attr.aria-expanded]="isExpanded(standing.id)"
           (click)="toggle(standing.id)"
         >
-          <span class="w-6 text-meta tabular-nums text-ink-muted">{{ standing.position }}</span>
-          <span class="min-w-0 flex-1 truncate text-row text-ink">{{ standing.name }}</span>
-          <span class="text-row font-bold tabular-nums text-ink">
+          <span class="text-meta w-[22px] tabular-nums text-ink-muted">{{
+            standing.position
+          }}</span>
+          <span class="text-row min-w-0 flex-1 truncate text-ink">{{ standing.name }}</span>
+          <!-- A dash is not a score, so it is not weighted like one. -->
+          <span
+            class="text-name font-bold tabular-nums"
+            [class]="standing.matchesPlayed === 0 ? 'text-ink-muted' : 'text-ink'"
+          >
             {{ copy.standings.rate(standing.pointsPerMatch, standing.matchesPlayed) }}
           </span>
         </button>
 
         @if (isExpanded(standing.id)) {
-          <dl class="flex gap-6 px-4 pb-3 text-meta text-ink-muted">
+          <!-- Indented past the position column, so the two figures line up under the name. -->
+          <dl class="text-meta flex gap-[22px] pt-0 pr-[18px] pb-[14px] pl-9 text-ink-muted">
             <div class="flex gap-2">
               <dt>{{ copy.standings.matchesPlayed }}</dt>
               <dd class="tabular-nums text-ink">{{ standing.matchesPlayed }}</dd>
@@ -54,10 +110,22 @@
     }
   </ul>
 
+  <!--
+    The ending sits at the bottom of the screen rather than under the last row, for the reason the
+    advance card does on the Round tab: a table longer than the screen scrolls, and the button
+    arrives at the end of the scroll instead of floating over it.
+  -->
+  <div class="flex-1"></div>
+
   @if (!ended()) {
+    <!--
+      Weighted as the ordinary end of an evening, not as a hazard. It is how every session is
+      supposed to finish and it is what produces the podium above; `danger` here would teach the
+      organizer to fear the happy path (ADR-0021 §3).
+    -->
     <button
       type="button"
-      class="rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
+      class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
       (click)="end()"
     >
       {{ copy.standings.end }}

@@ -29,6 +29,20 @@ import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
 import { SessionStore } from '../session/session-store';
 import { podiumOf } from './podium';
+import type { Metal } from './podium';
+
+/**
+ * The token each metal is drawn in, named here rather than in the template.
+ *
+ * A three-way choice written as nested ternaries in a class binding is unreadable, and written as
+ * an `@switch` it is the medal drawn three times over. This is the one fact that changes between
+ * the three places, so it is the only thing that varies.
+ */
+const METAL_INK: Record<Metal, string> = {
+  gold: 'text-podium-gold',
+  silver: 'text-podium-silver',
+  bronze: 'text-podium-bronze',
+};
 
 @Component({
   selector: 'app-standings-tab',
@@ -48,6 +62,7 @@ export class StandingsTab {
   protected readonly ended = this.store.ended;
 
   protected readonly podium = computed(() => podiumOf(this.standings()));
+  protected readonly metalInk = METAL_INK;
 
   protected isExpanded(id: PlayerId | TeamId): boolean {
     return this.expanded().includes(id);
