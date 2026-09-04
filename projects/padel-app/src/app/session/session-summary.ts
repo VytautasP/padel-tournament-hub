@@ -11,8 +11,8 @@
  * engine says about the recorded scores. Where the top place is joint, every name in it is a
  * winner — the app does not break a tie the engine declared (decision #8).
  */
-import type { Standing } from 'padel-engine';
 import { copy, formatDay } from '../copy/copy';
+import type { StandingRow } from '../standings/standing-row';
 import type { SessionRecord } from './session-record';
 
 export interface SessionSummary {
@@ -25,11 +25,18 @@ export interface SessionSummary {
    *
    * Empty rather than everybody: with no scores every player is joint first on nothing, and a row
    * claiming eleven winners would be reporting an artefact of the ranking as a result.
+   *
+   * A name here is whoever the evening ranked — a player, or a pair as `Ana & Ben` where the
+   * competitor was a team (ADR-0011). The row does not have to know which: it names the winner of
+   * the format it already says it played.
    */
   readonly winners: readonly string[];
 }
 
-export function summarise(record: SessionRecord, standings: readonly Standing[]): SessionSummary {
+export function summarise(
+  record: SessionRecord,
+  standings: readonly StandingRow[],
+): SessionSummary {
   return {
     sessionId: record.session.id,
     // The day the evening was played, which is `createdAt` — a night that ran past midnight is

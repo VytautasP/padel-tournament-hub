@@ -25,6 +25,7 @@ describe('padel-engine public API', () => {
       'removePlayer',
       'sameGenderSides',
       'teamsNeedingPartner',
+      'teamsOnByeIn',
     ]);
 
     const session = generateRemaining(createSession(americanoConfig()));

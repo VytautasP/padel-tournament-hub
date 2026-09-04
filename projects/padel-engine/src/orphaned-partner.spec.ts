@@ -221,6 +221,33 @@ describe('assigning a new partner', () => {
     expectFairAtEveryPrefix(playThrough(repaired, 6));
   });
 
+  /**
+   * A three-team evening on one court, seeded so that the byes of its first two rounds fall
+   * unevenly on the players — which is what makes a replacement's own count of rounds diverge
+   * from her team's.
+   *
+   * The id is part of the fixture rather than incidental: the scheduler seeds its tie-breaking
+   * from the session (decision #6), so this is the evening the app produced when the check below
+   * was being asked of the wrong unit, kept so it stays asked of the right one.
+   */
+  function threeTeamsOneCourtPlayed(): Session {
+    return playThrough(
+      scheduled(teamAmericanoConfig({ id: 's-2-82', teamCount: 3, courtCount: 1, roundCount: 8 })),
+      2,
+    );
+  }
+
+  it('judges a replacement as her team rather than against the rounds she was not here for', () => {
+    const orphaned = removePlayer(threeTeamsOneCourtPlayed(), 'p1');
+
+    const repaired = assignPartner(orphaned, 't1', { id: 'p7', name: 'Gita' });
+
+    // She joins in round 3 and plays exactly as t1 plays. Counting her sit-outs against a player
+    // who has been here since round 1 compares her with an evening she was not at — the unit the
+    // bye falls on is the team (decision #2c, ADR-0020).
+    expectFairAtEveryPrefix(repaired);
+  });
+
   it('holds them when the repair comes after further rounds have been played', () => {
     const late = assignPartner(playThrough(orphanedSession(), 4), 't1', {
       id: 'p11',

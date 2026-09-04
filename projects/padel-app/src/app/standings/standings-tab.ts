@@ -10,6 +10,10 @@
  * points explain a position rather than establish one, and a table that shows everything at once
  * is a table nobody can read across a court in the dark.
  *
+ * A row is a competitor rather than a player: the same table ranks teams in Team Americano, and
+ * the only thing that changes is the name in the middle column (ADR-0011). The store decides
+ * which ladder this session has; nothing on this screen asks what mode it is.
+ *
  * Positions come from the engine and are rendered exactly as given: a joint second is `2` twice
  * and the next player is `4`. The app never invents a separator and never renumbers, because the
  * places a joint position occupies are used up (decision #8).
@@ -20,7 +24,7 @@
  * three *are* the standings, so a podium screen would render the same rows twice.
  */
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { PlayerId } from 'padel-engine';
+import type { PlayerId, TeamId } from 'padel-engine';
 import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
 import { SessionStore } from '../session/session-store';
@@ -34,7 +38,8 @@ import { podiumOf } from './podium';
 export class StandingsTab {
   private readonly store = inject(SessionStore);
   private readonly confirm = inject(Confirm);
-  private readonly expanded = signal<readonly PlayerId[]>([]);
+  /** Which rows are open, by competitor id — a player's, or a team's (ADR-0011). */
+  private readonly expanded = signal<readonly (PlayerId | TeamId)[]>([]);
 
   protected readonly copy = copy;
   protected readonly standings = this.store.standings;
@@ -44,13 +49,13 @@ export class StandingsTab {
 
   protected readonly podium = computed(() => podiumOf(this.standings()));
 
-  protected isExpanded(playerId: PlayerId): boolean {
-    return this.expanded().includes(playerId);
+  protected isExpanded(id: PlayerId | TeamId): boolean {
+    return this.expanded().includes(id);
   }
 
-  protected toggle(playerId: PlayerId): void {
+  protected toggle(id: PlayerId | TeamId): void {
     this.expanded.update((open) =>
-      open.includes(playerId) ? open.filter((id) => id !== playerId) : [...open, playerId],
+      open.includes(id) ? open.filter((held) => held !== id) : [...open, id],
     );
   }
 

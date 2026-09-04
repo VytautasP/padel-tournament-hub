@@ -15,13 +15,15 @@ import type { Gender, SessionMode } from 'padel-engine';
 import { copy } from '../copy/copy';
 import {
   completeRotationRoundCount,
+  completeTeamRotationRoundCount,
   DEFAULT_COURT_COUNT,
   DEFAULT_TARGET_SCORE,
   MINIMUM_PLAYERS,
   MINIMUM_SESSION_NUMBER,
+  PLAYERS_PER_TEAM,
 } from '../session/round-defaults';
 import { newPlayer } from '../session/session-store';
-import type { SessionDraft } from '../session/session-store';
+import type { DraftPairing, SessionDraft } from '../session/session-store';
 
 /** A name on the list, with an id so that editing or removing it never depends on its position. */
 export interface DraftPlayer {
@@ -42,7 +44,18 @@ export interface DraftPlayer {
  * answers: `too-few` is about how many names there are, `gender-missing` about a question the
  * organizer has not answered on one of them.
  */
-export type PlayersProblem = 'too-few' | 'gender-missing';
+export type PlayersProblem = 'too-few' | 'gender-missing' | 'odd-roster';
+
+/** A pair the organizer has made on the pairing step, by draft player id. */
+export type DraftPair = readonly [string, string];
+
+/** A team as the pairing step renders it: who is on it, and what it is called. */
+export interface DraftTeam {
+  /** Addressed by its first member, which is stable while the pair exists and unique across it. */
+  readonly key: string;
+  readonly playerIds: DraftPair;
+  readonly names: readonly string[];
+}
 
 export class WizardDraft {
   readonly mode = signal<SessionMode>('americano');
@@ -50,6 +63,7 @@ export class WizardDraft {
   readonly courtCount = signal(DEFAULT_COURT_COUNT);
 
   private readonly entries = signal<readonly DraftPlayer[]>([]);
+  private readonly pairs = signal<readonly DraftPair[]>([]);
   private nextId = 1;
 
   readonly players = this.entries.asReadonly();
@@ -92,7 +106,14 @@ export class WizardDraft {
    * noticed after the evening has run the wrong length.
    */
   readonly suggestedRoundCount = computed(() =>
-    completeRotationRoundCount(this.entries().length, this.courtCount()),
+    // A complete rotation is over whatever this mode rotates: partnerships in the modes that make
+    // new ones every round, and the fixture list where the pairs are fixed (ADR-0011).
+    this.asksPairing()
+      ? completeTeamRotationRoundCount(
+          Math.floor(this.entries().length / PLAYERS_PER_TEAM),
+          this.courtCount(),
+        )
+      : completeRotationRoundCount(this.entries().length, this.courtCount()),
   );
 
   private readonly chosenRoundCount = signal<number | null>(null);
@@ -109,6 +130,15 @@ export class WizardDraft {
   private readonly asksGender = computed(() => this.mode() === 'mixicano');
 
   /**
+   * Whether this evening is played by fixed pairs — the whole of whether the pairing step exists.
+   *
+   * Asked here for the same reason the gender question is: Back is non-destructive, so a draft
+   * can be carried into Team Americano, paired, carried back out again, and the wizard, the
+   * roster step and the pairing step all have to agree about which mode it is now in.
+   */
+  readonly asksPairing = computed(() => this.mode() === 'team-americano');
+
+  /**
    * Whether every name on the list carries the gender its mode needs (ADR-0010).
    *
    * True for every mode that does not pair across gender, because there is nothing to ask. In
@@ -119,10 +149,60 @@ export class WizardDraft {
     () => !this.asksGender() || this.entries().every((player) => player.gender !== undefined),
   );
 
+  /**
+   * Whether the roster divides into pairs — asked of every mode, and true of the ones that do not
+   * pair at all (decision #2a).
+   *
+   * An odd roster is held at the Players step rather than at the pairing step, because a pairing
+   * step reached with somebody left over has nothing it can show: there is no pair to make out of
+   * the ninth of nine, and the honest place to say so is the screen the ninth name is on.
+   */
+  private readonly rosterDividesIntoPairs = computed(
+    () => !this.asksPairing() || this.entries().length % PLAYERS_PER_TEAM === 0,
+  );
+
   /** Whether the roster is one the engine could schedule (decision #4, ADR-0010). */
   readonly canLeavePlayers = computed(
-    () => this.entries().length >= MINIMUM_PLAYERS && this.everyGenderAnswered(),
+    () =>
+      this.entries().length >= MINIMUM_PLAYERS &&
+      this.everyGenderAnswered() &&
+      this.rosterDividesIntoPairs(),
   );
+
+  /**
+   * The pairs the organizer has made, in the order they made them.
+   *
+   * Pruned to the roster on every read rather than edited when a name is removed. Back is
+   * non-destructive, so the roster can move underneath a pairing that was already made — and a
+   * pair naming somebody who is no longer on the list is not a team, it is a stale index into a
+   * list that has changed.
+   */
+  private readonly livePairs = computed<readonly DraftPair[]>(() => {
+    const present = new Set(this.entries().map((player) => player.id));
+
+    return this.pairs().filter(([first, second]) => present.has(first) && present.has(second));
+  });
+
+  /** The teams as the pairing step shows them: the pair, and the two names on it. */
+  readonly teams = computed<readonly DraftTeam[]>(() => {
+    const names = new Map(this.entries().map((player) => [player.id, player.name]));
+
+    return this.livePairs().map((playerIds) => ({
+      key: playerIds[0],
+      playerIds,
+      names: playerIds.map((id) => names.get(id) ?? id),
+    }));
+  });
+
+  /** Whoever is still standing on their own, in roster order. */
+  readonly unpaired = computed<readonly DraftPlayer[]>(() => {
+    const taken = new Set(this.livePairs().flat());
+
+    return this.entries().filter((player) => !taken.has(player.id));
+  });
+
+  /** Whether every player has a partner, which is the whole of what the pairing step asks. */
+  readonly canLeavePairing = computed(() => this.unpaired().length === 0);
 
   /**
    * Why the roster cannot go on to Review, as a code rather than a sentence — and only once
@@ -146,7 +226,11 @@ export class WizardDraft {
 
     // Reported only once there are enough names to go on with, so a roster halfway through being
     // typed is told one thing at a time. The untouched toggles are visible on the rows either way.
-    return this.everyGenderAnswered() ? null : 'gender-missing';
+    if (!this.everyGenderAnswered()) {
+      return 'gender-missing';
+    }
+
+    return this.rosterDividesIntoPairs() ? null : 'odd-roster';
   });
 
   addPlayer(name: string): void {
@@ -189,6 +273,28 @@ export class WizardDraft {
     );
   }
 
+  /**
+   * Put two players on a team together.
+   *
+   * Either one already being on a team is ignored rather than rearranged: the step only offers
+   * unpaired names, so this is the draft defending its own state — a pairing that took somebody
+   * off one team and put them on another would leave their old partner standing alone without
+   * anybody having said so.
+   */
+  pair(first: string, second: string): void {
+    const taken = new Set(this.livePairs().flat());
+    if (first === second || taken.has(first) || taken.has(second)) {
+      return;
+    }
+
+    this.pairs.update((made) => [...made, [first, second]]);
+  }
+
+  /** Break up the team this player is on, returning both names to the unpaired list. */
+  unpair(playerId: string): void {
+    this.pairs.update((made) => made.filter((pair) => !pair.includes(playerId)));
+  }
+
   removePlayer(id: string): void {
     this.entries.update((players) => players.filter((player) => player.id !== id));
   }
@@ -229,6 +335,27 @@ export class WizardDraft {
     this.chosenRoundCount.set(wholeNumber(value, this.roundCount()));
   }
 
+  /**
+   * The pairing as the store takes it: positions in the roster it is about to be handed.
+   *
+   * Positions rather than the draft's own ids, because roster ids are the store's business — they
+   * are derived from the session id and the order the names arrived in, and a wizard that supplied
+   * them could break the reproducibility that derivation exists for (`session-store.ts`).
+   */
+  private draftTeams(): readonly DraftPairing[] {
+    const position = new Map(this.entries().map((player, index) => [player.id, index]));
+
+    return this.livePairs().flatMap(([first, second]) => {
+      const one = position.get(first);
+      const other = position.get(second);
+
+      // A pair naming somebody the roster no longer holds is dropped rather than defaulted. Both
+      // halves are on the list by construction — `livePairs` is pruned to it — and a miss that
+      // quietly became "the first name typed" would pair two people who never agreed to it.
+      return one === undefined || other === undefined ? [] : [[one, other] as const];
+    });
+  }
+
   toSessionDraft(): SessionDraft {
     return {
       mode: this.mode(),
@@ -238,6 +365,10 @@ export class WizardDraft {
       players: this.entries().map((player) =>
         newPlayer(player.name, this.asksGender() ? player.gender : undefined),
       ),
+      // Dropped where the mode stopped asking, like the genders above: a draft paired as a Team
+      // Americano and then carried back out is an Americano, and teams on it would be a pairing
+      // this evening never made. The engine refuses them there anyway (`session-shape.ts`).
+      ...(this.asksPairing() ? { teams: this.draftTeams() } : {}),
       courtCount: this.courtCount(),
       courtNames: this.courtNames(),
       targetScore: this.targetScore(),

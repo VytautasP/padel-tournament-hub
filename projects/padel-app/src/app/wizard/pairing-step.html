@@ -1,0 +1,72 @@
+<section class="space-y-5">
+  <header class="space-y-1">
+    <h1 class="text-2xl font-semibold tracking-tight text-ink">
+      {{ copy.wizard.pairing.heading }}
+    </h1>
+    <p class="text-sm text-ink-muted">{{ copy.wizard.pairing.lead }}</p>
+  </header>
+
+  @if (draft().teams().length > 0) {
+    <div class="space-y-3">
+      <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+        {{ copy.wizard.pairing.teams }}
+      </h2>
+      <ul
+        class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface-raised"
+      >
+        @for (team of draft().teams(); track team.key) {
+          <li class="flex items-center">
+            <span class="min-w-0 flex-1 truncate px-4 py-3 text-base text-ink">
+              {{ copy.team.name(team.names) }}
+            </span>
+            <button
+              type="button"
+              class="px-4 py-3 text-ink-muted"
+              [attr.aria-label]="copy.wizard.pairing.unpair(copy.team.name(team.names))"
+              (click)="unpair(team.key)"
+            >
+              <svg
+                class="size-4"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M3 3 L13 13 M13 3 L3 13" />
+              </svg>
+            </button>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (choices().length > 0) {
+    <div class="space-y-3">
+      <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+        {{ copy.wizard.pairing.unpaired }}
+      </h2>
+      <ul class="flex flex-wrap gap-2">
+        @for (choice of choices(); track choice.id) {
+          <li>
+            <button
+              type="button"
+              class="rounded-full border px-4 py-2 text-base font-medium"
+              [class]="
+                choice.waiting ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink'
+              "
+              [attr.aria-label]="copy.wizard.pairing.choose(choice.name)"
+              [attr.aria-pressed]="choice.waiting"
+              (click)="choose(choice.id)"
+            >
+              {{ choice.name }}
+            </button>
+          </li>
+        }
+      </ul>
+      <p class="text-sm font-medium text-ink">{{ copy.wizard.pairing.unpairedRemain }}</p>
+    </div>
+  }
+</section>
