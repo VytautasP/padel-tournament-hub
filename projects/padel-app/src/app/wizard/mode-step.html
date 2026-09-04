@@ -1,7 +1,7 @@
 <section class="space-y-5">
   <header class="space-y-1">
-    <h1 class="text-2xl font-semibold tracking-tight text-ink">{{ copy.wizard.mode.heading }}</h1>
-    <p class="text-sm text-ink-muted">{{ copy.wizard.mode.lead }}</p>
+    <h1 class="text-title font-bold text-ink">{{ copy.wizard.mode.heading }}</h1>
+    <p class="text-meta text-ink-muted">{{ copy.wizard.mode.lead }}</p>
   </header>
 
   <ul class="space-y-3">
@@ -13,10 +13,10 @@
           [attr.aria-label]="copy.wizard.mode.name(choice)"
           (click)="choose(choice)"
         >
-          <span class="block text-lg font-semibold text-ink">
+          <span class="block text-name font-bold text-ink">
             {{ copy.wizard.mode.name(choice) }}
           </span>
-          <span class="mt-1 block text-sm text-ink-muted">
+          <span class="mt-1 block text-meta text-ink-muted">
             {{ copy.wizard.mode.blurb(choice) }}
           </span>
         </button>

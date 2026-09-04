@@ -19,7 +19,7 @@
   <nav class="flex gap-3">
     <button
       type="button"
-      class="flex-1 rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
+      class="flex-1 rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
       (click)="back()"
     >
       {{ current() === 'mode' ? copy.wizard.cancel : copy.wizard.back }}
@@ -27,7 +27,7 @@
     @if (hasNext() && current() !== 'mode') {
       <button
         type="button"
-        class="flex-1 rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink disabled:opacity-40"
+        class="flex-1 rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink disabled:opacity-40"
         [disabled]="!canAdvance()"
         (click)="next()"
       >

@@ -1,7 +1,7 @@
-<div class="mx-auto flex h-screen max-w-md flex-col">
+<div class="page-column flex h-screen flex-col">
   @if (ended()) {
     <header class="flex justify-end border-b border-line bg-surface-raised px-4 py-2">
-      <button type="button" class="text-sm font-medium text-brand" (click)="left.emit()">
+      <button type="button" class="text-lead font-bold text-brand" (click)="left.emit()">
         {{ copy.session.done }}
       </button>
     </header>
@@ -21,8 +21,8 @@
     @for (tab of tabs; track tab.id) {
       <button
         type="button"
-        class="flex-1 py-3 text-sm font-medium"
-        [class]="current() === tab.id ? 'text-brand' : 'text-ink-muted'"
+        class="text-meta flex-1 py-3"
+        [class]="current() === tab.id ? 'font-bold text-brand' : 'text-ink-muted'"
         [attr.aria-current]="current() === tab.id ? 'page' : null"
         (click)="show(tab.id)"
       >

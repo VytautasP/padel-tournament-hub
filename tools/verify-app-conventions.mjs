@@ -1,18 +1,27 @@
 /**
- * Proves the two conventions padel-app cannot enforce with a type (decisions #20 and ADR-0018).
+ * Proves the three conventions padel-app cannot enforce with a type (decision #20, ADR-0018 and
+ * ADR-0021).
  *
- * Both are the kind of rule that holds perfectly for a month and then quietly stops: someone adds
- * a heading, someone reaches for `text-red-500` to make an error look like an error, and neither
- * shows up in a diff review because neither is wrong in any local sense. So they are checked here,
- * over the app's templates and component styles:
+ * All three are the kind of rule that holds perfectly for a month and then quietly stops: someone
+ * adds a heading, someone reaches for `text-red-500` to make an error look like an error, someone
+ * writes `text-sm` because the line looked big, and none of it shows up in a diff review because
+ * none of it is wrong in any local sense. So they are checked here, over the app's templates and
+ * component styles:
  *
  *   1. **No visible string is written in a template.** Every word the organizer reads comes from
  *      the copy dictionary through an interpolation or a binding (decision #20).
  *   2. **No component names a colour.** Colour is expressed only as tokens defined in
  *      `styles.css`, which is the one file exempt from the rule because it is where the tokens
  *      live (ADR-0018).
+ *   3. **No template names a type size.** Type is expressed only as the named roles defined in
+ *      `styles.css` — `text-header`, `text-name`, `text-meta` — never Tailwind's default
+ *      measurement scale (`text-sm`, `text-2xl`), an arbitrary `text-[17px]`, or a raw
+ *      `font-size`. This is rule 2's argument applied to the axis that would drift next: the
+ *      canvas needs sizes Tailwind's scale does not carry, and a role decides the face and the
+ *      tracking as well as the size, so a component that reaches for a measurement gets a third
+ *      of the answer and silently drops the rest (ADR-0021 §4).
  *
- * Like `verify-engine-boundary.mjs`, this script also checks itself: it runs both rules over
+ * Like `verify-engine-boundary.mjs`, this script also checks itself: it runs every rule over
  * deliberate violations and over deliberate near-misses, and fails if a rule lets a violation
  * through or trips on something legitimate. A convention checker nobody has seen reject anything
  * is indistinguishable from one that always passes.
@@ -41,6 +50,26 @@ const COLOUR_UTILITY = new RegExp(
 );
 
 const COLOUR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|color-mix)\s*\(/;
+
+/**
+ * Tailwind's default font-size scale. Naming one of these is naming a measurement rather than a
+ * role — and unlike the colour rule, a denylist is the right shape here. `text-` is a namespace
+ * three unrelated things share: colour tokens (`text-ink`), the type roles (`text-header`) and
+ * alignment (`text-center`). A rule that tried to describe what a role looks like would have to
+ * reject the other two as well.
+ */
+const TYPE_SCALE = 'xs|sm|base|lg|xl|[2-9]xl';
+
+const TYPE_UTILITY = new RegExp(
+  `(?:^|[\\s"'])(?:hover:|focus:|active:|disabled:|dark:|sm:|md:|lg:|xl:)*` +
+    `text-(?:(?:${TYPE_SCALE})(?:/\\S+)?|\\[[^\\]]*\\])(?:$|[\\s"'])`,
+);
+
+/**
+ * A raw `font-size`: the same measurement wearing CSS's hat. Written as an inline style
+ * (`font-size:`) or as the Angular binding that produces one (`[style.font-size]`).
+ */
+const TYPE_LITERAL = /font-size\s*(?::|\])/;
 
 /**
  * The visible text a template writes for itself, after everything that is not visible text has
@@ -121,6 +150,17 @@ function literalAttributesIn(template) {
   return found;
 }
 
+function typeSizesIn(template) {
+  const found = [];
+  for (const line of template.split('\n')) {
+    if (TYPE_UTILITY.test(line) || TYPE_LITERAL.test(line)) {
+      found.push(line.trim());
+    }
+  }
+
+  return found;
+}
+
 function colourNamesIn(source) {
   const found = [];
   for (const line of source.split('\n')) {
@@ -171,6 +211,9 @@ for (const file of sourceFiles(appSource, ['.html'])) {
   for (const colour of colourNamesIn(template)) {
     failures.push(`${relative} names a colour: "${colour}" — use a token from styles.css.`);
   }
+  for (const size of typeSizesIn(template)) {
+    failures.push(`${relative} names a type size: "${size}" — use a role from styles.css.`);
+  }
 }
 
 for (const file of sourceFiles(appSource, ['.css'])) {
@@ -193,6 +236,12 @@ const violations = [
   ['a palette utility', 'template', '<p class="text-red-500">{{ copy.thing }}</p>'],
   ['a hex colour', 'style', '.warning { color: #ff0000; }'],
   ['an rgb colour', 'style', '.warning { color: rgb(255 0 0); }'],
+  ['a scale type size', 'template', '<p class="text-sm text-ink-muted">{{ x }}</p>'],
+  ['a large scale type size', 'template', '<h1 class="text-2xl">{{ x }}</h1>'],
+  ['a responsive type size', 'template', '<p class="md:text-lg">{{ x }}</p>'],
+  ['an arbitrary type size', 'template', '<p class="text-[17px]">{{ x }}</p>'],
+  ['an inline font-size', 'template', '<p style="font-size: 17px">{{ x }}</p>'],
+  ['a bound font-size', 'template', '<p [style.font-size]="x">{{ y }}</p>'],
 ];
 
 // ...and allow these, or they are a wall rather than a rule.
@@ -215,6 +264,10 @@ const allowances = [
     '@if (a()) {\n  <p>{{ b }}</p>\n} @else {\n  <p>{{ c }}</p>\n}',
   ],
   ['a self-closing component', 'template', '<app-round-tab />'],
+  ['a type role', 'template', '<h1 class="text-header font-bold text-ink">{{ x }}</h1>'],
+  ['a role behind a variant', 'template', '<p class="text-meta md:text-lead">{{ x }}</p>'],
+  ['alignment and wrapping', 'template', '<p class="text-center text-pretty">{{ x }}</p>'],
+  ['a colour token in the same namespace', 'template', '<p class="text-ink-muted">{{ x }}</p>'],
   ['a token-valued style', 'style', '.card { background: var(--color-surface); }'],
 ];
 
@@ -222,7 +275,8 @@ const rejects = (kind, source) =>
   kind === 'template'
     ? literalTextIn(source).length > 0 ||
       literalAttributesIn(source).length > 0 ||
-      colourNamesIn(source).length > 0
+      colourNamesIn(source).length > 0 ||
+      typeSizesIn(source).length > 0
     : colourNamesIn(source).length > 0;
 
 for (const [label, kind, source] of violations) {
@@ -249,7 +303,7 @@ if (failures.length > 0) {
 
 console.log(
   `\npadel-app conventions hold: ${checkedFiles.templates} template(s) and ${checkedFiles.styles} ` +
-    `component stylesheet(s) write no visible string and name no colour of their own, and both ` +
-    `rules were shown to reject ${violations.length} violations without tripping on ` +
-    `${allowances.length} legitimate ones.`,
+    `component stylesheet(s) write no visible string and name no colour or type size of their ` +
+    `own, and the three rules were shown to reject ${violations.length} violations without ` +
+    `tripping on ${allowances.length} legitimate ones.`,
 );

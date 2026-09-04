@@ -3,18 +3,18 @@
     @for (row of rows(); track row.id) {
       <li class="space-y-2 px-4 py-3">
         <div class="flex items-center gap-3">
-          <span class="min-w-0 flex-1 truncate text-base text-ink">{{ row.name }}</span>
+          <span class="min-w-0 flex-1 truncate text-row text-ink">{{ row.name }}</span>
 
           @if (row.gone) {
-            <span class="rounded-full border border-line px-2 py-1 text-xs text-ink-muted">
+            <span class="rounded-full border border-line px-2 py-1 text-micro text-ink-muted">
               {{ copy.players.gone }}
             </span>
           } @else if (row.needsPartner) {
-            <span class="rounded-full border border-brand px-2 py-1 text-xs text-brand">
+            <span class="rounded-full border border-brand px-2 py-1 text-micro text-brand">
               {{ copy.players.needsPartner }}
             </span>
           } @else if (row.benched) {
-            <span class="rounded-full bg-surface-sunken px-2 py-1 text-xs text-ink-muted">
+            <span class="rounded-full bg-surface-sunken px-2 py-1 text-micro text-ink-muted">
               {{ copy.players.benched }}
             </span>
           }
@@ -22,7 +22,7 @@
           @if (!ended() && row.needsPartner && row.team !== null) {
             <button
               type="button"
-              class="rounded-full border border-brand px-3 py-1 text-xs font-medium text-brand"
+              class="rounded-full border border-brand px-3 py-1 text-micro font-bold text-brand"
               [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
               (click)="assignPartner(row)"
             >
@@ -46,7 +46,7 @@
         @if (isOpen(row.id)) {
           <button
             type="button"
-            class="w-full rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
+            class="w-full rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
             (click)="wentHome(row)"
           >
             {{ copy.players.wentHome }}
@@ -58,7 +58,7 @@
 
   @if (!ended()) {
     @if (!canAnybodyGoHome()) {
-      <p class="text-sm text-ink-muted">
+      <p class="text-meta text-ink-muted">
         {{
           playsAsTeams()
             ? copy.players.noTeamCanLose(teamsPerCourt)
@@ -68,7 +68,7 @@
     }
 
     @if (playsAsTeams()) {
-      <p class="text-sm text-ink-muted">{{ copy.players.arrivalsJoinATeam }}</p>
+      <p class="text-meta text-ink-muted">{{ copy.players.arrivalsJoinATeam }}</p>
     } @else {
       <form class="space-y-3" (submit)="$event.preventDefault(); add()">
         <div class="flex gap-2">
@@ -76,7 +76,7 @@
             #field
             type="text"
             autocomplete="off"
-            class="min-w-0 flex-1 rounded-xl border border-line bg-surface-raised px-4 py-3 text-base text-ink"
+            class="min-w-0 flex-1 rounded-xl border border-line bg-surface-raised px-4 py-3 text-control text-ink"
             [placeholder]="copy.players.placeholder"
             [value]="typed()"
             (input)="onType($event)"
@@ -84,7 +84,7 @@
           @if (canAdd()) {
             <button
               type="submit"
-              class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+              class="rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
             >
               {{ copy.players.add }}
             </button>
@@ -95,7 +95,7 @@
           <app-gender-toggle [selected]="gender()" (chose)="setGender($event)" />
 
           @if (!canAdd()) {
-            <p class="text-sm text-ink-muted">{{ copy.players.genderMissing }}</p>
+            <p class="text-meta text-ink-muted">{{ copy.players.genderMissing }}</p>
           }
         }
       </form>

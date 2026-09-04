@@ -1,8 +1,8 @@
-<section class="flex flex-col gap-5 px-4 py-6">
+<section class="flex flex-col gap-5 px-4 pt-7 pb-3">
   <header class="flex items-center justify-between gap-3">
     <button
       type="button"
-      class="rounded-full border border-line px-3 py-2 text-ink-muted disabled:opacity-30"
+      class="flex size-[46px] items-center justify-center rounded-full border border-line bg-surface-raised text-name text-ink-muted disabled:opacity-30"
       [attr.aria-label]="copy.round.previous"
       [disabled]="!canPage().back"
       (click)="previous()"
@@ -10,7 +10,7 @@
       {{ copy.round.previousGlyph }}
     </button>
 
-    <h1 class="text-center text-xl font-semibold tracking-tight text-ink">
+    <h1 class="text-header text-center font-bold text-ink">
       @if (pastTheLastRound()) {
         {{ copy.round.addRound.heading }}
       } @else {
@@ -20,7 +20,7 @@
 
     <button
       type="button"
-      class="rounded-full border border-line px-3 py-2 text-ink-muted disabled:opacity-30"
+      class="flex size-[46px] items-center justify-center rounded-full border border-line bg-surface-raised text-name text-ink-muted disabled:opacity-30"
       [attr.aria-label]="copy.round.next"
       [disabled]="!canPage().forward"
       (click)="next()"
@@ -32,7 +32,7 @@
   @if (canReturnToCurrentRound()) {
     <button
       type="button"
-      class="self-center text-sm font-medium text-brand underline"
+      class="text-meta self-center font-bold text-brand underline"
       (click)="backToCurrentRound()"
     >
       {{ copy.round.backToCurrent }}
@@ -40,15 +40,18 @@
   }
 
   @if (round(); as view) {
-    <ul class="space-y-3">
+    <!--
+      Two-up from the middle tier, one court per row below it (ADR-0022 §1). The grid is the whole
+      of what widening the Round tab means, which is why it is a utility and not a signal: nothing
+      here is a different screen at a different width, it is the same courts in more room.
+    -->
+    <ul class="grid gap-3 md:grid-cols-2">
       @for (court of view.courts; track court.courtNumber) {
         <li>
           @if (ended()) {
             <div
-              class="w-full rounded-2xl border p-4 text-left"
-              [class]="
-                court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
-              "
+              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
+              [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
             >
               <ng-container
                 [ngTemplateOutlet]="card"
@@ -58,10 +61,8 @@
           } @else {
             <button
               type="button"
-              class="w-full rounded-2xl border p-4 text-left"
-              [class]="
-                court.score ? 'border-brand bg-surface-sunken' : 'border-line bg-surface-raised'
-              "
+              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
+              [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
               [attr.aria-label]="copy.round.enterScore(court.name)"
               (click)="score(court)"
             >
@@ -76,32 +77,32 @@
     </ul>
 
     @if (view.hasSameGenderPair) {
-      <p class="text-sm text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+      <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
     }
 
     @if (view.bench.length > 0) {
-      <p class="text-sm text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
+      <p class="text-meta text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
     }
 
     @if (view.bye.length > 0) {
-      <p class="text-sm text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
+      <p class="text-meta text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
     }
 
     @if (advanceTo(); as nextRound) {
       <button
         type="button"
-        class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
         (click)="show(nextRound)"
       >
         {{ copy.round.advance(nextRound) }}
       </button>
     }
   } @else if (pastTheLastRound()) {
-    <div class="space-y-3 rounded-2xl border border-dashed border-line p-4 text-center">
-      <p class="text-sm text-ink-muted">{{ copy.round.addRound.lead }}</p>
+    <div class="space-y-3 rounded-[18px] border border-dashed border-line p-4 text-center">
+      <p class="text-meta text-ink-muted">{{ copy.round.addRound.lead }}</p>
       <button
         type="button"
-        class="rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
         (click)="addRound()"
       >
         {{ copy.round.addRound.action }}
@@ -119,13 +120,13 @@
   this template adds is the one thing that card leaves to the screen showing it: the result.
 -->
 <ng-template #card let-court>
-  <app-court-card class="block space-y-2" [court]="court">
+  <app-court-card [court]="court">
     @if (court.score; as score) {
-      <span class="block text-base font-semibold text-brand">
+      <span class="text-score font-bold whitespace-nowrap text-brand">
         {{ copy.round.score(score.sideA, score.sideB) }}
       </span>
     } @else {
-      <span class="block text-sm text-ink-muted">{{ copy.round.noScore }}</span>
+      <span class="text-meta whitespace-nowrap text-ink-muted">{{ copy.round.noScore }}</span>
     }
   </app-court-card>
 </ng-template>

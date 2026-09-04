@@ -3,18 +3,18 @@
   [class.justify-center]="history().length === 0"
 >
   <header class="space-y-2">
-    <h1 class="text-3xl font-semibold tracking-tight text-ink">{{ copy.appName }}</h1>
+    <h1 class="text-display font-bold text-ink">{{ copy.appName }}</h1>
     <p class="text-ink-muted">{{ copy.landing.tagline }}</p>
   </header>
 
   @if (session(); as active) {
-    <section class="space-y-4 rounded-2xl border border-line bg-surface-raised p-5 shadow-sm">
+    <section class="space-y-4 rounded-2xl border border-line bg-surface-raised p-5 shadow-raised">
       <div class="flex items-start justify-between gap-3">
         <div class="space-y-1">
-          <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+          <h2 class="text-micro font-bold text-ink-muted uppercase">
             {{ copy.landing.resumeHeading }}
           </h2>
-          <p class="text-lg text-ink">
+          <p class="text-name text-ink">
             {{ copy.landing.resumeSummary(active.mode, active.roster.length, roundNumber()) }}
           </p>
         </div>
@@ -32,7 +32,7 @@
       @if (optionsOpen()) {
         <button
           type="button"
-          class="w-full rounded-xl border border-line px-4 py-3 text-base font-medium text-ink"
+          class="w-full rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
           (click)="discard()"
         >
           {{ copy.landing.discard }}
@@ -41,7 +41,7 @@
 
       <button
         type="button"
-        class="w-full rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+        class="w-full rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
         (click)="opened.emit(active.id)"
       >
         {{ copy.landing.resume }}
@@ -50,7 +50,7 @@
   } @else {
     <button
       type="button"
-      class="w-full rounded-xl bg-brand px-4 py-3 text-base font-semibold text-brand-ink"
+      class="w-full rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
       (click)="started.emit()"
     >
       {{ copy.landing.newSession }}
@@ -59,7 +59,7 @@
 
   @if (history().length > 0) {
     <section class="space-y-3">
-      <h2 class="text-sm font-medium tracking-wide text-ink-muted uppercase">
+      <h2 class="text-micro font-bold text-ink-muted uppercase">
         {{ copy.history.heading }}
       </h2>
 
@@ -73,16 +73,16 @@
               class="min-w-0 flex-1 space-y-1 px-4 py-3 text-left"
               (click)="opened.emit(past.sessionId)"
             >
-              <span class="block truncate text-base text-ink">{{ past.title }}</span>
+              <span class="block truncate text-row text-ink">{{ past.title }}</span>
               @if (past.winners.length > 0) {
-                <span class="block truncate text-sm text-ink-muted">
+                <span class="block truncate text-meta text-ink-muted">
                   {{ copy.history.winner(past.winners) }}
                 </span>
               }
             </button>
             <button
               type="button"
-              class="px-4 py-3 text-lg text-ink-muted"
+              class="px-4 py-3 text-name text-ink-muted"
               [attr.aria-label]="copy.history.delete(past.title)"
               (click)="remove(past.sessionId)"
             >
