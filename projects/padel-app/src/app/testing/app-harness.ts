@@ -18,40 +18,62 @@
  *
  * The repository is the in-memory one (decision #19), and `reload()` is the whole reason it is
  * addressable — closing and reopening the app is a fresh injector reading the same storage.
+ *
+ * The tier is the other thing an app is launched into (ADR-0022), and it defaults to the phone.
+ * That default is load-bearing: it is what lets every spec written before there were tiers go on
+ * saying nothing about width, while a spec about the desk says so in one word.
  */
 import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { assertSessionValid } from 'padel-engine';
 import { App } from '../app';
+import { FixedLayout } from '../layout/fixed-layout';
+import { LAYOUT } from '../layout/layout';
+import type { Tier } from '../layout/layout';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
+
+/** What a launch can be told. Everything here has a default, and most launches take all of them. */
+export interface LaunchOptions {
+  /** Storage to open against — pass one to reopen the app on a session it already holds. */
+  readonly repository?: InMemorySessionRepository;
+  /** The shape the app is opened in. The phone unless a spec is about something else. */
+  readonly tier?: Tier;
+}
 
 export class AppHarness {
   private constructor(
     private readonly fixture: ComponentFixture<App>,
     readonly repository: InMemorySessionRepository,
+    // Kept only so a reload reopens the app in the shape it was closed in. Nothing reads it as an
+    // answer: a spec that wants to know the tier has to find out the way an organizer would.
+    private readonly tier: Tier,
   ) {}
 
-  static async launch(
-    repository: InMemorySessionRepository = new InMemorySessionRepository(),
-  ): Promise<AppHarness> {
+  static async launch({
+    repository = new InMemorySessionRepository(),
+    tier = 'phone',
+  }: LaunchOptions = {}): Promise<AppHarness> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: SESSION_REPOSITORY, useValue: repository }],
+      providers: [
+        { provide: SESSION_REPOSITORY, useValue: repository },
+        { provide: LAYOUT, useValue: new FixedLayout(tier) },
+      ],
     });
 
     const fixture = TestBed.createComponent(App);
-    const harness = new AppHarness(fixture, repository);
+    const harness = new AppHarness(fixture, repository, tier);
     await harness.settle();
 
     return harness;
   }
 
-  /** Close the app and open it again: a new injector, the same stored session. */
+  /** Close the app and open it again: a new injector, the same stored session, the same tier. */
   async reload(): Promise<AppHarness> {
     this.fixture.destroy();
 
-    return AppHarness.launch(this.repository);
+    return AppHarness.launch({ repository: this.repository, tier: this.tier });
   }
 
   /** Everything the organizer can read on screen right now, whitespace-normalised. */
