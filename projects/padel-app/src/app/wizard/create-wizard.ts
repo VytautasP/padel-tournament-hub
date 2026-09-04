@@ -73,28 +73,54 @@ export class CreateWizard {
     }
   });
 
-  /** Whether this step is one the organizer walks on from, as opposed to the last one. */
-  protected readonly hasNext = computed(() => this.step() !== 'review');
+  /**
+   * The bar per step at the top, and how far along it the organizer is (`Wizard.dc.html`).
+   *
+   * It is derived from the same list the walk is, so a Team Americano evening shows four and
+   * everything else shows three without either number being written down. A wizard whose progress
+   * counted steps the mode does not have would be promising a screen that never arrives.
+   */
+  protected readonly progress = computed(() => {
+    const steps = this.steps();
+    const reached = steps.indexOf(this.step());
+
+    return steps.map((name, index) => ({ name, reached: index <= reached }));
+  });
+
+  /** Whether there is a screen behind this one. There is not, on the first one. */
+  protected readonly canGoBack = computed(() => this.steps().indexOf(this.step()) > 0);
 
   protected next(): void {
     const steps = this.steps();
     this.step.update((step) => steps[Math.min(steps.indexOf(step) + 1, steps.length - 1)]);
   }
 
-  /** Back off the first step leaves the wizard, dropping the draft with it. */
+  /** One screen back, over any step this mode does not ask (the pairing step in two of three). */
   protected back(): void {
     const steps = this.steps();
     const index = steps.indexOf(this.step());
-    if (index === 0) {
-      this.cancelled.emit();
+    this.step.set(steps[Math.max(index - 1, 0)]);
+  }
+
+  /**
+   * The words on the one button at the foot of every step.
+   *
+   * The way on is the same control the whole way through, and on the last step what it does is
+   * create the evening — so it says so. A wizard whose final button still said "Next" would be
+   * hiding the only irreversible act in it behind the most ordinary word on the screen.
+   */
+  protected readonly onwardLabel = computed(() =>
+    this.step() === 'review' ? copy.wizard.review.create : copy.wizard.next,
+  );
+
+  /** What that button does: one step on, or — on the last step — the session itself. */
+  protected async onward(): Promise<void> {
+    if (this.step() !== 'review') {
+      this.next();
 
       return;
     }
 
-    this.step.set(steps[index - 1]);
-  }
-
-  protected async create(): Promise<void> {
     await this.store.create(this.draft.toSessionDraft());
     this.created.emit();
   }

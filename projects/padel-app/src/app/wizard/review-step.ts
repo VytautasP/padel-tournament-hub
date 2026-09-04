@@ -11,9 +11,11 @@
  * one whose club booked courts 7 and 8 does not have to send four people to the wrong end of the
  * building.
  *
- * This is the first and only screen in the wizard that writes anything.
+ * The button that commits the evening is not here. It belongs to the wizard, in the place every
+ * step's primary button has stood since the first one — and the last step, where the act is
+ * irreversible, is the worst possible screen on which to move it somewhere new.
  */
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { copy, modeNames } from '../copy/copy';
 import { NumberField } from './number-field';
 import { TextField } from './text-field';
@@ -27,7 +29,6 @@ import { WizardDraft } from './wizard-draft';
 })
 export class ReviewStep {
   readonly draft = input.required<WizardDraft>();
-  readonly create = output<void>();
 
   protected readonly copy = copy;
   protected readonly modeNames = modeNames;
