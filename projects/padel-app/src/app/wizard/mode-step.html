@@ -1,22 +1,29 @@
-<section class="space-y-5">
-  <header class="space-y-1">
+<!--
+  Three cards, one tap. Each carries the format's name and the sentence that says what playing it
+  is like, because "Mixicano" alone is only a word to whoever has not played one.
+-->
+<section class="flex flex-col gap-[22px]">
+  <header class="flex flex-col gap-[6px]">
     <h1 class="text-title font-bold text-ink">{{ copy.wizard.mode.heading }}</h1>
-    <p class="text-meta text-ink-muted">{{ copy.wizard.mode.lead }}</p>
+    <p class="text-lead text-pretty text-ink-muted">{{ copy.wizard.mode.lead }}</p>
   </header>
 
-  <ul class="space-y-3">
+  <ul class="flex flex-col gap-3">
     @for (choice of choices; track choice) {
       <li>
+        <!--
+          The whole card is the target, and the label a screen reader hears is the format's name
+          rather than the name and its blurb read together — the blurb is there to be read by
+          somebody choosing, not recited to somebody who has already chosen.
+        -->
         <button
           type="button"
-          class="w-full rounded-2xl border border-line bg-surface-raised p-4 text-left"
+          class="flex w-full flex-col gap-1 rounded-[20px] border border-line bg-surface-raised px-[18px] py-4 text-left"
           [attr.aria-label]="copy.wizard.mode.name(choice)"
           (click)="choose(choice)"
         >
-          <span class="block text-name font-bold text-ink">
-            {{ copy.wizard.mode.name(choice) }}
-          </span>
-          <span class="mt-1 block text-meta text-ink-muted">
+          <span class="text-name font-bold text-ink">{{ copy.wizard.mode.name(choice) }}</span>
+          <span class="text-meta text-pretty text-ink-muted">
             {{ copy.wizard.mode.blurb(choice) }}
           </span>
         </button>

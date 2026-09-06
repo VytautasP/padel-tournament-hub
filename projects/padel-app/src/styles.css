@@ -260,9 +260,11 @@
  * screen that got it wrong looks fine on both of the pictures anybody checks against. What a
  * screen still decides for itself is what it does with the room, not how much of it there is.
  *
- * The session shell and the landing page use it. The wizard still writes `mx-auto max-w-md`
- * inline and adopts this when its own ticket rebuilds it — the one outstanding user, not an
- * exception to the rule.
+ * The session shell and the landing page use it. The wizard does not, and that is the one place
+ * the rule is genuinely declined rather than not yet applied: it is a single centred column at
+ * every width by design (ADR-0022 §4 and decision 14 of #33), so the room the widened tier hands over is room it has
+ * nothing to do with — a court-naming field stretched across 56rem is worse than the same field
+ * at the width it was drawn. It keeps its own `max-w-md` and centres in whatever is left.
  *
  * The landing page is also the one screen that takes the cap back off again, at the desk tier and
  * nowhere else. The desk board gives the front door the whole page, and there is no shell standing
