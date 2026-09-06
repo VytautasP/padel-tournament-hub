@@ -134,8 +134,8 @@
   once it has ended. The card is identical either way — what changes is whether it can be tapped —
   so the alternative is two copies of it drifting apart a line at a time.
 
-  The card itself is `app-court-card`, shared with the preview of a regenerated schedule. What
-  this template adds is the one thing that card leaves to the screen showing it: the result.
+  The card itself is `app-court-card`, which is written once and instantiated by both branches.
+  What this template adds is the one thing that card leaves to the screen showing it: the result.
 -->
 <ng-template #card let-court>
   <app-court-card [court]="court">

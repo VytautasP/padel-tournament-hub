@@ -16,6 +16,11 @@
  *     round in play at the top. Printing it would invite the reading that the preview is about
  *     results, which is the one thing a roster change cannot touch.
  *
+ * A court is one row here rather than the card the Round tab renders, and that is the canvas's
+ * decision rather than a saving: on the Round tab a court is a thing to be tapped, and here it is
+ * a line of a schedule being read through, several rounds of it, on a surface that also has to
+ * leave room for the two buttons underneath.
+ *
  * The dismissal is worded `Don't change the roster` rather than Cancel, and that wording is the
  * honesty of the whole interaction: there is no state in which the schedule is rejected and the
  * roster change kept, so backing out is backing out of the cause.
@@ -24,8 +29,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, Injectable } from
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import type { Session } from 'padel-engine';
 import { copy } from '../copy/copy';
-import { CourtCard } from '../round/court-card';
 import { roundView } from '../round/round-view';
+import { Side } from '../round/side';
 import type { RoundView } from '../round/round-view';
 import { Sheets } from '../sheet/sheets';
 
@@ -46,7 +51,7 @@ export interface RosterPreviewData {
 
 @Component({
   selector: 'app-roster-preview-sheet',
-  imports: [CourtCard],
+  imports: [Side],
   templateUrl: './roster-preview.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

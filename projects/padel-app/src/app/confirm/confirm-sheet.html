@@ -1,11 +1,18 @@
-<section class="space-y-4 p-5">
-  <h2 class="text-name font-bold text-ink">{{ data.heading }}</h2>
-  <p class="text-meta text-ink-muted">{{ data.lead }}</p>
+<!--
+  Where this sits and what it is shaped like is `Sheets`' answer and `styles.css`' drawing — under
+  the thumb that asked the question on a phone, in the middle of the screen at a desk (ADR-0022
+  §4). What is here is the question, and the two ways out of it.
+-->
+<section class="flex flex-col gap-[18px] px-5 pt-[18px] pb-[34px]">
+  <header class="flex flex-col gap-1.5">
+    <h2 class="text-header font-bold text-ink">{{ data.heading }}</h2>
+    <p class="text-lead text-ink-muted">{{ data.lead }}</p>
+  </header>
 
   <div class="flex gap-3">
     <button
       type="button"
-      class="flex-1 rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
+      class="text-control h-[54px] flex-1 rounded-[15px] border border-line px-4 text-ink"
       (click)="cancel()"
     >
       {{ copy.confirm.cancel }}
@@ -22,7 +29,7 @@
     -->
     <button
       type="button"
-      class="flex-1 rounded-xl px-4 py-3 text-control font-bold text-brand-ink"
+      class="text-control h-[54px] flex-1 rounded-[15px] px-4 font-bold text-brand-ink"
       [class]="data.unrecoverable ? 'bg-danger' : 'bg-brand'"
       (click)="confirm()"
     >

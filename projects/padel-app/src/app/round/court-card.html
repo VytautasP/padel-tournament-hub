@@ -3,23 +3,13 @@
     {{ court().name }}
   </span>
   <span class="text-name text-ink">
-    {{ copy.round.side(court().sideA.names) }}
-    @if (court().sideA.sameGender) {
-      <span class="text-ink-muted" [attr.aria-label]="copy.round.sameGender.markLabel">{{
-        copy.round.sameGender.mark
-      }}</span>
-    }
+    <app-side [side]="court().sideA" />
   </span>
   <span class="text-micro font-bold text-ink-muted uppercase">
     {{ copy.round.versus }}
   </span>
   <span class="text-name text-ink">
-    {{ copy.round.side(court().sideB.names) }}
-    @if (court().sideB.sameGender) {
-      <span class="text-ink-muted" [attr.aria-label]="copy.round.sameGender.markLabel">{{
-        copy.round.sameGender.mark
-      }}</span>
-    }
+    <app-side [side]="court().sideB" />
   </span>
 </span>
 <ng-content />

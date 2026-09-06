@@ -58,10 +58,13 @@ export class Landing {
    * Throw the evening in progress away, once the organizer has read what goes with it.
    *
    * Confirmed for the same reason deleting a history row is: it is a hard delete of everything
-   * scored so far, and there is nothing to undo it with.
+   * scored so far, and there is nothing to undo it with. That is what is being said by telling
+   * the confirmation the act is unrecoverable, and it is the whole of what `danger` is spent on
+   * here — the button inside the sheet, not the overflow entry that opens it, which is neutral
+   * because reading a question is not doing the thing (ADR-0021 §3).
    */
   protected async discard(): Promise<void> {
-    if (await this.confirm.granted(copy.landing.discardConfirm)) {
+    if (await this.confirm.granted({ ...copy.landing.discardConfirm, unrecoverable: true })) {
       await this.store.discard();
     }
     this.overflow.set(false);
@@ -71,10 +74,10 @@ export class Landing {
    * Forget one ended evening, permanently (decision #10).
    *
    * The confirmation is told the act cannot be got back, which is what puts `danger` on the button
-   * that performs it. This is the only place this screen spends the token: ADR-0021 §3 allows it
-   * exactly one other home in the whole app — the confirming button inside Discard — and nothing
-   * beyond those two. It is said here rather than in the dictionary because it is a weight rather
-   * than a word, and `copy.ts` holds only what the organizer reads.
+   * that performs it. It is the second of the two homes ADR-0021 §3 allows the token in the whole
+   * app — the other is the confirming button inside Discard, above — and there is no third. It is
+   * said here rather than in the dictionary because it is a weight rather than a word, and
+   * `copy.ts` holds only what the organizer reads.
    */
   protected async remove(sessionId: string): Promise<void> {
     if (await this.confirm.granted({ ...copy.history.deleteConfirm, unrecoverable: true })) {
