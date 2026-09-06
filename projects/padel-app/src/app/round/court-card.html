@@ -1,15 +1,43 @@
-<span class="flex min-w-0 flex-1 flex-col gap-1">
-  <span class="text-micro font-bold text-ink-muted uppercase">
-    {{ court().name }}
-  </span>
-  <span class="text-name text-ink">
-    <app-side [side]="court().sideA" />
-  </span>
-  <span class="text-micro font-bold text-ink-muted uppercase">
-    {{ copy.round.versus }}
-  </span>
-  <span class="text-name text-ink">
-    <app-side [side]="court().sideB" />
-  </span>
-</span>
-<ng-content />
+@if (scored()) {
+  <!--
+    A scored court: each number on its own team's row, right of the name and on its baseline, so
+    the result is read rather than decoded.
+  -->
+  <div class="flex flex-col gap-1">
+    <span class="text-micro font-bold text-ink-muted uppercase">
+      {{ court().name }}
+    </span>
+    @for (side of sides(); track side.letter) {
+      @if (!$first) {
+        <span class="text-micro font-bold text-ink-muted uppercase">{{ copy.round.versus }}</span>
+      }
+      <div class="flex items-baseline gap-3">
+        <span class="text-name min-w-0 flex-1 text-ink">
+          <app-side [side]="side.view" />
+        </span>
+        <span class="text-scoreline" [class]="side.emphasis">{{ side.points }}</span>
+      </div>
+    }
+  </div>
+} @else {
+  <!--
+    A court still playing: the names in a column, and the one thing there is to say about the
+    result beside them.
+  -->
+  <div class="flex items-center gap-4">
+    <span class="flex min-w-0 flex-1 flex-col gap-1">
+      <span class="text-micro font-bold text-ink-muted uppercase">
+        {{ court().name }}
+      </span>
+      @for (side of sides(); track side.letter) {
+        @if (!$first) {
+          <span class="text-micro font-bold text-ink-muted uppercase">{{ copy.round.versus }}</span>
+        }
+        <span class="text-name text-ink">
+          <app-side [side]="side.view" />
+        </span>
+      }
+    </span>
+    <span class="text-meta whitespace-nowrap text-ink-muted">{{ copy.round.noScore }}</span>
+  </div>
+}

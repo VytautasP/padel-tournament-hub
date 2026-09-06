@@ -12,7 +12,7 @@
  * exist: creating an evening and scoring a court is setup for every spec here, and none of them
  * is about the wizard.
  */
-import { createSession, openSheet, score, scoreOf } from './testing/session-driver';
+import { createSession, openSheet, score, scoreOf, showsScore } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 const EIGHT = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin', 'Finn', 'Gita', 'Hugo'];
@@ -118,9 +118,30 @@ describe('scoring a court', () => {
       await app.setNumber(sides.a, 17);
       await app.tap('Save');
 
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
+      // The winner is pointed at and the loser stated: the treatment is what makes each number
+      // belong to the team beside it rather than to whoever reads faster.
+      expect(app.scoreEmphasis(17)).toEqual(['won']);
+      expect(app.scoreEmphasis(7)).toEqual(['lost']);
       expect(app.shows('No score yet')).toBe(false);
       expect(scoreOf(app)).toEqual({ sideA: 17, sideB: 7 });
+      app.expectStoredSessionValid();
+    });
+
+    it('shows a drawn court as the same number on both rows', async () => {
+      // An even target score is the only way to reach a draw, and it reaches it from either
+      // chair: 24 going to 12–12. A court that ended level has no winner to point at and no
+      // loser to mute, so both numbers are set the same way — which is the whole of what a draw
+      // renders as, and is why this asserts on the treatment as well as on the two numbers.
+      const app = await createSession(FOUR);
+      const sides = await openSheet(app);
+
+      await app.setNumber(sides.a, 12);
+      await app.tap('Save');
+
+      expect(showsScore(app, sides, { a: 12, b: 12 })).toBe(true);
+      expect(app.scoreEmphasis(12)).toEqual(['drawn', 'drawn']);
+      expect(scoreOf(app)).toEqual({ sideA: 12, sideB: 12 });
       app.expectStoredSessionValid();
     });
 
@@ -142,8 +163,8 @@ describe('scoring a court', () => {
       await app.setNumber(sides.a, 20);
       await app.tap('Save');
 
-      expect(app.shows('20 – 4')).toBe(true);
-      expect(app.shows('17 – 7')).toBe(false);
+      expect(showsScore(app, sides, { a: 20, b: 4 })).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(false);
       expect(scoreOf(app)).toEqual({ sideA: 20, sideB: 4 });
       app.expectStoredSessionValid();
     });
@@ -228,13 +249,13 @@ describe('scoring a court', () => {
   describe('closing the app and opening it again', () => {
     it('brings the score back with the round it was entered on', async () => {
       const created = await createSession(EIGHT, 2);
-      await score(created, 17);
+      const sides = await score(created, 17);
 
       const app = await created.reload();
       await app.tap('Resume');
 
       expect(app.shows('Round 1 of 7')).toBe(true);
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       app.expectStoredSessionValid();
     });
 

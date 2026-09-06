@@ -134,17 +134,10 @@
   once it has ended. The card is identical either way — what changes is whether it can be tapped —
   so the alternative is two copies of it drifting apart a line at a time.
 
-  The card itself is `app-court-card`, which is written once and instantiated by both branches.
-  What this template adds is the one thing that card leaves to the screen showing it: the result.
+  The card itself is `app-court-card`, which is written once and instantiated by both branches. It
+  says everything a court says, the result included; what the two branches above add is the frame
+  around it.
 -->
 <ng-template #card let-court>
-  <app-court-card [court]="court">
-    @if (court.score; as score) {
-      <span class="text-score font-bold whitespace-nowrap text-brand">
-        {{ copy.round.score(score.sideA, score.sideB) }}
-      </span>
-    } @else {
-      <span class="text-meta whitespace-nowrap text-ink-muted">{{ copy.round.noScore }}</span>
-    }
-  </app-court-card>
+  <app-court-card [court]="court" />
 </ng-template>

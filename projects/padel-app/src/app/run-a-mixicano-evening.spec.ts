@@ -28,6 +28,7 @@ import {
   endSession,
   matchOn,
   score,
+  showsScore,
   storedSession,
 } from './testing/session-driver';
 import type { MixicanoPlayer } from './testing/session-driver';
@@ -281,13 +282,13 @@ describe('running a Mixicano evening', () => {
       const app = await createMixicanoSession(EVEN_SIX);
       const roundCount = storedSession(app).rounds.length;
 
-      await score(app, 17);
+      const sides = await score(app, 17);
       await app.tap('Round 2 →');
       expect(app.shows(`Round 2 of ${roundCount}`)).toBe(true);
       await score(app, 13);
 
       await app.tap('Previous round');
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       await app.tap('Back to current round');
       expect(app.shows(`Round 3 of ${roundCount}`)).toBe(true);
       app.expectStoredSessionValid();
@@ -315,9 +316,9 @@ describe('running a Mixicano evening', () => {
       expect(markedSideNames(app)).toHaveLength(1);
       app.expectStoredSessionValid();
 
-      await score(app, 17);
+      const sides = await score(app, 17);
 
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       app.expectStoredSessionValid();
     });
   });

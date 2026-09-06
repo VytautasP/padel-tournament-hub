@@ -20,6 +20,7 @@ import {
   openStandings,
   score,
   scoreOf,
+  showsScore,
 } from './testing/session-driver';
 import { AppHarness } from './testing/app-harness';
 import type { Tier } from './layout/layout';
@@ -117,7 +118,7 @@ describe('opening a focused surface', () => {
 
       await app.tap('Save');
 
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       expect(scoreOf(app)).toEqual({ sideA: 17, sideB: 7 });
       app.expectStoredSessionValid();
     });

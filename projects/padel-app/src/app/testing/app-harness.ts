@@ -30,6 +30,8 @@ import { App } from '../app';
 import { FixedLayout } from '../layout/fixed-layout';
 import { LAYOUT } from '../layout/layout';
 import type { Tier } from '../layout/layout';
+import { SCORE_EMPHASIS } from '../round/court-card';
+import type { ScoreEmphasis } from '../round/court-card';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
 import { SHEET_PANEL } from '../sheet/sheets';
@@ -208,6 +210,35 @@ export class AppHarness {
     }
 
     assertSessionValid(record.session);
+  }
+
+  /**
+   * How each number on screen reading exactly `points` is set: pointed at, muted, or neither.
+   *
+   * The other thing about this app a spec cannot read as words. A court card says who won by
+   * setting the winner's number in brand and muting the loser's, and a draw by muting neither —
+   * three treatments that render the same characters. So the treatment is read off the class the
+   * card gave the number, named by the constant that file exports rather than spelled out again
+   * here, exactly as `sheetPosition` reads a sheet's anchor.
+   *
+   * A list rather than one answer, because a draw is two numbers that are the same and the whole
+   * assertion is that both of them are set the same way. Anything on screen carrying those
+   * characters and none of the treatments is not a score, and is passed over rather than guessed
+   * about.
+   */
+  scoreEmphasis(points: number): ScoreEmphasis[] {
+    const treatments = Object.entries(SCORE_EMPHASIS) as [ScoreEmphasis, string][];
+
+    return this.roots()
+      .flatMap((root) => [...root.querySelectorAll<HTMLElement>('*')])
+      .filter((element) => visibleText(element).trim() === String(points) && !isHidden(element))
+      .flatMap((element) =>
+        treatments
+          .filter(([, classes]) =>
+            classes.split(' ').every((name) => element.classList.contains(name)),
+          )
+          .map(([treatment]) => treatment),
+      );
   }
 
   /**
