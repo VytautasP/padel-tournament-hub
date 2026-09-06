@@ -1,31 +1,45 @@
-<section class="space-y-4 p-5">
-  <header class="space-y-1">
-    <h2 class="text-name font-bold text-ink">
+<!--
+  Where this opens and what shape it takes is `Sheets`' answer and `styles.css`' drawing — under
+  the thumb on a phone, the middle of the screen at a desk (ADR-0022 §4). What is here is one
+  question and the one field that answers it.
+
+  The field is set exactly as the arrival field at the bottom of the Players tab, because it is the
+  same gesture: a name typed and added. It takes the sunken ground rather than the raised one, the
+  way the score fields do — on a sheet, `surface-raised` is what the sheet itself is standing on.
+-->
+<section class="flex flex-col gap-[18px] px-5 pt-[18px] pb-[34px]">
+  <header class="flex flex-col gap-1.5">
+    <h2 class="text-header font-bold text-ink">
       {{ copy.players.partner.heading }}
     </h2>
-    <p class="text-meta text-ink-muted">{{ copy.players.partner.lead }}</p>
+    <p class="text-lead text-ink-muted">{{ copy.players.partner.lead }}</p>
   </header>
 
-  <form class="flex gap-2" (submit)="$event.preventDefault(); commit()">
+  <form class="flex gap-[10px]" (submit)="$event.preventDefault(); commit()">
     <input
       type="text"
       autocomplete="off"
-      class="min-w-0 flex-1 rounded-xl border border-line bg-surface-sunken px-4 py-3 text-control text-ink"
+      class="text-control min-w-0 flex-1 rounded-[15px] border border-line bg-surface px-4 py-[15px] text-ink"
       [placeholder]="copy.players.placeholder"
       [value]="typed()"
       (input)="onType($event)"
     />
     <button
       type="submit"
-      class="rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
+      class="text-control w-[84px] shrink-0 rounded-[15px] bg-brand font-bold text-brand-ink"
     >
       {{ copy.players.add }}
     </button>
   </form>
 
+  <!--
+    The way out is the full width, because there is nothing to set it beside: the tap that does
+    something is inside the form above, and a dismissal sharing a row with nothing reads as half of
+    a pair whose other half is missing.
+  -->
   <button
     type="button"
-    class="w-full rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
+    class="text-control h-[54px] rounded-[15px] border border-line px-4 text-ink"
     (click)="dismiss()"
   >
     {{ copy.players.partner.dismiss }}
