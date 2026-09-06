@@ -141,13 +141,27 @@ async function review(
 }
 
 /**
- * End the evening the way the organizer does: from the Standings tab, through the confirmation.
+ * Put the standings in front of the organizer, wherever this tier keeps them.
+ *
+ * Below the desk that is a tab and it is tapped. At the desk it is an aside that never left the
+ * screen, and Standings is not a destination at all (ADR-0022 §2) — so there is nothing to tap and
+ * the table is already there. Asking whether the destination exists is how a driver stays a driver
+ * rather than a second place that knows what the tiers are.
+ */
+export async function openStandings(app: AppHarness): Promise<void> {
+  if (app.isOnScreen('Standings')) {
+    await app.tap('Standings');
+  }
+}
+
+/**
+ * End the evening the way the organizer does: at the table, through the confirmation.
  *
  * Both taps say `End session`, because both buttons do. Only one of them is on screen at a time —
  * the sheet hides everything behind it — which is what makes tapping by label unambiguous here.
  */
 export async function endSession(app: AppHarness): Promise<void> {
-  await app.tap('Standings');
+  await openStandings(app);
   await app.tap('End session');
   await app.tap('End session');
 }

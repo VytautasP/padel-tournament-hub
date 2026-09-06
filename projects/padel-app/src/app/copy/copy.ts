@@ -146,6 +146,14 @@ export const copy = {
     standings: 'Standings',
     players: 'Players',
     /**
+     * The line under the app's name in the desktop rail: which evening this rail belongs to.
+     *
+     * The same sentence the Resume card says, because it answers the same question — an organizer
+     * with two laptop windows open should not have to tap a destination to find out which evening
+     * they are looking at. It is the rail's only text that is not a destination.
+     */
+    summary: modeAndSize,
+    /**
      * The way out of a session that has ended.
      *
      * A session in progress has no way out (ADR-0016) — leaving it is ending it or discarding it.
