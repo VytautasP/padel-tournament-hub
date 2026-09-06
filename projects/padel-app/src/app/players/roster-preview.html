@@ -1,22 +1,60 @@
-<section class="flex max-h-[85vh] flex-col">
-  <header class="space-y-1 border-b border-line p-5">
-    <h2 class="text-name font-bold text-ink">
+<!--
+  The sheet's own chrome — the corners, the handle, the shadow, and whether it rises from the
+  bottom edge or floats in the middle of a desk — is not here. `Sheets` decides it and
+  `styles.css` draws it (ADR-0022 §4), which is why this template names no position: the preview
+  is the same list of rounds under a thumb and under a cursor.
+
+  What is here is the consequence, and the two ways out of it. The rounds scroll and the buttons
+  do not, because a remainder of six rounds is longer than any sheet and the tap that causes the
+  change must not be somewhere the organizer has to scroll to find.
+-->
+<section class="flex max-h-[85vh] flex-col gap-[18px] px-5 pt-[18px] pb-[34px]">
+  <header class="flex flex-col gap-1.5">
+    <h2 class="text-header font-bold text-ink">
       {{ copy.players.preview.heading }}
     </h2>
-    <p class="text-meta text-ink-muted">{{ copy.players.preview.lead }}</p>
+    <p class="text-lead text-ink-muted">{{ copy.players.preview.lead }}</p>
   </header>
 
-  <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+  <!--
+    The rounds are set tighter than the Round tab sets one: a court here is a line of a schedule
+    being read through, not a card being tapped, so it is one row rather than a stack — the court
+    at the left, the two sides beside it, and no score anywhere (ADR-0015).
+  -->
+  <div class="-mx-5 flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto px-5">
     @for (round of rounds(); track round.number) {
-      <section class="space-y-2">
-        <h3 class="text-micro font-bold text-ink-muted uppercase">
+      <section class="flex flex-col gap-2">
+        <h3 class="text-micro font-bold text-brand uppercase">
           {{ copy.round.heading(round.number, roundCount()) }}
         </h3>
 
-        <ul class="space-y-2">
+        <ul class="flex flex-col gap-2">
           @for (court of round.courts; track court.courtNumber) {
-            <li class="rounded-xl border border-line bg-surface-sunken p-3">
-              <app-court-card [court]="court" />
+            <li
+              class="flex items-center gap-3 rounded-[15px] border border-line bg-surface px-4 py-3"
+            >
+              <span class="text-micro w-[62px] shrink-0 font-bold text-ink-muted uppercase">
+                {{ court.name }}
+              </span>
+              <span class="text-lead min-w-0 flex-1 text-ink">
+                {{ copy.round.side(court.sideA.names) }}
+                @if (court.sideA.sameGender) {
+                  <span
+                    class="text-ink-muted"
+                    [attr.aria-label]="copy.round.sameGender.markLabel"
+                    >{{ copy.round.sameGender.mark }}</span
+                  >
+                }
+                <span class="text-ink-muted">{{ copy.round.versus }}</span>
+                {{ copy.round.side(court.sideB.names) }}
+                @if (court.sideB.sameGender) {
+                  <span
+                    class="text-ink-muted"
+                    [attr.aria-label]="copy.round.sameGender.markLabel"
+                    >{{ copy.round.sameGender.mark }}</span
+                  >
+                }
+              </span>
             </li>
           }
         </ul>
@@ -36,20 +74,26 @@
     }
   </div>
 
-  <div class="flex gap-3 border-t border-line p-5">
+  <!--
+    The action is above the dismissal rather than beside it. Both labels are sentences — `Cara went
+    home`, `Don't change the roster` — and a row would set the one that causes the change in half
+    the width of a phone. Nothing here is in `danger`: a roster change is what the evening is for,
+    and the rounds it rewrites are printed above the button rather than warned about on it.
+  -->
+  <div class="flex flex-col gap-2.5">
     <button
       type="button"
-      class="flex-1 rounded-xl border border-line px-4 py-3 text-control font-bold text-ink"
-      (click)="dismiss()"
-    >
-      {{ copy.players.preview.dismiss }}
-    </button>
-    <button
-      type="button"
-      class="flex-1 rounded-xl bg-brand px-4 py-3 text-control font-bold text-brand-ink"
+      class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
       (click)="commit()"
     >
       {{ data.action }}
+    </button>
+    <button
+      type="button"
+      class="text-control h-[54px] rounded-[15px] border border-line px-4 text-ink"
+      (click)="dismiss()"
+    >
+      {{ copy.players.preview.dismiss }}
     </button>
   </div>
 </section>
