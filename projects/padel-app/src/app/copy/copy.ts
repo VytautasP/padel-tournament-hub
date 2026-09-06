@@ -152,7 +152,7 @@ export const copy = {
      * with two laptop windows open should not have to tap a destination to find out which evening
      * they are looking at. It is the rail's only text that is not a destination.
      */
-    summary: (mode: SessionMode, playerCount: number): string => modeAndSize(mode, playerCount),
+    summary: modeAndSize,
     /**
      * The way out of a session that has ended.
      *

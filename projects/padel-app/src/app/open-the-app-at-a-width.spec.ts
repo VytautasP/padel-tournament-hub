@@ -6,10 +6,16 @@
  * position in `open-a-focused-surface.spec.ts` — and what is left here is the tier itself: which
  * one the app launches in, and which widths it changes at.
  *
- * This file once also claimed every screen said the same words at every tier. That claim was true
- * only while nothing real read the tier, and it has been retired by the thing it was waiting for:
- * at the desk the Standings destination is gone and the table is an aside (ADR-0022 §2), which is
- * a difference an organizer can see and the rail is now the assertion for.
+ * This file once claimed every screen said the same words at *every* tier. Half of that claim has
+ * been retired by the thing it was waiting for: at the desk the Standings destination is gone and
+ * the leaderboard is an aside (ADR-0022 §2), which is a difference an organizer can see and which
+ * `run-the-evening-at-a-desk.spec.ts` is now the assertion for.
+ *
+ * The other half survives, and it is the half most worth keeping. ADR-0022 §1 says the middle tier
+ * "invents nothing" — it is the same layout widened — and that is a claim nothing else in the
+ * project checks. Neither the phone boards nor the desktop boards draw the middle tier, so a
+ * screen that quietly grew a word there would look right on both of the pictures anybody compares
+ * against.
  *
  * Reading the tier back is deliberately awkward, and the awkwardness is the point. A spec is not
  * allowed to inject `LAYOUT` and read the signal — that would be a test of the token, and the
@@ -28,6 +34,8 @@ import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { BreakpointLayout } from './layout/breakpoint-layout';
 import { LAYOUT } from './layout/layout';
+import type { Tier } from './layout/layout';
+import type { InMemorySessionRepository } from './session/in-memory-session-repository';
 import { AppHarness } from './testing/app-harness';
 import { createSession } from './testing/session-driver';
 
@@ -108,6 +116,16 @@ describe('opening the app at a width', () => {
       expect(await tierAfterResizingTo(probe, 1280)).toBe('desk');
       expect(await tierAfterResizingTo(probe, 900)).toBe('wide');
       expect(await tierAfterResizingTo(probe, 500)).toBe('phone');
+    });
+  });
+
+  describe('what the organizer sees on the widened middle tier', () => {
+    it('is the phone word for word, because it invents nothing', async () => {
+      const created = await createSession(FOUR);
+
+      expect(await screensAt('wide', created.repository)).toEqual(
+        await screensAt('phone', created.repository),
+      );
     });
   });
 });
@@ -204,4 +222,21 @@ function resizeTo(width: number): void {
       listener({ matches: query.list.matches });
     }
   }
+}
+
+/** Every word of one stored session, screen by screen, at one tier. */
+async function screensAt(tier: Tier, repository: InMemorySessionRepository) {
+  const app = await AppHarness.launch({ repository, tier });
+  const landing = app.text();
+
+  await app.tap('Resume');
+  const round = app.text();
+
+  await app.tap('Standings');
+  const standings = app.text();
+
+  await app.tap('Players');
+  const players = app.text();
+
+  return { landing, round, standings, players };
 }

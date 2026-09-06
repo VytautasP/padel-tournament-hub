@@ -50,17 +50,21 @@ import { RoundTab } from '../round/round-tab';
 import { SessionStore } from './session-store';
 import { StandingsTab } from '../standings/standings-tab';
 
-type Tab = 'round' | 'standings' | 'players';
+/**
+ * The three panels this shell holds. Not the same list as the destinations: at the desk the
+ * standings are a panel nobody navigates to, which is the whole of ADR-0022 §2.
+ */
+type Panel = 'round' | 'standings' | 'players';
 
-/** One destination in the navigation: what it is called, and the panel it shows. */
-interface TabView {
-  readonly id: Tab;
+/** One place the navigation offers: what it is called, and the panel it shows. */
+interface Destination {
+  readonly id: Panel;
   readonly label: string;
 }
 
-const ROUND: TabView = { id: 'round', label: copy.session.round };
-const STANDINGS: TabView = { id: 'standings', label: copy.session.standings };
-const PLAYERS: TabView = { id: 'players', label: copy.session.players };
+const ROUND: Destination = { id: 'round', label: copy.session.round };
+const STANDINGS: Destination = { id: 'standings', label: copy.session.standings };
+const PLAYERS: Destination = { id: 'players', label: copy.session.players };
 
 @Component({
   selector: 'app-session-shell',
@@ -73,7 +77,7 @@ export class SessionShell {
   private readonly tier = inject(LAYOUT).tier;
 
   /** The destination the organizer asked for. Held here; what is shown is `current`. */
-  private readonly requested = signal<Tab>('round');
+  private readonly requested = signal<Panel>('round');
 
   /** Emitted when the organizer closes a finished session. Nothing else leaves this screen. */
   readonly left = output<void>();
@@ -93,7 +97,7 @@ export class SessionShell {
    * the template, because "Standings is not a destination at the desk" is a single fact and a
    * template that stated it twice could come to state it inconsistently.
    */
-  protected readonly destinations = computed<readonly TabView[]>(() =>
+  protected readonly destinations = computed<readonly Destination[]>(() =>
     this.atDesk() ? [ROUND, PLAYERS] : [ROUND, STANDINGS, PLAYERS],
   );
 
@@ -104,7 +108,7 @@ export class SessionShell {
    * destination they were on. The table is not gone — it is in the aside beside them — so the
    * main area falls back to the round rather than to a panel with no way back to it.
    */
-  protected readonly current = computed<Tab>(() => {
+  protected readonly current = computed<Panel>(() => {
     const asked = this.requested();
 
     return this.atDesk() && asked === 'standings' ? 'round' : asked;
@@ -117,7 +121,7 @@ export class SessionShell {
     return session === null ? '' : copy.session.summary(session.mode, session.roster.length);
   });
 
-  protected show(tab: Tab): void {
-    this.requested.set(tab);
+  protected show(panel: Panel): void {
+    this.requested.set(panel);
   }
 }
