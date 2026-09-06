@@ -1,16 +1,22 @@
 /*
  * Which of the three shapes the app is in, and what a test can say about it (ADR-0022).
  *
- * This is the seam rather than anything an organizer can see: no screen looks different at any
- * tier yet, and the last test here asserts that as hard as the others assert the tier itself. The
- * navigation and the score sheet are what will read the tier, in the slices after this one.
+ * This is the seam rather than anything an organizer can see. What each tier *does* is asserted
+ * where it is done — the rail and the aside in `run-the-evening-at-a-desk.spec.ts`, the sheet's
+ * position in `open-a-focused-surface.spec.ts` — and what is left here is the tier itself: which
+ * one the app launches in, and which widths it changes at.
+ *
+ * This file once also claimed every screen said the same words at every tier. That claim was true
+ * only while nothing real read the tier, and it has been retired by the thing it was waiting for:
+ * at the desk the Standings destination is gone and the table is an aside (ADR-0022 §2), which is
+ * a difference an organizer can see and the rail is now the assertion for.
  *
  * Reading the tier back is deliberately awkward, and the awkwardness is the point. A spec is not
  * allowed to inject `LAYOUT` and read the signal — that would be a test of the token, and the
  * token is not the thing that has to be right. So the tier is read the way every other fact in
  * this project is read: something is rendered and the words are looked at. `TierProbe` is that
- * something, and it exists only here, only while nothing real renders differently. Once the rail
- * exists, the rail is the assertion.
+ * something, and it exists for the launch tests below, which have no screen of their own to look
+ * at.
  *
  * The widths are proved against the production implementation with the window stubbed, because
  * 768 and 1280 are the two numbers in this whole arrangement that a fake cannot vouch for — and
@@ -22,8 +28,6 @@ import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { BreakpointLayout } from './layout/breakpoint-layout';
 import { LAYOUT } from './layout/layout';
-import type { Tier } from './layout/layout';
-import type { InMemorySessionRepository } from './session/in-memory-session-repository';
 import { AppHarness } from './testing/app-harness';
 import { createSession } from './testing/session-driver';
 
@@ -104,16 +108,6 @@ describe('opening the app at a width', () => {
       expect(await tierAfterResizingTo(probe, 1280)).toBe('desk');
       expect(await tierAfterResizingTo(probe, 900)).toBe('wide');
       expect(await tierAfterResizingTo(probe, 500)).toBe('phone');
-    });
-  });
-
-  describe('what the organizer sees', () => {
-    it('is the same at every tier, word for word', async () => {
-      const created = await createSession(FOUR);
-      const phone = await screensAt('phone', created.repository);
-
-      expect(await screensAt('wide', created.repository)).toEqual(phone);
-      expect(await screensAt('desk', created.repository)).toEqual(phone);
     });
   });
 });
@@ -210,21 +204,4 @@ function resizeTo(width: number): void {
       listener({ matches: query.list.matches });
     }
   }
-}
-
-/** Every word of one stored session, screen by screen, at one tier. */
-async function screensAt(tier: Tier, repository: InMemorySessionRepository) {
-  const app = await AppHarness.launch({ repository, tier });
-  const landing = app.text();
-
-  await app.tap('Resume');
-  const round = app.text();
-
-  await app.tap('Standings');
-  const standings = app.text();
-
-  await app.tap('Players');
-  const players = app.text();
-
-  return { landing, round, standings, players };
 }
