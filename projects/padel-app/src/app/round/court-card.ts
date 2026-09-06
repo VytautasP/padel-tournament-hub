@@ -11,7 +11,8 @@
  * schedule (ADR-0015) shows neither — it is a schedule, and printing a score there would invite
  * the reading that a roster change can touch one — and it draws its courts as single rows of its
  * own rather than as this card, because there a court is a line being read through rather than a
- * card being tapped.
+ * card being tapped. What the two screens do share is `app-side`, which is where the same-gender
+ * mark is written once for both of them.
  *
  * The frame is not here either — the border, the padding, whether it is a button — because that is
  * what differs between the two, and it is the one thing each screen genuinely has an opinion
@@ -25,10 +26,12 @@
  */
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { copy } from '../copy/copy';
+import { Side } from './side';
 import type { CourtView } from './round-view';
 
 @Component({
   selector: 'app-court-card',
+  imports: [Side],
   templateUrl: './court-card.html',
   host: { class: 'flex items-center gap-4' },
   changeDetection: ChangeDetectionStrategy.OnPush,

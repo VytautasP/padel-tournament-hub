@@ -36,24 +36,17 @@
               <span class="text-micro w-[62px] shrink-0 font-bold text-ink-muted uppercase">
                 {{ court.name }}
               </span>
-              <span class="text-lead min-w-0 flex-1 text-ink">
-                {{ copy.round.side(court.sideA.names) }}
-                @if (court.sideA.sameGender) {
-                  <span
-                    class="text-ink-muted"
-                    [attr.aria-label]="copy.round.sameGender.markLabel"
-                    >{{ copy.round.sameGender.mark }}</span
-                  >
-                }
+              <!--
+                A flex row rather than a flowing sentence, because the three parts of it are
+                elements: Angular takes the whitespace between two elements out of the template,
+                so a space between the sides would be a space that exists in this file and not on
+                the screen. The gap is the space, and it wraps rather than truncating — a court is
+                four names, and shortening one of them is losing somebody.
+              -->
+              <span class="text-lead flex min-w-0 flex-1 flex-wrap items-baseline gap-1 text-ink">
+                <app-side [side]="court.sideA" />
                 <span class="text-ink-muted">{{ copy.round.versus }}</span>
-                {{ copy.round.side(court.sideB.names) }}
-                @if (court.sideB.sameGender) {
-                  <span
-                    class="text-ink-muted"
-                    [attr.aria-label]="copy.round.sameGender.markLabel"
-                    >{{ copy.round.sameGender.mark }}</span
-                  >
-                }
+                <app-side [side]="court.sideB" />
               </span>
             </li>
           }

@@ -30,6 +30,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import type { Session } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { roundView } from '../round/round-view';
+import { Side } from '../round/side';
 import type { RoundView } from '../round/round-view';
 import { Sheets } from '../sheet/sheets';
 
@@ -50,6 +51,7 @@ export interface RosterPreviewData {
 
 @Component({
   selector: 'app-roster-preview-sheet',
+  imports: [Side],
   templateUrl: './roster-preview.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,0 +1,6 @@
+{{ copy.round.side(side().names) }}
+@if (side().sameGender) {
+  <span class="text-ink-muted" [attr.aria-label]="copy.round.sameGender.markLabel">{{
+    copy.round.sameGender.mark
+  }}</span>
+}
