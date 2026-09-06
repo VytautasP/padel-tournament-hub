@@ -27,6 +27,7 @@ import {
   endSession,
   matchOn,
   score,
+  showsScore,
   storedSession,
 } from './testing/session-driver';
 import type { NamedPair } from './testing/session-driver';
@@ -306,13 +307,13 @@ describe('running a Team Americano evening', () => {
       const app = await createTeamAmericanoSession(THREE_TEAMS);
       const roundCount = storedSession(app).rounds.length;
 
-      await score(app, 17);
+      const sides = await score(app, 17);
       await app.tap('Round 2 →');
       expect(app.shows(`Round 2 of ${roundCount}`)).toBe(true);
       await score(app, 13);
 
       await app.tap('Previous round');
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       await app.tap('Back to current round');
       app.expectStoredSessionValid();
 

@@ -10,8 +10,8 @@
  *
  * The type scale gets the same treatment, for the same reason. The canvas needs sizes Tailwind's
  * default scale does not carry, so the scale is expressed as named roles — `text-header`,
- * `text-score`, `text-meta` — and a component names the role rather than a measurement. A role
- * carries its face as well as its size: `text-score` is Space Grotesk 700 at 30px with tabular
+ * `text-scoreline`, `text-meta` — and a component names the role rather than a measurement. A role
+ * carries its face as well as its size: `text-scoreline` is Space Grotesk 700 at 22px with tabular
  * figures, which is one decision rather than three for a template to get individually wrong.
  *
  * The identity is direction A, *Court at dusk*, and every value here comes from the design canvas
@@ -200,8 +200,18 @@
   --text-header--line-height: 1.2;
   --text-header--letter-spacing: -0.015em;
 
-  --text-score: 30px;
-  --text-score--line-height: 1.1;
+  /*
+   * Two roles rather than one, because the boards no longer agree on a size. A result on a court
+   * card is read at 22px beside the names it belongs to; the same number being typed into the
+   * score sheet is a target the thumb aims at, and it is drawn at 28. Retuning one role and
+   * letting the other side override the size would leave that override as the one measurement in
+   * the app that is not a role.
+   */
+  --text-scoreline: 22px;
+  --text-scoreline--line-height: 1.2;
+
+  --text-score-field: 28px;
+  --text-score-field--line-height: 1.1;
 
   --text-name: 17px;
   --text-name--line-height: 1.25;
@@ -224,11 +234,11 @@
 }
 
 /*
- * The four roles Space Grotesk carries, bound to the face here rather than in every template that
+ * The five roles Space Grotesk carries, bound to the face here rather than in every template that
  * uses one.
  *
  * A role is a whole typographic decision — face, size, tracking, figures — and splitting it across
- * two class names is how three of the four quietly drift apart. Their figures are even-width, so a
+ * two class names is how three of the five quietly drift apart. Their figures are even-width, so a
  * scoreline does not shift as it is typed; Verdana rows that also line up in a column ask for
  * `tabular-nums` themselves, because there the face is not the reason.
  *
@@ -240,7 +250,8 @@
   [class*='text-display'],
   [class*='text-title'],
   [class*='text-header'],
-  [class*='text-score'] {
+  [class*='text-scoreline'],
+  [class*='text-score-field'] {
     font-family: var(--font-display);
     font-variant-numeric: tabular-nums;
   }

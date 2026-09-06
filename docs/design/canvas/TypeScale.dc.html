@@ -52,7 +52,12 @@
 
     <div class="step">
       <div class="meta"><span style="font-size: 13px; font-weight: 700">Scoreline</span><span class="mono">Space Grotesk 700 &middot; 22px &middot; tabular</span></div>
-      <span class="num" style="font-size: {{s.score}}px; font-weight: 700; color: #0e6f87">24</span>
+      <span class="num" style="font-size: {{s.scoreline}}px; font-weight: 700; color: #0e6f87">24</span>
+    </div>
+
+    <div class="step">
+      <div class="meta"><span style="font-size: 13px; font-weight: 700">Score field</span><span class="mono">Space Grotesk 700 &middot; 28px &middot; tabular</span></div>
+      <span class="num" style="font-size: {{s.scoreField}}px; font-weight: 700">24</span>
     </div>
 
     <div class="step">
@@ -117,7 +122,8 @@ class Component extends DCLogic {
         display: at(32),
         title: at(26),
         header: at(21),
-        score: at(22),
+        scoreline: at(22),
+        scoreField: at(28),
         name: at(17),
         row: at(16),
         control: at(16),

@@ -16,7 +16,13 @@
  * the row the organizer reads rather than agreeing with whatever the app happened to produce.
  */
 import { AppHarness } from './testing/app-harness';
-import { createSession, endSession, score, storedSession } from './testing/session-driver';
+import {
+  createSession,
+  endSession,
+  score,
+  showsScore,
+  storedSession,
+} from './testing/session-driver';
 import type { Sides } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
@@ -64,13 +70,13 @@ describe('ending the session', () => {
 
     it('leaves the rounds readable and nothing about them tappable', async () => {
       const app = await createSession(FOUR);
-      await score(app, 17);
+      const sides = await score(app, 17);
       await endSession(app);
 
       await app.tap('Round');
 
       expect(app.shows('Round 1 of 3')).toBe(true);
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       expect(app.isOnScreen('Enter score for Court 1')).toBe(false);
 
       await app.tap('Next round');
@@ -258,7 +264,7 @@ describe('ending the session', () => {
 
       // A record opens at round one: every round it played, from the start.
       expect(app.shows('Round 1 of 3')).toBe(true);
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       expect(app.isOnScreen('Enter score for Court 1')).toBe(false);
       expect(app.isOnScreen('Back to current round')).toBe(false);
 

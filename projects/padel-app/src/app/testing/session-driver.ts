@@ -19,6 +19,7 @@
  */
 import type { Gender, Match, MatchScore, Session } from 'padel-engine';
 import { AppHarness } from './app-harness';
+import { copy } from '../copy/copy';
 import type { Tier } from '../layout/layout';
 import type { NewPlayer } from '../session/session-store';
 
@@ -181,6 +182,37 @@ export async function score(app: AppHarness, points: number, courtNumber = 1): P
   await app.tap('Save');
 
   return sides;
+}
+
+/**
+ * Whether a scored court reads the way the card draws one: each number beside its own side's name
+ * rather than in a combined scoreline (#53).
+ *
+ * A regular expression rather than two `shows` calls on `"Ana & Ben 17"`, because a Mixicano side
+ * can carry the same-gender mark (ADR-0010) and the mark sits between the name and its number. A
+ * spec asserting on a result should not have to know whether the draw happened to force a pair —
+ * and the mark comes from the dictionary rather than being spelled out here, so a glyph the app
+ * changes its mind about does not quietly stop these assertions from matching anything.
+ */
+export function showsScore(app: AppHarness, sides: Sides, points: SidePoints): boolean {
+  return besideTheName(app, sides.a, points.a) && besideTheName(app, sides.b, points.b);
+}
+
+/** Points as a spec spells a result out: one number per side, in the order the sheet took them. */
+export interface SidePoints {
+  readonly a: number;
+  readonly b: number;
+}
+
+function besideTheName(app: AppHarness, name: string, points: number): boolean {
+  const mark = escapeForRegExp(copy.round.sameGender.mark);
+  const beside = new RegExp(`${escapeForRegExp(name)}\\s*(?:${mark})?\\s*${points}(?!\\d)`);
+
+  return beside.test(app.text());
+}
+
+function escapeForRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Who the engine put on each side of a court of the round on screen. */

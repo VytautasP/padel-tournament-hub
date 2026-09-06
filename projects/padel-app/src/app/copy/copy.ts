@@ -182,8 +182,6 @@ export const copy = {
      * happen to be free at the same time.
      */
     bye: (teams: readonly string[]): string => `Bye: ${teams.join(', ')}`,
-    /** The result on the court card. An en dash, because it is a scoreline and not a subtraction. */
-    score: (sideA: number, sideB: number): string => `${sideA} – ${sideB}`,
     /**
      * The paging controls. Each is an arrow on screen and a sentence to a screen reader: the
      * glyph is all a thumb needs beside a header that already says which round this is, and

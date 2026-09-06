@@ -15,7 +15,7 @@
 import { addPlayer, removePlayer } from 'padel-engine';
 import type { Round, Session } from 'padel-engine';
 import type { AppHarness } from './testing/app-harness';
-import { createSession, idOf, score, storedSession } from './testing/session-driver';
+import { createSession, idOf, score, showsScore, storedSession } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 const SIX = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin', 'Finn'];
@@ -79,7 +79,7 @@ describe('paging the rounds', () => {
 
     it('leaves what has been scored exactly as it was', async () => {
       const app = await createSession(FOUR);
-      await score(app, 17);
+      const sides = await score(app, 17);
       const scored = app.text();
 
       await app.tap('Next round');
@@ -88,7 +88,7 @@ describe('paging the rounds', () => {
       await app.tap('Previous round');
 
       expect(app.text()).toBe(scored);
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
       app.expectStoredSessionValid();
     });
   });
@@ -158,10 +158,10 @@ describe('paging the rounds', () => {
     it('does not move the screen when the last court is scored', async () => {
       const app = await createSession(FOUR);
 
-      await score(app, 17);
+      const sides = await score(app, 17);
 
       expect(app.shows('Round 1 of 3')).toBe(true);
-      expect(app.shows('17 – 7')).toBe(true);
+      expect(showsScore(app, sides, { a: 17, b: 7 })).toBe(true);
     });
 
     it('offers the next round, and advances in one tap', async () => {

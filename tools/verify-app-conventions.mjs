@@ -194,7 +194,7 @@ function sourceFiles(root, extensions) {
 }
 
 const failures = [];
-const checkedFiles = { templates: 0, styles: 0 };
+const checkedFiles = { templates: 0, styled: 0 };
 
 for (const file of sourceFiles(appSource, ['.html'])) {
   const relative = path.relative(repoRoot, file);
@@ -222,19 +222,29 @@ for (const file of sourceFiles(appSource, ['.html'])) {
   }
 }
 
-for (const file of sourceFiles(appSource, ['.css'])) {
+/*
+ * Rules 2 and 3 again, over everything that is not a template: component stylesheets, and the
+ * TypeScript beside them.
+ *
+ * The `.ts` half is here because a class list does not have to be written in a template to reach
+ * the screen — a component that picks between two treatments can hold them as strings and bind
+ * one, and a rule that stopped at the file extension would let exactly the styling a screen argues
+ * about walk out of the checker's sight. Rule 1 is deliberately not applied here: a `.ts` file is
+ * where the copy dictionary itself lives, and every visible string in the app is a literal in it.
+ */
+for (const file of sourceFiles(appSource, ['.css', '.ts'])) {
   const relative = path.relative(repoRoot, file);
   if (relative.endsWith(path.join('src', 'styles.css'))) {
     continue;
   }
 
-  const stylesheet = fs.readFileSync(file, 'utf8');
-  checkedFiles.styles += 1;
+  const source = fs.readFileSync(file, 'utf8');
+  checkedFiles.styled += 1;
 
-  for (const colour of colourNamesIn(stylesheet)) {
+  for (const colour of colourNamesIn(source)) {
     failures.push(`${relative} names a colour: "${colour}" — use a token from styles.css.`);
   }
-  for (const size of typeSizesIn(stylesheet)) {
+  for (const size of typeSizesIn(source)) {
     failures.push(`${relative} names a type size: "${size}" — use a role from styles.css.`);
   }
 }
@@ -315,8 +325,8 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `\npadel-app conventions hold: ${checkedFiles.templates} template(s) and ${checkedFiles.styles} ` +
-    `component stylesheet(s) write no visible string and name no colour or type size of their ` +
-    `own, and the three rules were shown to reject ${violations.length} violations without ` +
-    `tripping on ${allowances.length} legitimate ones.`,
+  `\npadel-app conventions hold: ${checkedFiles.templates} template(s) write no visible string, ` +
+    `and they and ${checkedFiles.styled} other source file(s) name no colour or type size of ` +
+    `their own — and the three rules were shown to reject ${violations.length} violations ` +
+    `without tripping on ${allowances.length} legitimate ones.`,
 );
