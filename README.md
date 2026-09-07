@@ -59,7 +59,7 @@ sides, whoever is sitting out — and tapping a court opens the score sheet, two
 bounded by the session's target, which refuses anything larger rather than quietly clamping it
 (ADR-0014). The Standings tab is the same table the engine derives, live: position, name and points
 per match, a tap for the detail behind a row, and a dash rather than a column of zeroes before
-anybody has played. The evening lives in `localStorage` behind a `SessionRepository`
+anybody has played. The evening lives in Firestore behind a `SessionRepository`
 (decision #19), so closing the app and reopening it offers Resume rather than New session — and
 reopens on the current round, which is worked out from the unscored matches every time and stored
 nowhere. Prev and next reach every generated round with one control back to the current one, and
@@ -130,6 +130,52 @@ decisions ever disagree, one of them is a bug.
 The engine holds every scheduling and scoring rule and runs entirely in the browser, which is why
 there is no custom backend: the server only ever stores and serves session documents.
 
+## Firebase
+
+A session is one document at `sessions/{shareCode}` — the id **is** the ten-character Crockford
+base32 share code, so there is no second identifier and no lookup collection
+([ADR-0024](docs/adr/0024-the-share-code-is-the-document-id-and-ownership-is-an-immutable-uid.md)).
+Ownership is an `ownerUid` field set at creation from the anonymous uid and immutable thereafter.
+Firestore is the **only** source of truth — there is no `localStorage` mirror — and the SDK's
+offline persistence is what carries an evening through a club basement: writes queue, reads come
+from the cache, and the SDK reconciles on reconnect
+([ADR-0025](docs/adr/0025-firestore-is-the-only-source-of-truth.md)).
+
+`firestore.rules` is the entire authorization layer (decision #12). It splits `get` from `list`:
+holding the code is the credential, so any read of a known id is public, but only the organizer may
+*enumerate* and only their own sessions — `allow read: if true` would have made every session in the
+project listable, share codes included.
+
+```bash
+npm run test:rules   # rules, against the Firestore emulator — needs a JDK 21+
+```
+
+One acceptance criterion has no automated test and is checked by hand on a real device, because
+what it is about is a radio: **record a score with the device in airplane mode, reconnect, and
+confirm the score lands**. That is the entire justification for one source of truth rather than two
+(ADR-0025 §1), so it is run against every build that touches the repository. The mechanism behind
+it is that a Firestore write promise settles on the *server* acknowledgement — never, on a court
+with no signal — so `FirestoreSessionRepository` dispatches its writes and does not await them.
+
+The Firebase SDK takes the initial bundle to roughly 960 kB raw and **244 kB transferred**, against
+the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. The budget in
+`angular.json` is set on raw size and errors at 1.1 MB, which leaves little room on purpose: the
+binding constraint on this project is bandwidth, not Firestore reads.
+
+It is deliberately not part of `npm run verify`, which keeps its promise of running anywhere Node
+runs (ADR-0024 §6). Rules and the composite index over `ownerUid` and `status` are deployable
+configuration rather than console clicks:
+
+```bash
+firebase deploy --only firestore:rules,firestore:indexes
+firebase deploy --only hosting        # decision #22: the deploy stays manual
+```
+
+The one thing that is not in this repository is **Anonymous sign-in**, which has to be enabled once
+under Authentication → Sign-in method in the Firebase console. Until a device has signed in once it
+has no uid and therefore no sessions, which is why a fresh install with no network gets a screen
+saying so rather than a spinner (ADR-0025 §4).
+
 ## Getting started
 
 Requires Node 22.22.3+, 24.15+ or 26+ (Angular 22's floor — see
@@ -162,12 +208,15 @@ lint rather than by convention — see
 ## Build order
 
 1. **`padel-engine` + tests** — no UI. Print schedules, eyeball fairness on awkward rosters.
-2. **Angular app, `localStorage` only** — create → generate → score → standings → finish. Usable at a real session. ← *current*
-3. **Firebase** — repository implementation, anonymous auth, security rules, share code, QR, spectator view.
+2. **Angular app, `localStorage` only** — create → generate → score → standings → finish. Usable at a real session.
+3. **Firebase** — repository implementation, anonymous auth, security rules, share code, QR, spectator view. ← *current*
 4. **PWA polish**, Google account linking, session delete.
 
-Step 2 is deliberately a complete, usable app: swapping `localStorage` for Firestore touches a
-single file behind the `SessionRepository` interface.
+Step 2 was deliberately a complete, usable app, and step 3's first half proved the point: swapping
+`localStorage` for Firestore added one file behind the `SessionRepository` interface and changed
+none of its six signatures. It did add a seventh operation — the live listener — which
+[ADR-0027](docs/adr/0027-the-live-listener-is-a-seventh-repository-operation.md) records, because
+ADR-0025 had said there would be six and there are seven.
 
 ## Licence
 

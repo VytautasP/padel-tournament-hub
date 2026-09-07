@@ -30,8 +30,10 @@ import { App } from '../app';
 import { FixedLayout } from '../layout/fixed-layout';
 import { LAYOUT } from '../layout/layout';
 import type { Tier } from '../layout/layout';
+import type { Identity } from '../session/identity';
 import { SCORE_EMPHASIS } from '../round/court-card';
 import type { ScoreEmphasis } from '../round/court-card';
+import { IDENTITY } from '../session/identity';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
 import { SHEET_PANEL } from '../sheet/sheets';
@@ -43,6 +45,14 @@ export interface LaunchOptions {
   readonly repository?: InMemorySessionRepository;
   /** The shape the app is opened in. The phone unless a spec is about something else. */
   readonly tier?: Tier;
+  /**
+   * Who the app signs in as. The repository itself unless a spec is about not getting that far.
+   *
+   * The one thing a spec passes here is an identity that *refuses* — a first launch on a device
+   * with no network, which is the only way the app can be running and have no owner to read
+   * sessions for (ADR-0025 §4).
+   */
+  readonly identity?: Identity;
 }
 
 export class AppHarness {
@@ -52,32 +62,48 @@ export class AppHarness {
     // Kept only so a reload reopens the app in the shape it was closed in. Nothing reads it as an
     // answer: a spec that wants to know the tier has to find out the way an organizer would.
     private readonly tier: Tier,
+    // Kept for the same reason as the tier: reopening the app on a device that still has no
+    // signal has to be the same device, or the spec would be reloading its way out of the state
+    // it is about.
+    private readonly identity: Identity | undefined,
   ) {}
 
   static async launch({
     repository = new InMemorySessionRepository(),
     tier = 'phone',
+    identity,
   }: LaunchOptions = {}): Promise<AppHarness> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: SESSION_REPOSITORY, useValue: repository },
+        // The same object behind both tokens, exactly as the running app wires it (ADR-0025 §4):
+        // a fake that could store a session without being anybody would be a fake of a store this
+        // app does not have.
+        { provide: IDENTITY, useValue: identity ?? repository },
         { provide: LAYOUT, useValue: new FixedLayout(tier) },
       ],
     });
 
     const fixture = TestBed.createComponent(App);
-    const harness = new AppHarness(fixture, repository, tier);
+    const harness = new AppHarness(fixture, repository, tier, identity);
     await harness.settle();
 
     return harness;
   }
 
-  /** Close the app and open it again: a new injector, the same stored session, the same tier. */
+  /**
+   * Close the app and open it again: a new injector, the same stored session, the same tier — and
+   * the same identity, so a device that could not sign in is still that device.
+   */
   async reload(): Promise<AppHarness> {
     this.fixture.destroy();
 
-    return AppHarness.launch({ repository: this.repository, tier: this.tier });
+    return AppHarness.launch({
+      repository: this.repository,
+      tier: this.tier,
+      identity: this.identity,
+    });
   }
 
   /** Everything the organizer can read on screen right now, whitespace-normalised. */

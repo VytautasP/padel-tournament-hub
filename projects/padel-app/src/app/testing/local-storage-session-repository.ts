@@ -1,9 +1,16 @@
 /*
- * The repository the app runs on: one session document in `localStorage` (decision #23, step 2).
+ * A second test double: one session document in `localStorage` (ADR-0025 §1).
  *
- * This is the only file in the app that names a storage API. That is the entire point of
- * decision #19 — when Firestore arrives in step 3 it arrives as a sibling of this file and
- * nothing above it changes.
+ * This was the repository the app ran on for the whole of build-order step 2, and the swap that
+ * step 3 made is the reason it is in `testing/` now rather than in `session/`. Firestore is the
+ * only source of truth (ADR-0025 §1) — mirroring writes here as well would buy immunity to an
+ * outage and cost the one thing this project has been careful about everywhere else, a single
+ * place where a fact lives.
+ *
+ * It survives beside the in-memory fake because it is the only implementation that stores bytes
+ * which outlive the process, and the two defensive choices below are worth keeping a test for.
+ * Nothing in the running app provides it, and the sessions it holds on any device that ran step 2
+ * are abandoned: history starts empty in production (ADR-0025 §5).
  *
  * Two defensive choices, both about the fact that the stored bytes outlive the code that wrote
  * them:
@@ -15,8 +22,8 @@
  *     already lost either way.
  */
 import { Injectable } from '@angular/core';
-import type { SessionRecord } from './session-record';
-import type { SessionRepository } from './session-repository';
+import type { SessionRecord } from '../session/session-record';
+import type { SessionRepository } from '../session/session-repository';
 
 /** Where the active session lives. Exported so a test can put a bad document there on purpose. */
 export const STORAGE_KEY = 'padel-tournament-hub:active-session';
@@ -51,6 +58,8 @@ interface StoredHistory {
 
 @Injectable()
 export class LocalStorageSessionRepository implements SessionRepository {
+  private watchers = new Set<(record: SessionRecord | null) => void>();
+
   async loadActive(): Promise<SessionRecord | null> {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) {
@@ -63,10 +72,12 @@ export class LocalStorageSessionRepository implements SessionRepository {
   async saveActive(record: SessionRecord): Promise<void> {
     const document: StoredDocument = { version: FORMAT_VERSION, record };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(document));
+    await this.announce();
   }
 
   async clearActive(): Promise<void> {
     localStorage.removeItem(STORAGE_KEY);
+    await this.announce();
   }
 
   async loadHistory(): Promise<readonly SessionRecord[]> {
@@ -82,6 +93,26 @@ export class LocalStorageSessionRepository implements SessionRepository {
   async deleteFromHistory(sessionId: string): Promise<void> {
     const kept = (await this.loadHistory()).filter((held) => held.session.id !== sessionId);
     await this.writeHistory(kept);
+  }
+
+  /**
+   * The live listener, over a store that has no way to notice a write of its own.
+   *
+   * `localStorage` fires `storage` events at *other* tabs and never at the one that wrote, so
+   * this announces its own writes and nothing else. That is enough for what it is: a double whose
+   * job is to prove the bytes survive a reload, not to prove two views of an evening converge.
+   */
+  watchActive(onChange: (record: SessionRecord | null) => void): () => void {
+    this.watchers.add(onChange);
+
+    return () => this.watchers.delete(onChange);
+  }
+
+  private async announce(): Promise<void> {
+    const record = await this.loadActive();
+    for (const watcher of this.watchers) {
+      watcher(record);
+    }
   }
 
   private async writeHistory(records: readonly SessionRecord[]): Promise<void> {

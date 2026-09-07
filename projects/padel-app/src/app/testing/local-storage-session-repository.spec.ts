@@ -4,7 +4,7 @@ import {
   LocalStorageSessionRepository,
   STORAGE_KEY,
 } from './local-storage-session-repository';
-import type { SessionRecord } from './session-record';
+import type { SessionRecord } from '../session/session-record';
 
 describe('the localStorage session repository', () => {
   beforeEach(() => localStorage.clear());

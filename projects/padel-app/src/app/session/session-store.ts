@@ -20,9 +20,15 @@
  *
  * The store also owns the fact that reading a session is asynchronous. `restore()` runs once at
  * startup; until it settles, `ready()` is false and the app renders nothing rather than flashing
- * a landing page at an organizer who has an evening in progress.
+ * a landing page at an organizer who has an evening in progress. Since the Firestore swap it also
+ * owns *who the app is* — every read is a query scoped to a uid (ADR-0025 §2), so signing in comes
+ * before reading, and a startup that cannot reach the organizer's sessions — for want of a uid or
+ * for want of a working read — is a state (`needsConnection`) rather than a spinner (ADR-0025 §4). It then follows the evening in progress on a live listener, which is the
+ * same mechanism a spectator will use and is what makes two of the organizer's own devices converge
+ * rather than overwrite each other (ADR-0025 §3).
  */
 import { computed, inject, Injectable, signal } from '@angular/core';
+import type { OnDestroy } from '@angular/core';
 import {
   addPlayer,
   addRound,
@@ -48,6 +54,8 @@ import {
 import { rowsOfPlayers, rowsOfTeams } from '../standings/standing-row';
 import type { StandingRow } from '../standings/standing-row';
 import { currentRoundNumber } from './current-round';
+import { IDENTITY } from './identity';
+import { newShareCode } from './share-code';
 import { teamNameOf } from './teams';
 import type { SessionRecord } from './session-record';
 import { SESSION_REPOSITORY } from './session-repository';
@@ -140,15 +148,32 @@ export interface RosterChange {
 }
 
 @Injectable({ providedIn: 'root' })
-export class SessionStore {
+export class SessionStore implements OnDestroy {
   private readonly repository = inject(SESSION_REPOSITORY);
+  private readonly identity = inject(IDENTITY);
   private readonly record = signal<SessionRecord | null>(null);
   private readonly endedRecords = signal<readonly SessionRecord[]>([]);
   private readonly openId = signal<string | null>(null);
   private readonly restored = signal(false);
+  private readonly unreachable = signal(false);
+  private stopWatching: (() => void) | null = null;
 
   /** False until the repository has been read once. */
   readonly ready = this.restored.asReadonly();
+
+  /**
+   * Whether the app failed to reach the organizer's sessions at startup (ADR-0025 §4).
+   *
+   * Two ways in, and deliberately one state out. The first is the one the ADR names: on the first
+   * launch of a device with no network there is no uid — it is minted on Firebase's servers — and
+   * so nothing to read. The second is a read that failed once there *was* a uid, which ADR-0025
+   * already accepts as stopping an evening: "A Firestore outage, or an exhausted quota, stops an
+   * evening… That is the price of one source of truth."
+   *
+   * They are one state because the organizer's move is the same in both — find a signal, open the
+   * app again — and because the alternative to saying so is the blank page this replaces.
+   */
+  readonly needsConnection = this.unreachable.asReadonly();
 
   readonly activeSession = computed<Session | null>(() => this.record()?.session ?? null);
 
@@ -264,10 +289,41 @@ export class SessionStore {
       : teamsNeedingPartner(session);
   });
 
+  /**
+   * Sign in, read the repository once, then follow the evening in progress (ADR-0025 §3, §4).
+   *
+   * Signing in comes first because every read this makes is scoped to a uid — the active session
+   * is a query for the sessions this organizer owns, and there is no such query before there is an
+   * owner. A device that cannot sign in has nothing to show and says so; it is still `ready`,
+   * because a screen that never resolves is the failure this replaces.
+   *
+   * The listener is opened after the first read rather than instead of it. Both would work — the
+   * first snapshot carries the same record — but the read is what `PendingTasks` can wait on, and
+   * an app that became stable on a callback would be an app whose tests raced a subscription they
+   * could not see.
+   */
   async restore(): Promise<void> {
-    this.record.set(await this.repository.loadActive());
-    this.endedRecords.set(await this.repository.loadHistory());
-    this.restored.set(true);
+    try {
+      await this.identity.signIn();
+      this.record.set(await this.repository.loadActive());
+      this.endedRecords.set(await this.repository.loadHistory());
+      this.stopWatching = this.repository.watchActive((record) => this.record.set(record));
+    } catch {
+      this.unreachable.set(true);
+    } finally {
+      // Whatever happened, the app stops being unstable. `ready()` is what every screen renders
+      // behind, so a `restore` that threw its way out would leave the organizer looking at a blank
+      // page for as long as they cared to wait — the spinner ADR-0025 §4 forbids, in a worse
+      // disguise. Found by opening the deployed app while a composite index was still building,
+      // and it would have happened again on any outage or exhausted quota.
+      this.restored.set(true);
+    }
+  }
+
+  /** Stop following the evening in progress. The app closing is the only thing that asks. */
+  ngOnDestroy(): void {
+    this.stopWatching?.();
+    this.stopWatching = null;
   }
 
   /** Put the session with this id on screen: the active one, or one out of history. */
@@ -295,7 +351,7 @@ export class SessionStore {
    * Creating opens the session, because the last tap of the wizard has nowhere else to go.
    */
   async create(draft: SessionDraft): Promise<void> {
-    const id = newSessionId();
+    const id = newShareCode();
     const players = draft.players.map((player, index) => rosterEntry(id, index, player));
     const session = generateRemaining(
       createSession({
@@ -538,8 +594,4 @@ function pairedTeam(
     id: `${sessionId}:t${index + 1}`,
     playerIds: [players[pairing[0]].id, players[pairing[1]].id],
   });
-}
-
-function newSessionId(): string {
-  return crypto.randomUUID();
 }

@@ -5,6 +5,7 @@
     "ng": "ng",
     "build": "ng build padel-engine && ng build padel-app",
     "test": "ng test padel-engine --watch=false && ng test padel-app --watch=false",
+    "test:rules": "firebase emulators:exec --only firestore \"node tools/verify-firestore-rules.mjs\"",
     "lint": "ng lint",
     "format": "prettier --write \"**/*.{ts,js,mjs,json,html,css}\"",
     "format:check": "prettier --check \"**/*.{ts,js,mjs,json,html,css}\"",
@@ -23,6 +24,7 @@
     "@angular/compiler": "^22.1.3",
     "@angular/core": "^22.1.3",
     "@angular/platform-browser": "^22.1.3",
+    "firebase": "^12.18.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -31,6 +33,7 @@
     "@angular/cli": "^22.1.5",
     "@angular/compiler-cli": "^22.1.3",
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4.3.3",
     "angular-eslint": "22.1.0",
     "eslint": "^10.3.0",

@@ -1,0 +1,90 @@
+rules_version = '2';
+
+/*
+ * The authorization layer (decision #12, ADR-0024).
+ *
+ * There is no server behind this file. Whatever these rules allow is what the product allows, so
+ * they are read as a specification rather than as a safety net — and they are tested against the
+ * emulator by `npm run test:rules`, because an authorization layer nobody has watched reject
+ * anything is indistinguishable from one that always passes.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /*
+     * One document per session, at the share code (decision #13, ADR-0024 §1).
+     *
+     * The document id *is* the unguessable code, so holding it is the credential — which is the
+     * whole of what decision #10 promises. Reads are therefore public, and unlisted is not
+     * secure: a leaked code is permanent access to that evening, for anyone, and there is no
+     * revocation (ADR-0024 §4).
+     */
+    match /sessions/{code} {
+
+      /*
+       * The split that is the point of ADR-0024 §3.
+       *
+       * `get` is public because the id is the credential. `list` is not, because Firestore's
+       * `read` covers both and the obvious one-line rule — `allow read: if true` — does not mean
+       * "anyone holding a code may watch that session". It means anyone at all may query this
+       * collection and receive every session ever run, share codes included. The unguessable id
+       * stops being a credential the moment the collection is listable.
+       *
+       * So only the organizer enumerates, and only their own: `resource.data.ownerUid` is
+       * evaluated against each document a query would return, which is what makes the app's
+       * owner-scoped query the only one that can succeed.
+       */
+      allow get: if true;
+      allow list: if request.auth != null
+                  && request.auth.uid == resource.data.ownerUid;
+
+      /*
+       * Ownership is claimed once and never moves (ADR-0024 §2).
+       *
+       * A session is created carrying the caller's own uid, and every later write is checked
+       * against the uid already stored — so a session cannot be adopted, and cannot be handed to
+       * a co-organizer either. That second consequence is accepted knowingly.
+       *
+       * `status: 'finished'` is deliberately not enforced here (ADR-0024 §5). ADR-0009 makes
+       * finishing a status the engine refuses to operate past, and the only account that can
+       * write to a session is the organizer's own — so a rule forbidding a write to a finished
+       * evening would defend the organizer from themselves and foreclose "reopen, we played one
+       * more" for nothing. The rules answer *who*; the engine answers *what*.
+       */
+      /*
+       * `'ownerUid' in request.resource.data` changes nothing about what is allowed, and is here
+       * for the log.
+       *
+       * Reading a field that is not on the incoming document raises an *evaluation error* rather
+       * than returning false. Firestore denies on one either way, so a write with no owner was
+       * always refused — but it was refused by accident, and an errored rule reads in the console
+       * almost exactly like a rule that deliberately said no. That is unhelpful on the day a real
+       * permission problem has to be diagnosed, so the refusal is now one the rules chose.
+       *
+       * **A `resource != null` guard was tried on `update` and `delete` and removed again.** It
+       * made no difference: the emulator reports the same evaluation errors with and without it
+       * (`npm run test:rules`, five either way). Firestore evaluates a rule once before the
+       * document is loaded and again after — the first pass errors on any rule that reads
+       * `resource` at all, the second returns a clean answer, and both are logged. There is no
+       * guard that removes the first, so nobody should add one thinking it was overlooked.
+       */
+      allow create: if request.auth != null
+                    && 'ownerUid' in request.resource.data
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      allow update: if request.auth != null
+                    && 'ownerUid' in request.resource.data
+                    && resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+
+      /* Decision #10's hard delete, and the only thing that performs it. */
+      allow delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+
+    /* Nothing else exists. A collection this app has never heard of is not a collection it stores. */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
