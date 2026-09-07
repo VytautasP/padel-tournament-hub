@@ -157,7 +157,7 @@ confirm the score lands**. That is the entire justification for one source of tr
 it is that a Firestore write promise settles on the *server* acknowledgement — never, on a court
 with no signal — so `FirestoreSessionRepository` dispatches its writes and does not await them.
 
-The Firebase SDK takes the initial bundle to roughly 960 kB raw and **244 kB transferred**, against
+The Firebase SDK takes the initial bundle to roughly 970 kB raw and **246 kB transferred**, against
 the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. The budget in
 `angular.json` is set on raw size and errors at 1.1 MB, which leaves little room on purpose: the
 binding constraint on this project is bandwidth, not Firestore reads.
