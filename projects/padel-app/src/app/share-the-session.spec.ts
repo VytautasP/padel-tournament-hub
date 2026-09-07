@@ -15,6 +15,8 @@
  * agree on, exactly as `CROCKFORD_ALPHABET` is for the code itself.
  */
 import { copy } from './copy/copy';
+import { qrEncoder } from './share/qr-matrix';
+import type { QrEncoder } from './share/qr-matrix';
 import { shareLink } from './share/share-link';
 import { AppHarness } from './testing/app-harness';
 import {
@@ -45,15 +47,23 @@ describe('sharing a session', () => {
 
   /*
    * The QR is the whole reason the sheet exists: nobody types ten characters when a camera is in
-   * their hand. It is read here as a picture with a name, which is what a screen reader gets and
-   * the only thing about an SVG a DOM seam can honestly assert.
+   * their hand. Two halves to the assertion, because a picture on screen proves only half of it —
+   * what a camera walks away with is the *link*, and a QR of the bare code, or of last week's
+   * session, would look exactly as correct.
+   *
+   * The encoding is watched rather than replaced: the real library still draws the code, and what
+   * this asks is what the app handed it (ADR-0026 §4 — encoded here, on the device, because the
+   * code is the credential).
    */
   it('draws the link as a QR nobody has to type', async () => {
-    const app = await createSession(FOUR);
+    const encoded: string[] = [];
+    const app = await AppHarness.launch({ qrCode: watching(encoded) });
+    await createSessionOn(app, FOUR);
 
-    await anEveningBeingShared(app);
+    const code = await anEveningBeingShared(app);
 
     expect(app.hasImage(copy.share.qr)).toBe(true);
+    expect(encoded).toContain(shareLink(document.location.origin, code));
   });
 
   it('copies the link the QR points at', async () => {
@@ -62,7 +72,7 @@ describe('sharing a session', () => {
 
     await app.tap(copy.share.copyLink);
 
-    expect(app.clipboard.lastCopied).toBe(shareLink(location.origin, code));
+    expect(app.clipboard.lastCopied).toBe(shareLink(document.location.origin, code));
     expect(app.shows(copy.share.copied)).toBe(true);
   });
 
@@ -122,6 +132,21 @@ describe('sharing a session', () => {
   });
 
   /*
+   * Nothing on this sheet is confirmed, so the way out is a door rather than a cancel — and it is
+   * the one control here that would leave no trace if it quietly stopped working.
+   */
+  it('closes on the way out, leaving the evening where it was', async () => {
+    const app = await createSession(FOUR);
+    const code = await anEveningBeingShared(app);
+
+    await app.tap(copy.share.done);
+
+    expect(app.shows(copy.share.heading)).toBe(false);
+    expect(app.shows(code)).toBe(false);
+    expect(app.isOnScreen(copy.share.open)).toBe(true);
+  });
+
+  /*
    * The sheet is a sheet under a thumb and a dialog on a desk, like every other focused surface
    * in this app (ADR-0022 §4). It is asserted once, here, because sharing is the newest of them.
    */
@@ -133,3 +158,17 @@ describe('sharing a session', () => {
     expect(app.sheetPosition()).toBe('centered');
   });
 });
+
+/**
+ * The real encoder, with a note taken of everything it was asked to encode.
+ *
+ * A recording stub returning a fixed grid would test that a picture appears; this tests that the
+ * picture is of the link, and leaves `qrcode` doing the encoding it is here to do.
+ */
+function watching(encoded: string[]): QrEncoder {
+  return (text) => {
+    encoded.push(text);
+
+    return qrEncoder(text);
+  };
+}

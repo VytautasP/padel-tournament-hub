@@ -10,9 +10,9 @@
  * Refusing is not a second class, because it is not a second clipboard: a browser that denies the
  * permission is this one on a different day.
  */
-import type { Clipboard } from '../share/clipboard';
+import type { TextClipboard } from '../share/clipboard';
 
-export class RecordingClipboard implements Clipboard {
+export class RecordingClipboard implements TextClipboard {
   private writes = true;
 
   /** The last text put on the clipboard, or `null` where nothing ever was. */

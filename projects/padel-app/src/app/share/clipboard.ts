@@ -10,24 +10,29 @@
  * `write` answers whether the text is actually on the clipboard, so the one caller has something
  * to say either way. It never rejects: a refused permission is an answer rather than an exception,
  * and every failure here is the same failure from where the organizer is standing.
+ *
+ * `TextClipboard` rather than `Clipboard`, which is a name `lib.dom` already has: a file that
+ * forgot the import would type-check against the browser's own interface and mean something else
+ * entirely. `SessionRepository` and `Identity` have no such twin and need no such care.
  */
 import { InjectionToken } from '@angular/core';
 
-export interface Clipboard {
+export interface TextClipboard {
   /** Put this text on the system clipboard. `false` where the browser would not. */
   write(text: string): Promise<boolean>;
 }
 
-export const CLIPBOARD = new InjectionToken<Clipboard>('Clipboard');
+export const CLIPBOARD = new InjectionToken<TextClipboard>('TextClipboard');
 
 /**
- * The real one: the async Clipboard API, which is what every browser this app supports has.
+ * The real one: the async Clipboard API.
  *
  * `document.execCommand('copy')` is the fallback the web usually reaches for, and it is not here.
  * It needs a hidden textarea, a selection and a synchronous stack, and it is deprecated — three
- * things to maintain for browsers this PWA already requires service workers and modules from.
+ * things to keep working so that a browser old enough to lack the async API can copy a link it
+ * could equally be read the ten characters of.
  */
-export class BrowserClipboard implements Clipboard {
+export class BrowserClipboard implements TextClipboard {
   async write(text: string): Promise<boolean> {
     try {
       await navigator.clipboard.writeText(text);

@@ -48,7 +48,7 @@ export class ShareSheet {
   private readonly copying = signal<Copying>('untried');
 
   protected readonly copy = copy;
-  protected readonly copied = this.copying.asReadonly();
+  protected readonly copyState = this.copying.asReadonly();
 
   /**
    * Copy the link, and say which of the two things happened.

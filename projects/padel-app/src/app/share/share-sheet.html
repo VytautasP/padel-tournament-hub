@@ -42,7 +42,7 @@
       nothing at all happened.
     -->
     <p class="text-meta text-pretty text-ink-muted" aria-live="polite">
-      @switch (copied()) {
+      @switch (copyState()) {
         @case ('copied') {
           {{ copy.share.copied }}
         }

@@ -47,6 +47,14 @@ const appName = 'Padel Tournament Hub';
  */
 const googleAccount = 'your Google account';
 
+/**
+ * What sharing a session is called, in the two places that name it.
+ *
+ * The header control announces it and the sheet it opens is titled it. Out on its own for the
+ * reason `appName` is: a sentence written twice is a sentence that can be changed once.
+ */
+const shareHeading = 'Share this session';
+
 export const copy = {
   appName,
 
@@ -262,9 +270,12 @@ export const copy = {
      * A glyph on screen and a sentence to a screen reader, like the paging arrows: the icon is all
      * a thumb needs beside a screen that is plainly a session, and "Share" alone would not say
      * share *what*.
+     *
+     * The same sentence as the heading of the sheet it opens, and the same constant: a control and
+     * the surface it leads to that disagreed about their own name would be two names for one act.
      */
-    open: 'Share this session',
-    heading: 'Share this session',
+    open: shareHeading,
+    heading: shareHeading,
     /**
      * What the person on the other end of this gets, said before they are handed it.
      *

@@ -33,10 +33,13 @@ import type { QrMatrix } from './qr-matrix';
  */
 const QUIET_ZONE = 4;
 
-/** One QR as the template draws it: where the coordinates start, how far they run, and the ink. */
+/**
+ * One QR as the template draws it: the box the modules live in, and the ink.
+ *
+ * Two fields and no third: the quiet zone is in the viewBox and nowhere else, so there is no
+ * second representation of the same two numbers for the drawing to disagree with itself about.
+ */
 interface Drawing {
-  readonly edge: number;
-  readonly across: number;
   readonly viewBox: string;
   readonly path: string;
 }
@@ -71,8 +74,6 @@ export class QrCode {
     const across = matrix.size + QUIET_ZONE * 2;
 
     return {
-      edge: -QUIET_ZONE,
-      across,
       viewBox: `${-QUIET_ZONE} ${-QUIET_ZONE} ${across} ${across}`,
       path: matrix.path,
     };
