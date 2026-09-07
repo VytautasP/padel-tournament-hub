@@ -1,0 +1,62 @@
+<!--
+  The QR, the code, and the link — in the order they are reached for. The camera first, because it
+  is the one that needs no talking; the code under it, because that is what gets read out when the
+  camera will not focus; the link last, for the group that is in a chat app rather than at the
+  court yet.
+
+  The QR is held to a square that is a share of the sheet's own width rather than a pixel size, so
+  it is as big as a phone can make it and no bigger than a dialog on a desk should be.
+-->
+<section class="flex flex-col items-center gap-[18px] px-5 pt-[18px] pb-[34px]">
+  <header class="flex w-full flex-col gap-1.5">
+    <h2 class="text-header font-bold text-ink">{{ copy.share.heading }}</h2>
+    <p class="text-lead text-ink-muted">{{ copy.share.lead }}</p>
+  </header>
+
+  <div class="flex aspect-square w-2/3 items-center justify-center">
+    <app-qr-code [text]="data.link" />
+  </div>
+
+  <div class="flex flex-col items-center gap-1">
+    <span class="text-micro font-bold text-ink-muted uppercase">{{ copy.share.code }}</span>
+    <!--
+      The one place in the app a share code is read by a person. Tracked wide and set in the
+      display face's tabular figures, because these ten characters are read out one at a time
+      across a court and `0` and `O` are not both in the alphabet precisely so that this can be
+      done (ADR-0024 §3).
+    -->
+    <span class="text-title font-bold tracking-[0.14em] text-ink">{{ data.code }}</span>
+  </div>
+
+  <div class="flex w-full flex-col gap-2">
+    <button
+      type="button"
+      class="text-control h-[54px] w-full rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
+      (click)="copyLink()"
+    >
+      {{ copy.share.copyLink }}
+    </button>
+    <!--
+      What the clipboard actually did, announced rather than only shown: the button does not change
+      and there is nothing else on screen to notice, so a screen reader would otherwise be told
+      nothing at all happened.
+    -->
+    <p class="text-meta text-pretty text-ink-muted" aria-live="polite">
+      @switch (copied()) {
+        @case ('copied') {
+          {{ copy.share.copied }}
+        }
+        @case ('refused') {
+          {{ copy.share.copyFailed }}
+        }
+      }
+    </p>
+    <button
+      type="button"
+      class="text-control h-[54px] w-full rounded-[15px] border border-line px-4 text-ink"
+      (click)="close()"
+    >
+      {{ copy.share.done }}
+    </button>
+  </div>
+</section>

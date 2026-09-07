@@ -1,0 +1,32 @@
+<!--
+  A picture with a name, and nothing else in the accessibility tree — the grid of squares is not
+  something to describe module by module, and the code it encodes is on screen underneath it in
+  characters anybody can read.
+
+  The two colours are the one pair in this app that does not follow the theme (`styles.css`): a
+  camera decodes contrast, not a palette, and a QR inverted into the dark theme is a scan that
+  sometimes works. `shape-rendering="crispEdges"` keeps the modules from being antialiased into
+  each other at the sizes a phone draws this.
+-->
+@if (drawing(); as qr) {
+  <svg
+    class="block h-full w-full"
+    [attr.viewBox]="qr.viewBox"
+    shape-rendering="crispEdges"
+    role="img"
+    [attr.aria-label]="copy.share.qr"
+  >
+    <rect
+      [attr.x]="qr.edge"
+      [attr.y]="qr.edge"
+      [attr.width]="qr.across"
+      [attr.height]="qr.across"
+      class="fill-qr-ground"
+    />
+    <path [attr.d]="qr.path" class="fill-qr-ink" />
+  </svg>
+}
+
+@if (unavailable()) {
+  <p class="text-meta text-pretty text-ink-muted">{{ copy.share.qrUnavailable }}</p>
+}

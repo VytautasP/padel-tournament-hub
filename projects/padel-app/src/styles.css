@@ -83,6 +83,18 @@
   --palette-danger: #a8322b;
 
   /*
+   * The two colours a camera reads, and the only pair in this file that is not themed.
+   *
+   * A QR is not a surface — it is a target for an optical decoder, and the decoder is looking for
+   * dark modules on a light ground. Inverting it into the dark theme produces a code that some
+   * scanners read, some read slowly, and some do not read at all, which is a coin toss to hand
+   * somebody standing at the side of a court. So the ground stays paper and the modules stay ink
+   * in both themes, and the dark block below deliberately does not redefine them (ADR-0026 §4).
+   */
+  --palette-qr-ground: #ffffff;
+  --palette-qr-ink: #101720;
+
+  /*
    * Three roles, not a scale: a card resting on the page, a sheet lifted over a scrim from the
    * bottom edge, and the same sheet floating free in the middle of a desk (ADR-0022 §4). The
    * sheet's shadow only rises, because nothing is under it; the dialog's falls all round.
@@ -163,6 +175,8 @@
   --color-warning: var(--palette-warning);
   --color-warning-surface: var(--palette-warning-surface);
   --color-danger: var(--palette-danger);
+  --color-qr-ground: var(--palette-qr-ground);
+  --color-qr-ink: var(--palette-qr-ink);
 
   --shadow-raised: var(--palette-shadow-raised);
   --shadow-sheet: var(--palette-shadow-sheet);

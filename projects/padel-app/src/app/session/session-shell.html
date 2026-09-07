@@ -86,13 +86,53 @@
     on the window that is, a court card 2800px across is not what the extra room is for.
   -->
   <div class="page-column flex min-w-0 flex-1 flex-col">
-    @if (ended()) {
-      <header class="flex justify-end border-b border-line bg-surface-raised px-4 py-2">
+    <!--
+      The one piece of chrome a session has (ADR-0026 §4, amending ADR-0016).
+
+      Sharing is on the left of it at every width and in every state, including after the evening
+      has ended: a finished session is a record, and its final table is exactly the thing somebody
+      asks to be sent. Leaving is on the right and only when there is somewhere to go — a session
+      in progress is left by ending it or discarding it, both of which are elsewhere.
+    -->
+    <header
+      class="flex items-center justify-between border-b border-line bg-surface-raised px-4 py-2"
+    >
+      <button
+        type="button"
+        class="flex h-9 w-9 items-center justify-center rounded-full text-brand"
+        [attr.aria-label]="copy.share.open"
+        (click)="share()"
+      >
+        <!--
+          Three nodes and the two lines between them: the glyph every platform draws for handing
+          something to somebody else. Decoration rather than a label, so it is out of the
+          accessibility tree and the button's name is the sentence bound above it.
+        -->
+        <svg
+          class="block"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <path d="M8.6 10.5 15.4 6.5M8.6 13.5l6.8 4" />
+        </svg>
+      </button>
+
+      @if (ended()) {
         <button type="button" class="text-lead font-bold text-brand" (click)="left.emit()">
           {{ copy.session.done }}
         </button>
-      </header>
-    }
+      }
+    </header>
 
     <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'round'">
       <app-round-tab />

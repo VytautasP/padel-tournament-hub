@@ -36,6 +36,10 @@ import type { ScoreEmphasis } from '../round/court-card';
 import { IDENTITY } from '../session/identity';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
+import { CLIPBOARD } from '../share/clipboard';
+import { qrEncoder, QR_ENCODER } from '../share/qr-matrix';
+import type { QrEncoder } from '../share/qr-matrix';
+import { RecordingClipboard } from './recording-clipboard';
 import { SHEET_PANEL } from '../sheet/sheets';
 import type { SheetPosition } from '../sheet/sheets';
 
@@ -53,12 +57,23 @@ export interface LaunchOptions {
    * sessions for (ADR-0025 §4).
    */
   readonly identity?: Identity;
+  /**
+   * An encoder for the share sheet's QR. The real one unless a spec is about not getting it.
+   *
+   * The real library is used by default rather than a stub that returns a fixed grid, because a
+   * QR nobody encodes is a picture of a feature. What a spec passes here is an encoder that
+   * *fails* — the phone at a court with no signal, which is the one failure this sheet has
+   * (ADR-0026 §4).
+   */
+  readonly qrCode?: QrEncoder;
 }
 
 export class AppHarness {
   private constructor(
     private readonly fixture: ComponentFixture<App>,
     readonly repository: InMemorySessionRepository,
+    /** What the share sheet copied to, and the only way to ask whether it copied at all. */
+    readonly clipboard: RecordingClipboard,
     // Kept only so a reload reopens the app in the shape it was closed in. Nothing reads it as an
     // answer: a spec that wants to know the tier has to find out the way an organizer would.
     private readonly tier: Tier,
@@ -66,13 +81,19 @@ export class AppHarness {
     // signal has to be the same device, or the spec would be reloading its way out of the state
     // it is about.
     private readonly identity: Identity | undefined,
+    // And for the same reason again: a browser that cannot fetch the QR encoder is still that
+    // browser after the app is closed and opened.
+    private readonly qrCode: QrEncoder,
   ) {}
 
   static async launch({
     repository = new InMemorySessionRepository(),
     tier = 'phone',
     identity,
+    qrCode = qrEncoder,
   }: LaunchOptions = {}): Promise<AppHarness> {
+    const clipboard = new RecordingClipboard();
+
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -82,11 +103,13 @@ export class AppHarness {
         // app does not have.
         { provide: IDENTITY, useValue: identity ?? repository },
         { provide: LAYOUT, useValue: new FixedLayout(tier) },
+        { provide: CLIPBOARD, useValue: clipboard },
+        { provide: QR_ENCODER, useValue: qrCode },
       ],
     });
 
     const fixture = TestBed.createComponent(App);
-    const harness = new AppHarness(fixture, repository, tier, identity);
+    const harness = new AppHarness(fixture, repository, clipboard, tier, identity, qrCode);
     await harness.settle();
 
     return harness;
@@ -103,6 +126,7 @@ export class AppHarness {
       repository: this.repository,
       tier: this.tier,
       identity: this.identity,
+      qrCode: this.qrCode,
     });
   }
 
@@ -139,6 +163,19 @@ export class AppHarness {
    */
   isPressed(label: string): boolean {
     return this.control(label).getAttribute('aria-pressed') === 'true';
+  }
+
+  /**
+   * Whether a picture carrying this accessible name is on screen.
+   *
+   * The QR is the app's only graphic that says something — it is a link drawn as squares — and
+   * there is nothing in it to read as text. `role="img"` and a name is what a screen reader is
+   * given, so it is what this seam asks for too.
+   */
+  hasImage(label: string): boolean {
+    return this.roots()
+      .flatMap((root) => [...root.querySelectorAll('[role="img"]')])
+      .some((image) => image.getAttribute('aria-label') === label && !isHidden(image));
   }
 
   isOnScreen(label: string): boolean {
