@@ -1,14 +1,15 @@
 /*
  * Where a session lives between one opening of the app and the next (decision #19).
  *
- * The interface is the whole of the vendor boundary: `LocalStorageSessionRepository` is the only
- * file in the app that touches a storage API today, and the Firestore implementation of step 3
- * will be the only one that imports the Firebase SDK. Everything above this line — the store, the
- * screens, the tests — knows only these three operations.
+ * The interface is the whole of the vendor boundary: `FirestoreSessionRepository` is the only file
+ * in the app that touches a storage API, and the only one that imports the Firebase SDK
+ * (ADR-0025). Everything above this line — the store, the screens, the tests — knows only these
+ * seven operations, and two test doubles answer for them.
  *
- * They return promises even though local storage is synchronous, because the implementation that
- * replaces it will not be. A synchronous interface here would buy nothing and would have to be
- * unpicked through every caller the moment a network appeared behind it.
+ * They returned promises from the first day, months before anything behind them was asynchronous,
+ * because the implementation that would replace `localStorage` was never going to be. That bet is
+ * the reason step 3 was a swap: the six operations below reached Firestore with their signatures
+ * untouched, and the listener that ADR-0027 adds is a seventh rather than a change to any of them.
  *
  * There is exactly one active session at a time (decision #13 / ADR-0013), which is why the
  * active session is addressed as *the* active session rather than by id. History is the other

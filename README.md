@@ -150,6 +150,18 @@ project listable, share codes included.
 npm run test:rules   # rules, against the Firestore emulator — needs a JDK 21+
 ```
 
+One acceptance criterion has no automated test and is checked by hand on a real device, because
+what it is about is a radio: **record a score with the device in airplane mode, reconnect, and
+confirm the score lands**. That is the entire justification for one source of truth rather than two
+(ADR-0025 §1), so it is run against every build that touches the repository. The mechanism behind
+it is that a Firestore write promise settles on the *server* acknowledgement — never, on a court
+with no signal — so `FirestoreSessionRepository` dispatches its writes and does not await them.
+
+The Firebase SDK takes the initial bundle to roughly 960 kB raw and **244 kB transferred**, against
+the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. The budget in
+`angular.json` is set on raw size and errors at 1.1 MB, which leaves little room on purpose: the
+binding constraint on this project is bandwidth, not Firestore reads.
+
 It is deliberately not part of `npm run verify`, which keeps its promise of running anywhere Node
 runs (ADR-0024 §6). Rules and the composite index over `ownerUid` and `status` are deployable
 configuration rather than console clicks:
@@ -202,7 +214,9 @@ lint rather than by convention — see
 
 Step 2 was deliberately a complete, usable app, and step 3's first half proved the point: swapping
 `localStorage` for Firestore added one file behind the `SessionRepository` interface and changed
-none of its six signatures.
+none of its six signatures. It did add a seventh operation — the live listener — which
+[ADR-0027](docs/adr/0027-the-live-listener-is-a-seventh-repository-operation.md) records, because
+ADR-0025 had said there would be six and there are seven.
 
 ## Licence
 

@@ -29,6 +29,7 @@
  *     write and from nowhere else, so the two cannot disagree.
  */
 import { Injectable } from '@angular/core';
+import type { SessionStatus } from 'padel-engine';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import type { Auth } from 'firebase/auth';
@@ -40,6 +41,7 @@ import {
   initializeFirestore,
   limit,
   onSnapshot,
+  orderBy,
   persistentLocalCache,
   persistentMultipleTabManager,
   query,
@@ -61,8 +63,19 @@ import type { SessionRepository } from './session-repository';
  */
 interface SessionDocument extends SessionRecord {
   readonly ownerUid: string;
-  readonly status: string;
+  readonly status: SessionStatus;
 }
+
+/**
+ * The two values `status` holds, named rather than spelled out at each of the four places that
+ * name one — the two queries, the write, and the guard in `clearActive`.
+ *
+ * They are the engine's own words (`SessionStatus`), so the compiler holds this file to the
+ * vocabulary the document already uses and a typo cannot become a query that silently matches
+ * nothing.
+ */
+const IN_PROGRESS: SessionStatus = 'in-progress';
+const FINISHED: SessionStatus = 'finished';
 
 @Injectable()
 export class FirestoreSessionRepository implements SessionRepository, Identity {
@@ -90,6 +103,10 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
    * a pending write on the results it gets back — but "should" is doing far too much work for a
    * mistake that would delete the evening a moment after it was kept. So the id is remembered and
    * skipped, and the guarantee stops being one about SDK internals.
+   *
+   * The window it guards is one call of `end()` and nothing wider, which is why it is a field
+   * rather than anything durable: an ended session that survives to a later launch is one the
+   * cache or the server already reports as finished, and the query cannot return it at all.
    */
   private lastEnded: string | null = null;
 
@@ -133,8 +150,18 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
     }
   }
 
+  /**
+   * Every ended evening, most recently ended first — ordered here rather than left to the caller.
+   *
+   * The store sorts what it is handed as well (ADR-0013 §4), and that is not a reason to skip it.
+   * The interface says "most recently ended first" and a store returning documents in share-code
+   * order would be keeping a signature while dropping its contract; the second sort is the store
+   * refusing to depend on any store getting it right, which is what that comment says it is for.
+   */
   async loadHistory(): Promise<readonly SessionRecord[]> {
-    return recordsIn(await getDocs(this.ownedQuery(where('status', '==', 'finished'))));
+    return recordsIn(
+      await getDocs(this.ownedQuery(where('status', '==', FINISHED), orderBy('endedAt', 'desc'))),
+    );
   }
 
   async addToHistory(record: SessionRecord): Promise<void> {
@@ -176,7 +203,7 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
       status: record.session.status,
     };
 
-    if (document.status === 'finished') {
+    if (document.status === FINISHED) {
       this.lastEnded = record.session.id;
     }
 
@@ -184,7 +211,7 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
   }
 
   private activeQuery(): Query {
-    return this.ownedQuery(where('status', '==', 'in-progress'), limit(1));
+    return this.ownedQuery(where('status', '==', IN_PROGRESS), limit(1));
   }
 
   /** Every query this repository makes is owner-scoped — the `list` rule allows nothing else. */

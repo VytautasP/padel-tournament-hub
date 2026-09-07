@@ -8,7 +8,7 @@
  * later one.
  *
  * It is a token of its own rather than a method on `SessionRepository` because the repository's
- * six operations are a promise ADR-0019 made and ADR-0025 §5 kept. `FirestoreSessionRepository`
+ * six operations are a promise ADR-0019 made and ADR-0025 kept (and ADR-0027 keeps). `FirestoreSessionRepository`
  * implements both interfaces, so decision #19 still holds literally: one file in the app imports
  * the Firebase SDK, and it is that one.
  */

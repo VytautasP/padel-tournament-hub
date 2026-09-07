@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { CROCKFORD_ALPHABET, SHARE_CODE_LENGTH, newShareCode } from './share-code';
 
 describe('the share code', () => {

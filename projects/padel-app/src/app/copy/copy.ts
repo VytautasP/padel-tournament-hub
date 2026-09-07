@@ -31,8 +31,16 @@ export const genderNames: Readonly<Record<Gender, string>> = {
   man: 'Man',
 };
 
+/**
+ * The product's name, out on its own because two entries below need it in a sentence.
+ *
+ * Written once for the same reason every other word in this file is written once: a name that
+ * appeared twice would be a name that could be changed once.
+ */
+const appName = 'Padel Tournament Hub';
+
 export const copy = {
-  appName: 'Padel Tournament Hub',
+  appName,
 
   /**
    * The first launch of a device, with no connection to make an identity on (ADR-0025 §4).
@@ -47,7 +55,7 @@ export const copy = {
    */
   connection: {
     heading: 'Connect once to get started',
-    lead: 'The first time you open Padel Tournament Hub it needs a connection to set the app up on this device. After that it works on court with no signal at all.',
+    lead: `The first time you open ${appName} it needs a connection to set the app up on this device. After that it works on court with no signal at all.`,
     hint: 'Find a signal or some Wi-Fi, then open the app again.',
   },
 

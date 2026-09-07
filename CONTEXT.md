@@ -69,6 +69,13 @@ the whole of the permission — a session is unlisted, not private, and a code o
 taken back.
 _Avoid_: Link, invite code, password, session id (the code *is* the session's identity)
 
+**Device identity**:
+The anonymous uid Firebase mints for a browser the first time it reaches the network, and the only
+identity this product has. Every session an organizer creates carries it, and that is the whole of
+what makes their history theirs. It belongs to the browser rather than to the person: clearing site
+data loses every session it owned, and nothing can prove a new uid is the same organizer.
+_Avoid_: Account, login, user, profile, sign-in (there is nothing to sign in *to*)
+
 ### Play
 
 **Round**:
