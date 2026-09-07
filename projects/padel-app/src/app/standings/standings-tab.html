@@ -71,12 +71,18 @@
 
     An expanded row takes a brand outline instead of its divider, which is what makes the figures
     underneath read as belonging to the name above them rather than to the row below.
+
+    The first and last rows round with the list. The list clips its own corners, so a square
+    outline on the row at either end is cut through by the curve and reads as a broken box; the
+    radius is the list's 20px less its 1px border, which is where the row's own edge sits.
   -->
   <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
     @for (standing of standings(); track standing.id) {
       <li
         [class]="
-          isExpanded(standing.id) ? 'border border-brand' : 'border-b border-line last:border-b-0'
+          isExpanded(standing.id)
+            ? 'border border-brand first:rounded-t-[19px] last:rounded-b-[19px]'
+            : 'border-b border-line last:border-b-0'
         "
       >
         <button
