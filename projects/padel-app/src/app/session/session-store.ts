@@ -22,8 +22,8 @@
  * startup; until it settles, `ready()` is false and the app renders nothing rather than flashing
  * a landing page at an organizer who has an evening in progress. Since the Firestore swap it also
  * owns *who the app is* — every read is a query scoped to a uid (ADR-0025 §2), so signing in comes
- * before reading, and the one device that cannot sign in is a state (`needsConnection`) rather than
- * a spinner (ADR-0025 §4). It then follows the evening in progress on a live listener, which is the
+ * before reading, and a startup that cannot reach the organizer's sessions — for want of a uid or
+ * for want of a working read — is a state (`needsConnection`) rather than a spinner (ADR-0025 §4). It then follows the evening in progress on a live listener, which is the
  * same mechanism a spectator will use and is what makes two of the organizer's own devices converge
  * rather than overwrite each other (ADR-0025 §3).
  */
@@ -155,24 +155,25 @@ export class SessionStore implements OnDestroy {
   private readonly endedRecords = signal<readonly SessionRecord[]>([]);
   private readonly openId = signal<string | null>(null);
   private readonly restored = signal(false);
-  private readonly unidentified = signal(false);
+  private readonly unreachable = signal(false);
   private stopWatching: (() => void) | null = null;
 
   /** False until the repository has been read once. */
   readonly ready = this.restored.asReadonly();
 
   /**
-   * Whether the app got as far as knowing who it is (ADR-0025 §4).
+   * Whether the app failed to reach the organizer's sessions at startup (ADR-0025 §4).
    *
-   * True only on the first launch of a device with no network: the uid is minted on Firebase's
-   * servers, and until that has happened once there is no uid and therefore no session to read.
-   * Every later launch restores it locally and this stays false in a basement.
+   * Two ways in, and deliberately one state out. The first is the one the ADR names: on the first
+   * launch of a device with no network there is no uid — it is minted on Firebase's servers — and
+   * so nothing to read. The second is a read that failed once there *was* a uid, which ADR-0025
+   * already accepts as stopping an evening: "A Firestore outage, or an exhausted quota, stops an
+   * evening… That is the price of one source of truth."
    *
-   * It is a state rather than an error because there is something to say and something to do —
-   * find a signal, reopen the app — and because the alternative is the spinner ADR-0025 §4 was
-   * written to forbid.
+   * They are one state because the organizer's move is the same in both — find a signal, open the
+   * app again — and because the alternative to saying so is the blank page this replaces.
    */
-  readonly needsConnection = this.unidentified.asReadonly();
+  readonly needsConnection = this.unreachable.asReadonly();
 
   readonly activeSession = computed<Session | null>(() => this.record()?.session ?? null);
 
@@ -304,17 +305,19 @@ export class SessionStore implements OnDestroy {
   async restore(): Promise<void> {
     try {
       await this.identity.signIn();
+      this.record.set(await this.repository.loadActive());
+      this.endedRecords.set(await this.repository.loadHistory());
+      this.stopWatching = this.repository.watchActive((record) => this.record.set(record));
     } catch {
-      this.unidentified.set(true);
+      this.unreachable.set(true);
+    } finally {
+      // Whatever happened, the app stops being unstable. `ready()` is what every screen renders
+      // behind, so a `restore` that threw its way out would leave the organizer looking at a blank
+      // page for as long as they cared to wait — the spinner ADR-0025 §4 forbids, in a worse
+      // disguise. Found by opening the deployed app while a composite index was still building,
+      // and it would have happened again on any outage or exhausted quota.
       this.restored.set(true);
-
-      return;
     }
-
-    this.record.set(await this.repository.loadActive());
-    this.endedRecords.set(await this.repository.loadHistory());
-    this.stopWatching = this.repository.watchActive((record) => this.record.set(record));
-    this.restored.set(true);
   }
 
   /** Stop following the evening in progress. The app closing is the only thing that asks. */

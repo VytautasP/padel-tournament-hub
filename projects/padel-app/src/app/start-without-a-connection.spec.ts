@@ -1,5 +1,9 @@
 /*
- * The first launch of a device, in a basement (ADR-0025 §4).
+ * A startup that cannot reach the organizer's sessions (ADR-0025 §4).
+ *
+ * Two ways in — no uid, or no readable store — and one screen out. The first is the one the ADR
+ * names, and the rest of this comment is about it; the second is the bug these tests were extended
+ * for, found by opening the deployed app while a composite index was still building.
  *
  * Anonymous sign-in mints the uid on Firebase's servers, so a device that has never had a network
  * has no owner and therefore nothing to read. ADR-0025 calls that a state to be designed rather
@@ -17,7 +21,21 @@ const offline: Identity = {
   signIn: () => Promise.reject(new Error('offline')),
 };
 
-describe('opening the app on a device that has never had a connection', () => {
+/**
+ * A store the app *can* sign in to and cannot read from: an outage, an exhausted quota, or a
+ * composite index that is still building.
+ *
+ * ADR-0025 accepts that this stops an evening — "A Firestore outage, or an exhausted quota, stops
+ * an evening… That is the price of one source of truth" — and says nothing about it being allowed
+ * to stop the app *silently*, which is what these two cases are for.
+ */
+class UnreadableRepository extends InMemorySessionRepository {
+  override async loadActive(): Promise<never> {
+    throw new Error('the query requires an index');
+  }
+}
+
+describe('opening the app when it cannot reach the organizer’s sessions', () => {
   it('says a connection is needed the first time', async () => {
     const app = await AppHarness.launch({ identity: offline });
 
@@ -44,6 +62,27 @@ describe('opening the app on a device that has never had a connection', () => {
     const app = await AppHarness.launch({ identity: offline });
 
     expect(app.text()).not.toBe('');
+  });
+
+  /*
+   * The same screen, reached the other way. This is the bug that shipped to Hosting and was found
+   * by opening the deployed app while a composite index was still building: `restore` caught the
+   * sign-in and not the reads, so a failed read threw its way out, `ready()` never became true,
+   * and the app rendered nothing at all — for as long as the organizer cared to wait.
+   */
+  it('says so when it can sign in but cannot read, rather than rendering nothing', async () => {
+    const app = await AppHarness.launch({ repository: new UnreadableRepository() });
+
+    expect(app.shows(copy.connection.heading)).toBe(true);
+  });
+
+  it('never renders a blank page, whichever half of the startup failed', async () => {
+    for (const app of [
+      await AppHarness.launch({ identity: offline }),
+      await AppHarness.launch({ repository: new UnreadableRepository() }),
+    ]) {
+      expect(app.text()).not.toBe('');
+    }
   });
 
   /*

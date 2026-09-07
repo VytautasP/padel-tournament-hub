@@ -43,19 +43,21 @@ export const copy = {
   appName,
 
   /**
-   * The first launch of a device, with no connection to make an identity on (ADR-0025 §4).
+   * A startup that could not reach the organizer's sessions (ADR-0025 §4).
    *
-   * It says what is true and what to do about it, in that order, and it never appears again on
-   * that device: the uid is minted once on Firebase's servers and restored locally forever after,
-   * so an organizer who reads this once will not read it at the side of a court.
+   * Almost always the first launch of a device with no network — the uid is minted once on
+   * Firebase's servers and restored locally forever after, so an organizer who reads this will
+   * usually read it once and never again. The other way here is a read that failed with a uid
+   * already in hand, which ADR-0025 accepts as stopping an evening. The words cover both without
+   * asking the organizer to diagnose which, because their move is the same either way.
    *
    * There is no Retry button. Reopening the app is the retry, it is the thing a person does
    * anyway, and a button that fails silently in the same place teaches them the app is broken
    * rather than that the signal is.
    */
   connection: {
-    heading: 'Connect once to get started',
-    lead: `The first time you open ${appName} it needs a connection to set the app up on this device. After that it works on court with no signal at all.`,
+    heading: 'No connection to your sessions',
+    lead: `${appName} could not reach your sessions. The first time you open it on a device it needs a connection to set itself up; after that it works on court with no signal at all.`,
     hint: 'Find a signal or some Wi-Fi, then open the app again.',
   },
 
