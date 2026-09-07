@@ -26,6 +26,11 @@
  * for want of a working read — is a state (`needsConnection`) rather than a spinner (ADR-0025 §4). It then follows the evening in progress on a live listener, which is the
  * same mechanism a spectator will use and is what makes two of the organizer's own devices converge
  * rather than overwrite each other (ADR-0025 §3).
+ *
+ * Since decision #14 landed it also owns *how durable that identity is*. `link()` attaches a Google
+ * account to the uid already in hand and changes nothing else; `adopt()` is the one operation in
+ * this file that makes the app a different organizer, and it therefore reads everything again
+ * (ADR-0028).
  */
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type { OnDestroy } from '@angular/core';
@@ -55,6 +60,7 @@ import { rowsOfPlayers, rowsOfTeams } from '../standings/standing-row';
 import type { StandingRow } from '../standings/standing-row';
 import { currentRoundNumber } from './current-round';
 import { IDENTITY } from './identity';
+import type { Durability, LinkOutcome, TakenAccount } from './identity';
 import { newShareCode } from './share-code';
 import { teamNameOf } from './teams';
 import type { SessionRecord } from './session-record';
@@ -156,10 +162,22 @@ export class SessionStore implements OnDestroy {
   private readonly openId = signal<string | null>(null);
   private readonly restored = signal(false);
   private readonly unreachable = signal(false);
+  private readonly kept = signal<Durability>({ kind: 'browser' });
   private stopWatching: (() => void) | null = null;
 
   /** False until the repository has been read once. */
   readonly ready = this.restored.asReadonly();
+
+  /**
+   * Whether the organizer's history outlives this browser (decision #14, ADR-0028).
+   *
+   * Held as a signal rather than asked of the identity on every read, because it is read from a
+   * template and an identity is not a signal — this is the one place the two are joined, and it is
+   * written from `identity.durability()` after every operation that could have changed it.
+   *
+   * It starts at `browser`, which is the truth before anybody has signed in: no uid is no account.
+   */
+  readonly durability = this.kept.asReadonly();
 
   /**
    * Whether the app failed to reach the organizer's sessions at startup (ADR-0025 §4).
@@ -174,6 +192,17 @@ export class SessionStore implements OnDestroy {
    * app again — and because the alternative to saying so is the blank page this replaces.
    */
   readonly needsConnection = this.unreachable.asReadonly();
+
+  /**
+   * How many evenings the uid in hand owns: the one in progress, and every one already played.
+   *
+   * The figure a taken account has to be weighed against (ADR-0028 §2) — signing in as somebody
+   * else leaves these behind, and how many there are is the difference between an obvious yes and
+   * a question worth reading. Counted rather than stored, like everything else here.
+   */
+  readonly eveningsOnThisBrowser = computed(
+    () => this.endedRecords().length + (this.record() === null ? 0 : 1),
+  );
 
   readonly activeSession = computed<Session | null>(() => this.record()?.session ?? null);
 
@@ -305,9 +334,8 @@ export class SessionStore implements OnDestroy {
   async restore(): Promise<void> {
     try {
       await this.identity.signIn();
-      this.record.set(await this.repository.loadActive());
-      this.endedRecords.set(await this.repository.loadHistory());
-      this.stopWatching = this.repository.watchActive((record) => this.record.set(record));
+      this.kept.set(this.identity.durability());
+      await this.readEverything();
     } catch {
       this.unreachable.set(true);
     } finally {
@@ -317,6 +345,48 @@ export class SessionStore implements OnDestroy {
       // disguise. Found by opening the deployed app while a composite index was still building,
       // and it would have happened again on any outage or exhausted quota.
       this.restored.set(true);
+    }
+  }
+
+  /**
+   * Attach a Google account to the uid the organizer already has, so their history outlives this
+   * browser (decision #14, ADR-0028 §1).
+   *
+   * Nothing here reads the outcome except to write down what the identity now says about
+   * durability. The screen decides what to do with a `taken` account, because what it costs is a
+   * question only the organizer can answer and asking it is a screen's job.
+   */
+  async link(): Promise<LinkOutcome> {
+    const outcome = await this.identity.linkGoogle();
+    this.kept.set(this.identity.durability());
+
+    return outcome;
+  }
+
+  /**
+   * Become the uid a Google account already belongs to, and read that organizer's sessions
+   * (ADR-0028 §2).
+   *
+   * The way home from a browser that lost its uid, and the only operation in this store that
+   * changes who the app is. Everything it was holding belonged to the uid before it, so the whole
+   * of the read is done again — including the listener, whose query is bound to an owner and would
+   * otherwise go on reporting an evening this organizer no longer owns.
+   *
+   * A `TakenAccount` rather than an account name, for the reason `commitRosterChange` takes a
+   * `RosterChange` (ADR-0015): what is being committed is the thing the identity handed back, and
+   * a screen cannot construct one of its own.
+   */
+  async adopt(account: TakenAccount): Promise<void> {
+    try {
+      await account.adopt();
+      this.leave();
+      this.kept.set(this.identity.durability());
+      await this.readEverything();
+    } catch {
+      // The same state a startup that could not read lands in, for the same reason: the app is
+      // signed in as somebody whose sessions it has not got, and an empty front door would be a
+      // claim that they have none (ADR-0025 §4).
+      this.unreachable.set(true);
     }
   }
 
@@ -509,6 +579,22 @@ export class SessionStore implements OnDestroy {
    * players (ADR-0011), the engine refuses the wrong question of either, and a screen asking both
    * and picking one would be this check in a second place.
    */
+  /**
+   * Everything one organizer's uid owns: the evening in progress, the evenings already played, and
+   * a listener following the first of them (ADR-0025 §3).
+   *
+   * Written once because it happens twice — at startup, and again the moment the app becomes a
+   * different organizer (ADR-0028 §2). The listener is stopped before a new one is opened, because
+   * the old one's query is owner-scoped and two of them would be two answers to one question.
+   */
+  private async readEverything(): Promise<void> {
+    this.stopWatching?.();
+    this.stopWatching = null;
+    this.record.set(await this.repository.loadActive());
+    this.endedRecords.set(await this.repository.loadHistory());
+    this.stopWatching = this.repository.watchActive((record) => this.record.set(record));
+  }
+
   private tableOf(session: Session): readonly StandingRow[] {
     return session.mode === 'team-americano'
       ? rowsOfTeams(computeTeamStandings(session), (teamId) => teamNameOf(session, teamId))

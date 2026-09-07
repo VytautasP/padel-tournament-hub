@@ -19,6 +19,13 @@ import type { Identity } from './session/identity';
 /** A device that has never reached Firebase: the sign-in that mints a uid cannot happen. */
 const offline: Identity = {
   signIn: () => Promise.reject(new Error('offline')),
+  /*
+   * A device with no uid has nothing to attach an account to, and never reaches the front door
+   * where it would be offered one. Both of these are here because the interface has them and
+   * neither is reachable from the screen these tests are about (ADR-0028).
+   */
+  durability: () => ({ kind: 'browser' }),
+  linkGoogle: () => Promise.resolve({ kind: 'unavailable' }),
 };
 
 /**

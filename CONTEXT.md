@@ -72,9 +72,23 @@ _Avoid_: Link, invite code, password, session id (the code *is* the session's id
 **Device identity**:
 The anonymous uid Firebase mints for a browser the first time it reaches the network, and the only
 identity this product has. Every session an organizer creates carries it, and that is the whole of
-what makes their history theirs. It belongs to the browser rather than to the person: clearing site
-data loses every session it owned, and nothing can prove a new uid is the same organizer.
-_Avoid_: Account, login, user, profile, sign-in (there is nothing to sign in *to*)
+what makes their history theirs. It belongs to the browser rather than to the person until it is
+linked: unlinked, clearing site data loses every session it owned, and nothing can prove a new uid
+is the same organizer.
+_Avoid_: Account (an account is the thing a device identity is *linked to*), login, user, profile
+
+**Linked account**:
+A Google account attached to a device identity, so that history survives the browser. Linking keeps
+the uid rather than replacing it, so nothing moves and nothing is copied — the same identity simply
+gains a second way to be signed in to. A device identity is either browser-bound or linked, and the
+front door says which.
+_Avoid_: Login, sign-up, profile, merge (nothing is merged — see **stranded evening**)
+
+**Stranded evening**:
+A session whose device identity no longer exists on any browser. Its `ownerUid` cannot move, so it
+can never be listed again by anybody; holding its share code still opens it. What linking prevents,
+and what signing in as an already-linked account costs the browser that does it.
+_Avoid_: Orphaned session (**orphaned** is reserved for a team), lost session, deleted session
 
 ### Play
 

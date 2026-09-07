@@ -39,6 +39,14 @@ export const genderNames: Readonly<Record<Gender, string>> = {
  */
 const appName = 'Padel Tournament Hub';
 
+/**
+ * What a Google account is called when Google gave no address for it.
+ *
+ * Out on its own for the same reason `appName` is: two entries below need it in a sentence, and a
+ * word written twice is a word that can be changed once.
+ */
+const googleAccount = 'your Google account';
+
 export const copy = {
   appName,
 
@@ -84,6 +92,58 @@ export const copy = {
       lead: 'The evening goes for good — its rounds, its scores and its table. It is not kept in history.',
       action: 'Discard session',
     },
+  },
+
+  /**
+   * How durable the organizer's history is, and the one thing they can do about it (decision #14,
+   * ADR-0028).
+   *
+   * It is written as a fact rather than as a warning. Browser-bound history is the state every
+   * organizer starts in and the state most of them will stay in, and a front door that nagged
+   * about it every evening would be a front door people stop reading. So it says what is true and
+   * offers the one thing that changes it, in the quietest voice on the page.
+   */
+  identity: {
+    /**
+     * The fallback name for an account Google gave no address for.
+     *
+     * It is a word the organizer reads, so it lives here rather than in the file that discovers
+     * there is nothing to show (decision #20).
+     */
+    account: googleAccount,
+    browserOnly: 'History is kept on this browser. Clear its data and it goes.',
+    kept: (account: string | null): string => `History is kept with ${account ?? googleAccount}.`,
+    keep: 'Keep history with Google',
+    /**
+     * A link that did not happen and was nobody's mistake.
+     *
+     * One sentence for every cause — no signal, a blocked popup, a project misconfigured — because
+     * the organizer's move is the same in all of them and the detail is in the console. Closing
+     * the Google window says nothing at all: changing your mind is an answer, not a failure.
+     */
+    unavailable: 'Google could not be reached. Try again.',
+    /**
+     * The account already belongs to a uid, which is nearly always this organizer's own previous
+     * browser (ADR-0028 §2).
+     *
+     * The question names what it costs, because that is the only thing that makes it worth
+     * reading, and the cost is the one thing about it that varies: a browser holding nothing loses
+     * nothing and this is pure recovery, while a browser holding evenings leaves them behind for
+     * good — `ownerUid` cannot move (ADR-0024 §2), so nothing can bring them back afterwards.
+     *
+     * It is not marked unrecoverable and its button is not `danger`, for the reason **went home**
+     * is neither (ADR-0021 §3): nothing is deleted. Those evenings are exactly where they were,
+     * still owned by a uid — what changes is that this browser is no longer holding it.
+     */
+    adoptConfirm: (account: string | null, evenings: number) => ({
+      heading: 'Use this Google account?',
+      lead:
+        `${account ?? googleAccount} already keeps history from another browser. ` +
+        (evenings === 0
+          ? 'Signing in brings that history here, and this browser has none of its own to leave behind.'
+          : `Signing in brings that history here and leaves ${eveningCount(evenings)} behind for good — an evening belongs to the browser that created it and cannot be moved.`),
+      action: 'Use this account',
+    }),
   },
 
   wizard: {
@@ -509,6 +569,17 @@ export const copy = {
  */
 function modeAndSize(mode: SessionMode, playerCount: number): string {
   return `${modeNames[mode]} · ${playerCount} players`;
+}
+
+/**
+ * A number of evenings, with the noun agreeing with it.
+ *
+ * One evening is not `1 evenings`, and the sentence it sits in is the one asking the organizer to
+ * weigh what they are leaving behind — a plural that does not agree is exactly the sort of thing
+ * that makes a person stop believing the rest of the sentence.
+ */
+function eveningCount(evenings: number): string {
+  return evenings === 1 ? '1 evening' : `${evenings} evenings`;
 }
 
 /**

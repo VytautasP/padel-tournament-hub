@@ -2,7 +2,7 @@
  * The repository the tests run on, and the identity they run as (decision #19).
  *
  * It stores the record the way the real one does — as JSON — rather than holding the object it
- * was handed. A fake that keeps the live object would let a session carrying something
+ * was handed. A fake that kept the live object would let a session carrying something
  * unserialisable pass every test and fail the first time an organizer closed the app, which is
  * exactly the class of bug this seam exists to catch.
  *
@@ -11,23 +11,82 @@
  * hold records of a shape the real store never produces. `signIn` resolves immediately, because
  * a test is not a first launch in a basement — the app's behaviour when it *cannot* sign in is
  * asked of a repository that refuses to.
+ *
+ * **Sessions are kept apart by uid, and Google accounts are kept apart from the browser.** Both
+ * halves are what ADR-0028 is about and neither is decoration. A fake that stored one pile of
+ * sessions for one organizer could not tell a link that keeps the uid from a sign-in that changes
+ * it — the two look identical until somebody asks whose evenings are on screen. And a fake whose
+ * account list died with the browser could not describe the case the whole feature exists for:
+ * `clearSiteData` throws the uid away exactly as clearing site data does, while the accounts map
+ * survives, because that half lives on Firebase's servers.
  */
 import { Injectable } from '@angular/core';
-import type { Identity } from './identity';
+import type { Durability, Identity, LinkOutcome } from './identity';
 import type { SessionRecord } from './session-record';
 import type { SessionRepository } from './session-repository';
 
-/** The uid every fake writes as. One organizer, because a test only ever has one device. */
+/** The uid every fake writes as, until a test opens the app in a browser that has never run it. */
 export const FAKE_UID = 'test-organizer';
+
+/**
+ * The Google account every fake links. One, because a test has one organizer — what varies is
+ * which uid it belongs to, and that is the whole of what ADR-0028 §2 is about.
+ */
+export const FAKE_ACCOUNT = 'organizer@example.com';
+
+/** One organizer's sessions: the evening in progress, and every evening they have ended. */
+interface Owned {
+  active: string | null;
+  history: string;
+}
 
 @Injectable()
 export class InMemorySessionRepository implements SessionRepository, Identity {
-  private stored: string | null = null;
-  private history: string = JSON.stringify([]);
-  private watchers = new Set<(record: SessionRecord | null) => void>();
+  private readonly owners = new Map<string, Owned>();
+  /** Which uid each Google account belongs to. Firebase's side of the line, so it outlives a uid. */
+  private readonly accounts = new Map<string, string>();
+  private readonly watchers = new Set<(record: SessionRecord | null) => void>();
+  private uid = FAKE_UID;
+  private browsers = 0;
 
   async signIn(): Promise<string> {
-    return FAKE_UID;
+    return this.uid;
+  }
+
+  durability(): Durability {
+    return this.accounts.get(FAKE_ACCOUNT) === this.uid
+      ? { kind: 'account', account: FAKE_ACCOUNT }
+      : { kind: 'browser' };
+  }
+
+  async linkGoogle(): Promise<LinkOutcome> {
+    const held = this.accounts.get(FAKE_ACCOUNT);
+    if (held !== undefined && held !== this.uid) {
+      return {
+        kind: 'taken',
+        account: FAKE_ACCOUNT,
+        adopt: async () => {
+          this.uid = held;
+
+          return held;
+        },
+      };
+    }
+
+    this.accounts.set(FAKE_ACCOUNT, this.uid);
+
+    return { kind: 'linked', account: FAKE_ACCOUNT };
+  }
+
+  /**
+   * What clearing site data does: the browser forgets its uid and Firebase mints a fresh anonymous
+   * one, while every session already written stays where it is, owned by a uid nobody holds.
+   *
+   * The loss decision #14 exists to undo, in one line a spec can cause on purpose.
+   */
+  clearSiteData(): void {
+    this.browsers += 1;
+    this.uid = `${FAKE_UID}-${this.browsers}`;
   }
 
   async loadActive(): Promise<SessionRecord | null> {
@@ -35,12 +94,12 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
   }
 
   async saveActive(record: SessionRecord): Promise<void> {
-    this.stored = JSON.stringify({ ...record, ownerUid: FAKE_UID });
+    this.owned().active = JSON.stringify({ ...record, ownerUid: this.uid });
     this.announce();
   }
 
   async clearActive(): Promise<void> {
-    this.stored = null;
+    this.owned().active = null;
     this.announce();
   }
 
@@ -49,11 +108,14 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
   }
 
   async addToHistory(record: SessionRecord): Promise<void> {
-    this.history = JSON.stringify([{ ...record, ownerUid: FAKE_UID }, ...this.historyRecords()]);
+    this.owned().history = JSON.stringify([
+      { ...record, ownerUid: this.uid },
+      ...this.historyRecords(),
+    ]);
   }
 
   async deleteFromHistory(sessionId: string): Promise<void> {
-    this.history = JSON.stringify(
+    this.owned().history = JSON.stringify(
       this.historyRecords().filter((held) => held.session.id !== sessionId),
     );
   }
@@ -72,16 +134,25 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
   }
 
   /**
-   * What the repository is holding, read the way a test reads it rather than the way the app
-   * does — synchronously, so an assertion does not have to be `await`ed.
+   * What the repository is holding for whoever is signed in, read the way a test reads it rather
+   * than the way the app does — synchronously, so an assertion does not have to be `await`ed.
    */
   activeRecord(): SessionRecord | null {
-    return this.stored === null ? null : (JSON.parse(this.stored) as SessionRecord);
+    const stored = this.owned().active;
+
+    return stored === null ? null : (JSON.parse(stored) as SessionRecord);
   }
 
-  /** Every ended session it is holding, read the same way, most recently ended first. */
+  /** Every ended session it is holding for them, read the same way, most recently ended first. */
   historyRecords(): readonly SessionRecord[] {
-    return JSON.parse(this.history) as readonly SessionRecord[];
+    return JSON.parse(this.owned().history) as readonly SessionRecord[];
+  }
+
+  private owned(): Owned {
+    const held = this.owners.get(this.uid) ?? { active: null, history: JSON.stringify([]) };
+    this.owners.set(this.uid, held);
+
+    return held;
   }
 
   private announce(): void {

@@ -17,6 +17,10 @@
  * knows. Nothing here can be opened into an edit — a row opens the session read-only — and the
  * only thing that can be done to one is delete it, which is where decision #10's promise of a hard
  * delete is actually kept.
+ *
+ * **Whether that history outlives the browser is said at the foot of the page** (ADR-0028). It is
+ * here rather than anywhere else because this is the only screen history is on, and it is last and
+ * quiet because the answer is ordinary — see `keep-history.ts`.
  */
 import {
   ChangeDetectionStrategy,
@@ -28,10 +32,12 @@ import {
 } from '@angular/core';
 import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
+import { KeepHistory } from '../identity/keep-history';
 import { SessionStore } from '../session/session-store';
 
 @Component({
   selector: 'app-landing',
+  imports: [KeepHistory],
   templateUrl: './landing.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

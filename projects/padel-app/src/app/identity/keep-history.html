@@ -1,0 +1,33 @@
+<!--
+  A sentence and, while there is anything to do about it, a button.
+
+  No card, no border around the pair and no brand colour anywhere: the state it describes is
+  ordinary, and a surface would make the front door look like it is asking for something. Once the
+  account is linked the button is *absent* rather than disabled — there is nothing left to do, and
+  every other control in this app that has nothing to do is gone rather than greyed.
+-->
+<section class="flex flex-col items-start gap-3 pt-2">
+  <p class="text-meta text-pretty text-ink-muted">
+    @if (durability(); as kept) {
+      @if (kept.kind === 'account') {
+        {{ copy.identity.kept(kept.account) }}
+      } @else {
+        {{ copy.identity.browserOnly }}
+      }
+    }
+  </p>
+
+  @if (durability().kind === 'browser') {
+    <button
+      type="button"
+      class="text-control h-12 rounded-[15px] border border-line px-4 text-ink"
+      (click)="keep()"
+    >
+      {{ copy.identity.keep }}
+    </button>
+  }
+
+  @if (unavailable()) {
+    <p class="text-meta text-pretty text-ink-muted">{{ copy.identity.unavailable }}</p>
+  }
+</section>
