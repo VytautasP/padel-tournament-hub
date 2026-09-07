@@ -12,7 +12,8 @@
     "print:schedule": "npm run build && node tools/print-schedule.mjs",
     "verify": "npm run format:check && npm run lint && npm run verify:boundary && npm run verify:conventions && npm run build && npm test",
     "start": "ng serve padel-app",
-    "verify:conventions": "node tools/verify-app-conventions.mjs"
+    "verify:conventions": "node tools/verify-app-conventions.mjs",
+    "icons": "node tools/make-icons.mjs"
   },
   "private": true,
   "packageManager": "npm@11.17.0",
@@ -37,6 +38,7 @@
     "ng-packagr": "^22.1.1",
     "postcss": "^8.5.26",
     "prettier": "^3.8.1",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.59.2",

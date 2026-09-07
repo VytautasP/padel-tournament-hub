@@ -6,7 +6,15 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <!-- The bar behind the notch matches the app surface, not the brand, so `viewport-fit=cover`
+         reads as one continuous screen rather than a coloured band above the app. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6f8" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1117" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <!-- iOS ignores the manifest's icons and reads this. -->
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   </head>
   <body>
     <app-root></app-root>
