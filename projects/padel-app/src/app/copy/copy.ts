@@ -34,6 +34,23 @@ export const genderNames: Readonly<Record<Gender, string>> = {
 export const copy = {
   appName: 'Padel Tournament Hub',
 
+  /**
+   * The first launch of a device, with no connection to make an identity on (ADR-0025 §4).
+   *
+   * It says what is true and what to do about it, in that order, and it never appears again on
+   * that device: the uid is minted once on Firebase's servers and restored locally forever after,
+   * so an organizer who reads this once will not read it at the side of a court.
+   *
+   * There is no Retry button. Reopening the app is the retry, it is the thing a person does
+   * anyway, and a button that fails silently in the same place teaches them the app is broken
+   * rather than that the signal is.
+   */
+  connection: {
+    heading: 'Connect once to get started',
+    lead: 'The first time you open Padel Tournament Hub it needs a connection to set the app up on this device. After that it works on court with no signal at all.',
+    hint: 'Find a signal or some Wi-Fi, then open the app again.',
+  },
+
   landing: {
     tagline: 'One padel evening, run from your phone.',
     newSession: 'New session',

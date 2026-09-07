@@ -34,6 +34,25 @@ export interface SessionRepository {
   addToHistory(record: SessionRecord): Promise<void>;
   /** Forget the ended session with this id, permanently (decision #10). */
   deleteFromHistory(sessionId: string): Promise<void>;
+
+  /**
+   * Call `onChange` with the session in progress whenever it changes, until the returned function
+   * is called (ADR-0025 §3).
+   *
+   * The seventh operation, and the only one added by the Firestore swap: the six above kept every
+   * signature they had, which was the point of ADR-0019. It is here rather than folded into
+   * `loadActive` because a listener has a lifetime and a one-shot read does not, and a caller has
+   * to be able to end it.
+   *
+   * The organizer is the only writer, so this costs one read per write and buys one mechanism
+   * instead of two — the spectator subscribes to a session exactly this way. What it is actually
+   * for is the organizer with the app open on a phone and a laptop: two views of one evening that
+   * converge, rather than a last write that silently erases the other's scores.
+   *
+   * `onChange` fires with `null` when there is no longer a session in progress, which is what
+   * ending or discarding one looks like from here.
+   */
+  watchActive(onChange: (record: SessionRecord | null) => void): () => void;
 }
 
 export const SESSION_REPOSITORY = new InjectionToken<SessionRepository>('SessionRepository');

@@ -7,9 +7,12 @@
  *
  * The restore runs through `PendingTasks` so the app is genuinely unstable until it settles.
  * Without that, "stable" would mean "the first paint happened", and every test would be racing a
- * promise it could not see.
+ * promise it could not see. Since step 3 the restore signs in before it reads (ADR-0025 §4), so
+ * what the app is unstable until is now the first *auth* as well as the first read — and the one
+ * device that cannot get there gets a screen of its own rather than a fourth kind of nothing.
  */
 import { ChangeDetectionStrategy, Component, inject, PendingTasks, signal } from '@angular/core';
+import { ConnectionNeeded } from './startup/connection-needed';
 import { CreateWizard } from './wizard/create-wizard';
 import { Landing } from './landing/landing';
 import { SessionShell } from './session/session-shell';
@@ -19,7 +22,7 @@ type Screen = 'landing' | 'wizard' | 'session';
 
 @Component({
   selector: 'app-root',
-  imports: [CreateWizard, Landing, SessionShell],
+  imports: [ConnectionNeeded, CreateWizard, Landing, SessionShell],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -28,6 +31,8 @@ export class App {
   private readonly screen = signal<Screen>('landing');
 
   protected readonly ready = this.store.ready;
+  /** The one thing that can stand between a settled restore and a screen (ADR-0025 §4). */
+  protected readonly needsConnection = this.store.needsConnection;
   protected readonly current = this.screen.asReadonly();
 
   constructor() {

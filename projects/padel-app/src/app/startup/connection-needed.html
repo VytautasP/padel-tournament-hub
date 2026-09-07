@@ -1,0 +1,15 @@
+<!--
+  The one screen this app has that is about the app rather than about an evening (ADR-0025 §4).
+
+  It is centred and it is quiet: a title, a sentence explaining that this happens once, and the
+  thing to do. No card, no border and no brand colour anywhere, because nothing here is an action
+  and a coloured surface would look like one. The whole page is text, which is the correct weight
+  for a state whose answer is "walk outside".
+-->
+<main
+  class="page-column flex min-h-screen flex-col justify-center gap-4 px-6 py-14 text-center xl:max-w-[560px]"
+>
+  <h1 class="text-title font-bold text-ink">{{ copy.connection.heading }}</h1>
+  <p class="text-lead text-pretty text-ink-muted">{{ copy.connection.lead }}</p>
+  <p class="text-meta text-pretty text-ink-muted">{{ copy.connection.hint }}</p>
+</main>

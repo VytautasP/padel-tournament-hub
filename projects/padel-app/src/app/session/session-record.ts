@@ -15,6 +15,21 @@ import type { Session } from 'padel-engine';
 
 export interface SessionRecord {
   readonly session: Session;
+  /**
+   * The uid of the organizer who owns this evening, set when it is first written and never after
+   * (ADR-0024 §2).
+   *
+   * The second app-owned field, and the only one the security rules read: `create` requires it to
+   * be the caller's own, `update` and `delete` require it to match what is stored, and no update
+   * may change it. Everything else on the document is the engine's business and the rules have no
+   * opinion about it.
+   *
+   * Absent on a record that has never been written by a store with an identity — which is every
+   * record the in-memory fake holds, and every record in the moment between the engine returning
+   * one and the repository stamping it. The field belongs to the store rather than to the wizard
+   * that built the evening, so nothing above the repository ever has to supply it.
+   */
+  readonly ownerUid?: string;
   /** When the organizer created the evening, as an ISO-8601 instant. */
   readonly createdAt: string;
   /**
