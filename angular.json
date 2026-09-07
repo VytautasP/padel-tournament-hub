@@ -59,7 +59,8 @@
                 "input": "projects/padel-app/public"
               }
             ],
-            "styles": ["projects/padel-app/src/styles.css"]
+            "styles": ["projects/padel-app/src/styles.css"],
+            "allowedCommonJsDependencies": ["qrcode", "dijkstrajs"]
           },
           "configurations": {
             "production": {

@@ -157,8 +157,27 @@ confirm the score lands**. That is the entire justification for one source of tr
 it is that a Firestore write promise settles on the *server* acknowledgement — never, on a court
 with no signal — so `FirestoreSessionRepository` dispatches its writes and does not await them.
 
-The Firebase SDK takes the initial bundle to roughly 970 kB raw and **246 kB transferred**, against
-the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. The budget in
+A share icon in the session header opens the sheet that gets that code onto everybody else's phone
+([ADR-0026](docs/adr/0026-the-spectator-is-a-route-in-this-app-and-sharing-is-a-header-sheet.md)
+§4): a QR, the ten characters as text, and copy-link — the three ways this actually happens, none
+of them a fallback for the others. It is a persistent control rather than a screen at the end of
+the wizard, which is that ADR's deliberate amendment to ADR-0016's "three tabs and no chrome":
+people arrive late, phones lock, and somebody asks again in round four. The QR is encoded on the
+device, because the code is the credential and a hosted QR image API would post it to a third
+party; it is drawn from `qrcode`'s module matrix into an SVG of the app's own rather than through
+the library's SVG renderer, which bakes two hex colours into its markup — so the QR's two colours
+are tokens like every other colour in the app, and they are the one pair `styles.css` does not
+theme, because a camera decodes contrast rather than a palette.
+
+What that QR and that link point at — `/s/<code>`, the spectator route — is the *next* slice
+(ADR-0026 §1). Until it lands, a scanned code reaches an app that has no route for it: this half is
+the one that gets the code off the organizer's phone, and it is deliberately shipped first because
+the sheet is what the route is worth having for.
+
+The Firebase SDK takes the initial bundle to roughly 978 kB raw and **248 kB transferred**, against
+the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. `qrcode` is not in
+that figure: it is imported dynamically and arrives as a 25 kB lazy chunk (8 kB transferred) the
+first time an organizer opens the share sheet, and never for one who does not. The budget in
 `angular.json` is set on raw size and errors at 1.1 MB, which leaves little room on purpose: the
 binding constraint on this project is bandwidth, not Firestore reads.
 

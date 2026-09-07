@@ -48,6 +48,7 @@ import { LAYOUT } from '../layout/layout';
 import { PlayersTab } from '../players/players-tab';
 import { RoundTab } from '../round/round-tab';
 import { SessionStore } from './session-store';
+import { Share } from '../share/share-sheet';
 import { StandingsTab } from '../standings/standings-tab';
 
 /**
@@ -74,6 +75,7 @@ const PLAYERS: Destination = { id: 'players', label: copy.session.players };
 })
 export class SessionShell {
   private readonly store = inject(SessionStore);
+  private readonly sharing = inject(Share);
   private readonly tier = inject(LAYOUT).tier;
 
   /** The destination the organizer asked for. Held here; what is shown is `current`. */
@@ -123,5 +125,21 @@ export class SessionShell {
 
   protected show(panel: Panel): void {
     this.requested.set(panel);
+  }
+
+  /**
+   * Open the share sheet on the session in front of the organizer.
+   *
+   * The code it shares is the session's id, because those are one value (ADR-0024 §1) — there is
+   * no share code field to read and nothing to derive. The header is only rendered inside a
+   * session, so the null branch is the impossible one and does nothing rather than inventing a
+   * state for it.
+   */
+  protected async share(): Promise<void> {
+    const session = this.store.openSession();
+
+    if (session !== null) {
+      await this.sharing.open(session.id);
+    }
   }
 }

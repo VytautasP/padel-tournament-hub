@@ -47,6 +47,14 @@ const appName = 'Padel Tournament Hub';
  */
 const googleAccount = 'your Google account';
 
+/**
+ * What sharing a session is called, in the two places that name it.
+ *
+ * The header control announces it and the sheet it opens is titled it. Out on its own for the
+ * reason `appName` is: a sentence written twice is a sentence that can be changed once.
+ */
+const shareHeading = 'Share this session';
+
 export const copy = {
   appName,
 
@@ -244,6 +252,60 @@ export const copy = {
      * and the door is the same whether the organizer just closed the night or opened it out of
      * history a week later.
      */
+    done: 'Done',
+  },
+
+  /**
+   * Getting a share code from the organizer's phone onto everybody else's (ADR-0026 §4).
+   *
+   * The one surface in the app that shows a share code to a human, which is what ADR-0024's choice
+   * of alphabet was for. Three ways out of it — a QR, ten characters read aloud, a link pasted
+   * into whatever the group talks in — and the words below never call any of them a fallback,
+   * because all three are how this actually happens.
+   */
+  share: {
+    /**
+     * The one control ADR-0026 adds to a session's header, and the whole of its accessible name.
+     *
+     * A glyph on screen and a sentence to a screen reader, like the paging arrows: the icon is all
+     * a thumb needs beside a screen that is plainly a session, and "Share" alone would not say
+     * share *what*.
+     *
+     * The same sentence as the heading of the sheet it opens, and the same constant: a control and
+     * the surface it leads to that disagreed about their own name would be two names for one act.
+     */
+    open: shareHeading,
+    heading: shareHeading,
+    /**
+     * What the person on the other end of this gets, said before they are handed it.
+     *
+     * It says watching rather than joining, because a spectator has no identity here and changes
+     * nothing (ADR-0026 §3) — and it does not promise the code can be taken back, because it
+     * cannot (CONTEXT.md, **share code**).
+     */
+    lead: 'Anyone with the code can watch this evening. They cannot change it.',
+    /** The QR's accessible name. The grid of squares is not describable and does not need to be. */
+    qr: 'QR code for this session',
+    /**
+     * The QR encoder did not arrive, which on a court means no signal (ADR-0026 §4).
+     *
+     * It says what still works rather than what failed. The code is underneath it, it is the whole
+     * credential, and it can be read out — so the sheet is not broken, it is one of its three ways
+     * short.
+     */
+    qrUnavailable: 'The QR needs a connection to draw. The code below works without one.',
+    code: 'Share code',
+    copyLink: 'Copy link',
+    copied: 'Link copied.',
+    /**
+     * A clipboard the browser would not write to — a denied permission, or an origin with no
+     * clipboard API at all.
+     *
+     * One sentence for every cause, like `identity.unavailable`: the organizer's move is the same
+     * in all of them, and it is the one thing this sheet can always offer.
+     */
+    copyFailed: 'The link did not copy. Read the code out instead.',
+    /** The way out of the sheet. Nothing here is confirmed, so there is nothing to cancel. */
     done: 'Done',
   },
 
