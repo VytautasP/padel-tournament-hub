@@ -69,5 +69,13 @@ Outcome of the design interview. Each entry is a decision, not a suggestion.
 - ~~Visual identity: colours, typography, dark mode — undecided.~~ Settled by
   [ADR-0021](adr/0021-the-identity-is-court-at-dusk-and-verdana-carries-the-text.md); the widths it
   is drawn at are [ADR-0022](adr/0022-three-tiers-and-only-the-navigation-knows-about-width.md).
-- Verify current Firebase Spark free-tier limits before relying on the numbers discussed.
-- `git init` — this is not yet a repository.
+- ~~Verify current Firebase Spark free-tier limits before relying on the numbers discussed.~~
+  Checked 2026-09-07: Firestore 50K reads / 20K writes / 20K deletes per day and 1 GiB stored;
+  Hosting 10 GB stored but only **360 MB/day transfer**. The binding constraint on this project is
+  Hosting bandwidth — roughly 700 cold loads a day at a ~500 KB bundle — not Firestore reads, which
+  one document per session (#13) keeps at about 500 for a twenty-spectator evening. Cloud Storage
+  moved to Blaze-only in February 2026 and is unused here (#10 keeps photos out of the model).
+- ~~`git init` — this is not yet a repository.~~ Done; the tracker is GitHub Issues on
+  `VytautasP/padel-tournament-hub`.
+- Decision #22's **manual deploy** stands. Its **no CI** half is reopened as issue #62 — `npm run
+  verify` currently runs only when someone remembers to.

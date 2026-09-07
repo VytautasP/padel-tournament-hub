@@ -20,6 +20,12 @@ _Avoid_: Tournament, event, game, match (a match is one court's play)
 The one person who creates the session and enters every score. Everyone else only watches.
 _Avoid_: Admin, host, owner, referee (the referee is the engine's validator)
 
+**Spectator**:
+Anyone watching a session they did not create. They see the evening read-only and have no identity
+of their own — the app never knows which player is holding the phone, so a spectator finds their
+next court by looking for their own name.
+_Avoid_: Viewer, guest, watcher, player (a spectator is usually playing too)
+
 **Mode**:
 Which format the session plays: Americano, Mixicano or Team Americano. Fixed at creation.
 _Avoid_: Format, type, variant
@@ -56,6 +62,12 @@ _Avoid_: Finish, close, complete, stop (a *match* finishes; the session ends)
 Every ended session, kept read-only. A session enters history by being ended, and leaves it only
 by being deleted.
 _Avoid_: Archive, past sessions, log
+
+**Share code**:
+The unguessable code that names a session and is the only thing needed to watch one. Holding it is
+the whole of the permission — a session is unlisted, not private, and a code once shared cannot be
+taken back.
+_Avoid_: Link, invite code, password, session id (the code *is* the session's identity)
 
 ### Play
 
