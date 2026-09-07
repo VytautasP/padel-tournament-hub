@@ -51,10 +51,29 @@ service cloud.firestore {
        * evening would defend the organizer from themselves and foreclose "reopen, we played one
        * more" for nothing. The rules answer *who*; the engine answers *what*.
        */
+      /*
+       * `'ownerUid' in request.resource.data` changes nothing about what is allowed, and is here
+       * for the log.
+       *
+       * Reading a field that is not on the incoming document raises an *evaluation error* rather
+       * than returning false. Firestore denies on one either way, so a write with no owner was
+       * always refused — but it was refused by accident, and an errored rule reads in the console
+       * almost exactly like a rule that deliberately said no. That is unhelpful on the day a real
+       * permission problem has to be diagnosed, so the refusal is now one the rules chose.
+       *
+       * **A `resource != null` guard was tried on `update` and `delete` and removed again.** It
+       * made no difference: the emulator reports the same evaluation errors with and without it
+       * (`npm run test:rules`, five either way). Firestore evaluates a rule once before the
+       * document is loaded and again after — the first pass errors on any rule that reads
+       * `resource` at all, the second returns a clean answer, and both are logged. There is no
+       * guard that removes the first, so nobody should add one thinking it was overlooked.
+       */
       allow create: if request.auth != null
+                    && 'ownerUid' in request.resource.data
                     && request.resource.data.ownerUid == request.auth.uid;
 
       allow update: if request.auth != null
+                    && 'ownerUid' in request.resource.data
                     && resource.data.ownerUid == request.auth.uid
                     && request.resource.data.ownerUid == resource.data.ownerUid;
 

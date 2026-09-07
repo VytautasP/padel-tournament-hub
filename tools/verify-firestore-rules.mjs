@@ -159,6 +159,23 @@ await refused("the organizer creates one carrying somebody else's uid", () =>
 await refused('a signed-out visitor creates a session at all', () =>
   setDoc(doc(asNobody(), 'sessions', 'ANON8Z0123'), session(ORGANIZER)),
 );
+/*
+ * A document with no owner on it at all, which is what the existence guard in the rules is for.
+ * It was refused before the guard too — reading an absent field raises an evaluation error and
+ * Firestore denies on one — but it was refused by accident, and this asserts the refusal rather
+ * than the accident.
+ */
+await refused('anybody creates a session carrying no owner', () =>
+  setDoc(doc(asOrganizer(), 'sessions', 'NOOWNER123'), { status: 'in-progress', courtNames: [] }),
+);
+/*
+ * An update to a document that is not there. Firestore evaluates `update` against a write whose
+ * document does not exist, so `resource` is null and every field read off it would raise — which
+ * is the second half of what the guards make deliberate.
+ */
+await refused('the organizer updates a session that does not exist', () =>
+  updateDoc(doc(asOrganizer(), 'sessions', 'GHOST99999'), { courtNames: ['Centre'] }),
+);
 
 await allowed('the organizer writes a score to their own evening', () =>
   updateDoc(doc(asOrganizer(), 'sessions', 'MINE0AB1CD'), { courtNames: ['Centre'] }),
