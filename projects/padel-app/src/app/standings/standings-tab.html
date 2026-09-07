@@ -51,7 +51,13 @@
               place.standing.name
             }}</span>
             <span class="text-name font-bold tabular-nums text-ink">
-              {{ copy.standings.rate(place.standing.pointsPerMatch, place.standing.matchesPlayed) }}
+              {{
+                copy.standings.total(
+                  place.standing.points,
+                  place.standing.matchesPlayed,
+                  place.standing.benched
+                )
+              }}
             </span>
           </li>
         }
@@ -60,11 +66,11 @@
   }
 
   <!--
-    One row per competitor, divided rather than carded: the table is read down a column of rates,
+    One row per competitor, divided rather than carded: the table is read down a column of totals,
     and a gap between every line is a gap the eye has to cross seven times.
 
-    An expanded row takes a brand outline instead of its divider, which is what makes the two
-    figures underneath read as belonging to the name above them rather than to the row below.
+    An expanded row takes a brand outline instead of its divider, which is what makes the figures
+    underneath read as belonging to the name above them rather than to the row below.
   -->
   <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
     @for (standing of standings(); track standing.id) {
@@ -87,22 +93,37 @@
           <!-- A dash is not a score, so it is not weighted like one. -->
           <span
             class="text-name font-bold tabular-nums"
-            [class]="standing.matchesPlayed === 0 ? 'text-ink-muted' : 'text-ink'"
+            [class]="
+              standing.matchesPlayed === 0 && standing.benched === 0 ? 'text-ink-muted' : 'text-ink'
+            "
           >
-            {{ copy.standings.rate(standing.pointsPerMatch, standing.matchesPlayed) }}
+            {{ copy.standings.total(standing.points, standing.matchesPlayed, standing.benched) }}
           </span>
         </button>
 
         @if (isExpanded(standing.id)) {
-          <!-- Indented past the position column, so the two figures line up under the name. -->
+          <!--
+            Indented past the position column, so the figures line up under the name.
+
+            The three of them are one sentence read left to right: what happened on court, how many
+            courts that was, and how many rounds it was not. The last is there because the total
+            above includes a bench credit for each of them (ADR-0023 §2) — without the count, a
+            record of three matches beside a total of four rounds' points looks like a bug.
+          -->
           <dl class="text-meta flex gap-[22px] pt-0 pr-[18px] pb-[14px] pl-9 text-ink-muted">
+            <div class="flex gap-2">
+              <dt>{{ copy.standings.record }}</dt>
+              <dd class="tabular-nums text-ink">
+                {{ copy.standings.recordOf(standing.won, standing.tied, standing.lost) }}
+              </dd>
+            </div>
             <div class="flex gap-2">
               <dt>{{ copy.standings.matchesPlayed }}</dt>
               <dd class="tabular-nums text-ink">{{ standing.matchesPlayed }}</dd>
             </div>
             <div class="flex gap-2">
-              <dt>{{ copy.standings.totalPoints }}</dt>
-              <dd class="tabular-nums text-ink">{{ standing.points }}</dd>
+              <dt>{{ copy.standings.benched }}</dt>
+              <dd class="tabular-nums text-ink">{{ standing.benched }}</dd>
             </div>
           </dl>
         }

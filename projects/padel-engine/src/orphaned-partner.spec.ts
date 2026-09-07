@@ -201,18 +201,18 @@ describe('assigning a new partner', () => {
     expect(after.matchesPlayed).toBe(before.matchesPlayed);
   });
 
-  it('leaves every other team points per match untouched, all the way through', () => {
+  it('leaves every other team total untouched, all the way through', () => {
     const played = fiveTeamsTwoPlayed();
     const others = ['t2', 't3', 't4', 't5'];
-    const pointsPerMatch = (session: Session): number[] =>
-      others.map((id) => lineFor(computeTeamStandings(session), id).pointsPerMatch);
-    const before = pointsPerMatch(played);
+    const points = (session: Session): number[] =>
+      others.map((id) => lineFor(computeTeamStandings(session), id).points);
+    const before = points(played);
 
     const orphaned = removePlayer(played, 'p1');
     const repaired = assignPartner(orphaned, 't1', { id: 'p11', name: 'Kaja' });
 
-    expect(pointsPerMatch(orphaned)).toEqual(before);
-    expect(pointsPerMatch(repaired)).toEqual(before);
+    expect(points(orphaned)).toEqual(before);
+    expect(points(repaired)).toEqual(before);
   });
 
   it('holds bench spread and opponent variety at every prefix after the repair', () => {

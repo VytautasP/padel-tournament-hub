@@ -87,7 +87,9 @@ _Avoid_: Team (reserved for Team Americano), pair (means the fixed partnership)
 
 **Bench**:
 The players not on a court in a given round, because the roster does not divide evenly into courts.
-A player on the bench is **benched**; benching costs them nothing in the standings.
+A player on the bench is **benched**; benching costs them nothing in the standings, because the
+round they sat out is paid for as a bench credit. Being absent is not being benched: a player who
+had not arrived, or who has gone home, is not on the bench and earns nothing.
 _Avoid_: Sitting out, resting, sub, waiting list
 
 **Bye**:
@@ -133,14 +135,26 @@ _Avoid_: Unmixed pair, non-mixed pair, exception
 ### The table
 
 **Standings**:
-The leaderboard, ranked by points per match played and derived from the recorded scores on every
-read. Never stored, so a corrected score recomputes for free.
+The leaderboard, ranked by total points and derived from the recorded scores on every read. Never
+stored, so a corrected score recomputes for free.
 _Avoid_: Leaderboard, table, rankings, results
 
-**Points per match**:
-A competitor's points divided by the matches they have actually played. The ranking figure, chosen
-so that sitting out neither costs nor gains position.
-_Avoid_: Average, PPM, score rate
+**Total points**:
+Everything a competitor has to their name: what they scored on court, plus a bench credit for every
+round they sat out. The ranking figure, and the only figure the table shows beside a name.
+_Avoid_: Score (a score is one match's), total, tally, points per match (gone — see ADR-0023)
+
+**Bench credit**:
+What a benched competitor is paid for the round they were not seated in: half the target score,
+which is exactly a drawn match. Awarded rather than scored, and only once every match in that round
+has one — so the credit and the results it is measured against arrive together.
+_Avoid_: Bench points, sit-out points, bonus, compensation
+
+**Record**:
+A competitor's wins, ties and losses across the matches they have actually played, written as one
+triple. A bench round is none of the three, which is why the record does not add up to the total
+on its own and why the count of benched rounds is shown beside it.
+_Avoid_: Form, results, W/L, win rate
 
 **Joint position**:
 A place shared by competitors who are still level after every tie-break the evidence supports. The

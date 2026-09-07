@@ -131,11 +131,11 @@ describe('ending the session', () => {
       expect(app.shows('Podium')).toBe(true);
       for (const name of decided.a.split(' & ')) {
         // Both of them are first, and both are on the podium: twice on screen, once in each.
-        expect(app.shows(`1 ${name} 24.0`)).toBe(true);
+        expect(app.shows(`1 ${name} 24`)).toBe(true);
         expect(timesShown(app, name)).toBe(2);
       }
       for (const name of drawn.a.split(' & ')) {
-        expect(app.shows(`3 ${name} 12.0`)).toBe(true);
+        expect(app.shows(`3 ${name} 12`)).toBe(true);
       }
       for (const name of decided.b.split(' & ')) {
         expect(timesShown(app, name)).toBe(1);

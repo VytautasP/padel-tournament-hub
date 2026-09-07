@@ -4,7 +4,7 @@
  * The engine ranks players and teams on the same ladder and says so twice: `Standing` carries a
  * `playerId`, `TeamStanding` a `teamId`, and every other field on the two is identical, means the
  * same thing and was computed by the same code (`ranking.ts`, ADR-0011). The Standings tab is the
- * same table for both — position, name, rate, and the two figures behind a tap — so it renders
+ * same table for both — position, name, total, and the three figures behind a tap — so it renders
  * this rather than one of them, and the mode is read once, in the store, rather than in every
  * template that shows a row.
  *
@@ -23,8 +23,12 @@ export interface StandingRow {
   readonly position: number;
   readonly joint: boolean;
   readonly matchesPlayed: number;
+  /** The ranking figure: points scored, plus a bench credit for every round sat out (ADR-0023). */
   readonly points: number;
-  readonly pointsPerMatch: number;
+  readonly won: number;
+  readonly tied: number;
+  readonly lost: number;
+  readonly benched: number;
 }
 
 /** The players' table as a row apiece. */
@@ -57,6 +61,9 @@ function row(id: PlayerId | TeamId, standing: Omit<Standing, 'playerId'>): Stand
     joint: standing.joint,
     matchesPlayed: standing.matchesPlayed,
     points: standing.points,
-    pointsPerMatch: standing.pointsPerMatch,
+    won: standing.won,
+    tied: standing.tied,
+    lost: standing.lost,
+    benched: standing.benched,
   };
 }
