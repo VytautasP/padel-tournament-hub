@@ -23,12 +23,13 @@ import { InjectionToken } from '@angular/core';
 /**
  * How durable the organizer's history is: this browser only, or an account that outlives it.
  *
- * The distinction the front door renders. It is asked of the identity on every read rather than
- * stored anywhere, for the same reason the standings are (ADR-0008): linking changes it, and a
- * second copy of the answer is a second thing to keep in step.
+ * The distinction the front door renders, in CONTEXT.md's own two words for it: a device identity
+ * is browser-bound or it is linked. It is asked of the identity on every read rather than stored
+ * anywhere, for the same reason the standings are (ADR-0008): linking changes it, and a second
+ * copy of the answer is a second thing to keep in step.
  */
 export type Durability =
-  { readonly kind: 'browser' } | { readonly kind: 'account'; readonly account: string | null };
+  { readonly kind: 'browser' } | { readonly kind: 'linked'; readonly account: string | null };
 
 /** The account is attached to the uid the organizer already had. Nothing moved; nothing was lost. */
 export interface LinkedAccount {

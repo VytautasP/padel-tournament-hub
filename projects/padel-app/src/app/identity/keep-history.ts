@@ -28,12 +28,16 @@ export class KeepHistory {
   private readonly store = inject(SessionStore);
   private readonly confirm = inject(Confirm);
   /**
-   * Whether the last attempt could not reach Google.
+   * Whether the last attempt did not happen.
    *
    * The only outcome that leaves a mark. Linking says so by changing the sentence above the
    * button, adopting says so by the history that appears, and closing the Google window is an
-   * answer rather than a failure — so this holds the one case with nothing else to show for it,
-   * and it is cleared the moment the organizer tries again.
+   * answer rather than a failure — so this holds the cases with nothing else to show for them, and
+   * it is cleared the moment the organizer tries again.
+   *
+   * A sign-in that did not happen lands here too, and deliberately says the same words: from where
+   * the organizer is standing, a link that failed and an account they could not sign in to are one
+   * thing, and their move is the same.
    */
   private readonly failed = signal(false);
 
@@ -64,7 +68,7 @@ export class KeepHistory {
       );
 
       if (await this.confirm.granted(question)) {
-        await this.store.adopt(outcome);
+        this.failed.set(!(await this.store.adopt(outcome)));
       }
     }
   }

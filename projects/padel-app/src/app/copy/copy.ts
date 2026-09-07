@@ -104,24 +104,20 @@ export const copy = {
    * offers the one thing that changes it, in the quietest voice on the page.
    */
   identity: {
-    /**
-     * The fallback name for an account Google gave no address for.
-     *
-     * It is a word the organizer reads, so it lives here rather than in the file that discovers
-     * there is nothing to show (decision #20).
-     */
-    account: googleAccount,
     browserOnly: 'History is kept on this browser. Clear its data and it goes.',
     kept: (account: string | null): string => `History is kept with ${account ?? googleAccount}.`,
     keep: 'Keep history with Google',
     /**
      * A link that did not happen and was nobody's mistake.
      *
-     * One sentence for every cause — no signal, a blocked popup, a project misconfigured — because
-     * the organizer's move is the same in all of them and the detail is in the console. Closing
-     * the Google window says nothing at all: changing your mind is an answer, not a failure.
+     * One sentence for every cause — no signal, a blocked popup, a project misconfigured, a
+     * credential that expired while the question was on screen — because the organizer's move is
+     * the same in all of them and the detail is in the console. It says the *act* did not happen
+     * rather than naming a cause, because naming one would be wrong for most of them: a popup the
+     * browser blocked is not Google being unreachable. Closing the Google window says nothing at
+     * all: changing your mind is an answer, not a failure.
      */
-    unavailable: 'Google could not be reached. Try again.',
+    unavailable: 'Linking to Google did not work. Try again.',
     /**
      * The account already belongs to a uid, which is nearly always this organizer's own previous
      * browser (ADR-0028 §2).

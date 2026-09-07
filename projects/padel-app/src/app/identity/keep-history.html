@@ -7,24 +7,19 @@
   every other control in this app that has nothing to do is gone rather than greyed.
 -->
 <section class="flex flex-col items-start gap-3 pt-2">
-  <p class="text-meta text-pretty text-ink-muted">
-    @if (durability(); as kept) {
-      @if (kept.kind === 'account') {
-        {{ copy.identity.kept(kept.account) }}
-      } @else {
-        {{ copy.identity.browserOnly }}
-      }
+  @if (durability(); as kept) {
+    @if (kept.kind === 'linked') {
+      <p class="text-meta text-pretty text-ink-muted">{{ copy.identity.kept(kept.account) }}</p>
+    } @else {
+      <p class="text-meta text-pretty text-ink-muted">{{ copy.identity.browserOnly }}</p>
+      <button
+        type="button"
+        class="text-control h-12 rounded-[15px] border border-line px-4 text-ink"
+        (click)="keep()"
+      >
+        {{ copy.identity.keep }}
+      </button>
     }
-  </p>
-
-  @if (durability().kind === 'browser') {
-    <button
-      type="button"
-      class="text-control h-12 rounded-[15px] border border-line px-4 text-ink"
-      (click)="keep()"
-    >
-      {{ copy.identity.keep }}
-    </button>
   }
 
   @if (unavailable()) {

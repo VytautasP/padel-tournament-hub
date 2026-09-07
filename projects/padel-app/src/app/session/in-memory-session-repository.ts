@@ -55,7 +55,7 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
 
   durability(): Durability {
     return this.accounts.get(FAKE_ACCOUNT) === this.uid
-      ? { kind: 'account', account: FAKE_ACCOUNT }
+      ? { kind: 'linked', account: FAKE_ACCOUNT }
       : { kind: 'browser' };
   }
 

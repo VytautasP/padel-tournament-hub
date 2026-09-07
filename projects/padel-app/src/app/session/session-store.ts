@@ -375,12 +375,27 @@ export class SessionStore implements OnDestroy {
    * A `TakenAccount` rather than an account name, for the reason `commitRosterChange` takes a
    * `RosterChange` (ADR-0015): what is being committed is the thing the identity handed back, and
    * a screen cannot construct one of its own.
+   *
+   * `false` where the sign-in did not happen and nothing changed, which the screen says in the
+   * same words it uses for a link that did not happen — it is the same thing from where the
+   * organizer is standing.
    */
-  async adopt(account: TakenAccount): Promise<void> {
+  async adopt(account: TakenAccount): Promise<boolean> {
     try {
       await account.adopt();
-      this.leave();
-      this.kept.set(this.identity.durability());
+    } catch {
+      // The sign-in itself did not happen — an expired credential, a connection that went. The uid
+      // is the uid it was, so this browser's own evenings are still exactly where they were and
+      // still readable: nothing here moves, and the screen says what it says about any other link
+      // that did not happen. Two catches rather than one, because the failure below is the
+      // opposite case and cannot be answered the same way.
+      return false;
+    }
+
+    this.leave();
+    this.kept.set(this.identity.durability());
+
+    try {
       await this.readEverything();
     } catch {
       // The same state a startup that could not read lands in, for the same reason: the app is
@@ -388,6 +403,8 @@ export class SessionStore implements OnDestroy {
       // claim that they have none (ADR-0025 §4).
       this.unreachable.set(true);
     }
+
+    return true;
   }
 
   /** Stop following the evening in progress. The app closing is the only thing that asks. */
@@ -579,6 +596,12 @@ export class SessionStore implements OnDestroy {
    * players (ADR-0011), the engine refuses the wrong question of either, and a screen asking both
    * and picking one would be this check in a second place.
    */
+  private tableOf(session: Session): readonly StandingRow[] {
+    return session.mode === 'team-americano'
+      ? rowsOfTeams(computeTeamStandings(session), (teamId) => teamNameOf(session, teamId))
+      : rowsOfPlayers(computeStandings(session));
+  }
+
   /**
    * Everything one organizer's uid owns: the evening in progress, the evenings already played, and
    * a listener following the first of them (ADR-0025 §3).
@@ -593,12 +616,6 @@ export class SessionStore implements OnDestroy {
     this.record.set(await this.repository.loadActive());
     this.endedRecords.set(await this.repository.loadHistory());
     this.stopWatching = this.repository.watchActive((record) => this.record.set(record));
-  }
-
-  private tableOf(session: Session): readonly StandingRow[] {
-    return session.mode === 'team-americano'
-      ? rowsOfTeams(computeTeamStandings(session), (teamId) => teamNameOf(session, teamId))
-      : rowsOfPlayers(computeStandings(session));
   }
 
   private plan(apply: (session: Session) => Session): RosterChange {

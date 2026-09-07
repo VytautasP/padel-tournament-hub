@@ -32,8 +32,14 @@ const today = new Intl.DateTimeFormat('en-GB', {
 
 const ROW = `${today} · Americano · 4 players`;
 
-/** An identity that can sign in and cannot reach Google: a blocked popup, or no signal. */
-function googleRefusing(outcome: LinkOutcome): Identity {
+/**
+ * An identity that can sign in and answers a link with whatever the spec hands it.
+ *
+ * Not `googleRefusing`: one of the two answers it is asked for is `dismissed`, which this app is
+ * careful to say is *not* a refusal — the organizer closed a window they opened, which is an
+ * answer.
+ */
+function googleAnswering(outcome: LinkOutcome): Identity {
   return {
     signIn: async () => FAKE_UID,
     durability: () => ({ kind: 'browser' }),
@@ -73,7 +79,7 @@ describe('keeping history with a Google account', () => {
   });
 
   it('says so when Google cannot be reached, and stays browser-bound', async () => {
-    const app = await AppHarness.launch({ identity: googleRefusing({ kind: 'unavailable' }) });
+    const app = await AppHarness.launch({ identity: googleAnswering({ kind: 'unavailable' }) });
 
     await app.tap(copy.identity.keep);
 
@@ -85,7 +91,7 @@ describe('keeping history with a Google account', () => {
   /* Changing your mind is an answer. An app that called it a failure would be telling the
    * organizer they made a mistake by closing a window they opened on purpose. */
   it('says nothing at all when the organizer closes the Google window', async () => {
-    const app = await AppHarness.launch({ identity: googleRefusing({ kind: 'dismissed' }) });
+    const app = await AppHarness.launch({ identity: googleAnswering({ kind: 'dismissed' }) });
 
     await app.tap(copy.identity.keep);
 
@@ -115,6 +121,28 @@ describe('keeping history with a Google account', () => {
 
       expect(second.shows(ROW)).toBe(true);
       expect(second.shows(copy.identity.browserOnly)).toBe(true);
+    });
+
+    /*
+     * A sign-in that does not happen must not cost the organizer the front door. The uid is the
+     * uid it was, so this browser's own evenings are still readable — and an app that answered a
+     * failed sign-in with the no-connection screen would be throwing away a working one.
+     */
+    it('leaves the app where it was when the sign-in itself does not happen', async () => {
+      const app = await AppHarness.launch({
+        identity: googleAnswering({
+          kind: 'taken',
+          account: FAKE_ACCOUNT,
+          adopt: () => Promise.reject(new Error('the credential expired')),
+        }),
+      });
+
+      await app.tap(copy.identity.keep);
+      await app.tap(copy.identity.adoptConfirm(FAKE_ACCOUNT, 0).action);
+
+      expect(app.shows(copy.identity.unavailable)).toBe(true);
+      expect(app.shows(copy.connection.heading)).toBe(false);
+      expect(app.shows(copy.identity.browserOnly)).toBe(true);
     });
 
     /*

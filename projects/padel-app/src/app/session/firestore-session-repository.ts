@@ -39,7 +39,7 @@ import {
   signInAnonymously,
   signInWithCredential,
 } from 'firebase/auth';
-import type { Auth, AuthError, User } from 'firebase/auth';
+import type { Auth, AuthError, User, UserInfo } from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -141,11 +141,9 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
    * whose `ownerUid` can never move (ADR-0024 §2). An anonymous user's list is empty.
    */
   durability(): Durability {
-    const google = this.auth.currentUser?.providerData.find(
-      (provider) => provider.providerId === GoogleAuthProvider.PROVIDER_ID,
-    );
+    const google = googleOn(this.auth.currentUser);
 
-    return google === undefined ? { kind: 'browser' } : { kind: 'account', account: google.email };
+    return google === null ? { kind: 'browser' } : { kind: 'linked', account: google.email };
   }
 
   /**
@@ -169,7 +167,7 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
     try {
       const linked = await linkWithPopup(user, new GoogleAuthProvider());
 
-      return { kind: 'linked', account: emailOf(linked.user) };
+      return { kind: 'linked', account: googleOn(linked.user)?.email ?? null };
     } catch (error) {
       return this.refusalOf(error);
     }
@@ -284,7 +282,12 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
    * belongs in the console rather than on the front door.
    */
   private refusalOf(error: unknown): LinkOutcome {
-    const code = (error as { code?: string }).code;
+    // Read defensively rather than cast, because this is the one place in the file that has to
+    // survive whatever it is handed. Everything Firebase rejects with carries a `code`, but a
+    // rejection is not a promise about its own shape, and reading a property off a `null` here
+    // would throw out of `linkGoogle` — past a caller that is not expecting one, leaving a button
+    // that appears to do nothing at all.
+    const code = codeOf(error);
 
     if (code === 'auth/credential-already-in-use') {
       const credential = GoogleAuthProvider.credentialFromError(error as AuthError);
@@ -308,6 +311,10 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
       return { kind: 'dismissed' };
     }
 
+    // Everything else, including the collision above arriving without the credential it is
+    // supposed to carry. That last one is a Firebase refusing to say which account it refused
+    // over, which is a bug rather than a state the organizer is in — so it is logged like the
+    // rest rather than given a sentence of its own that nobody could act on either.
     console.error('Linking a Google account failed.', error);
 
     return { kind: 'unavailable' };
@@ -323,16 +330,31 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
 }
 
 /**
- * The address on a linked account, or `null` where Google gave none.
+ * The `code` on a rejection, where there is a rejection with a `code` on it.
  *
- * Read off the Google provider rather than off `user.email`, which on a linked account is the same
- * value today and is the account's address rather than that provider's. The dictionary owns what
- * `null` is called on screen (decision #20); this file's business is only whether there is one.
+ * `null` for anything else — a string thrown, a `null` rejection, a `TypeError` from inside the
+ * SDK. All of those are `unavailable`, which is where the four named codes' `default` goes anyway.
  */
-function emailOf(user: User): string | null {
+function codeOf(error: unknown): string | null {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code: unknown }).code)
+    : null;
+}
+
+/**
+ * The Google half of a user, or `null` for one that has never been linked.
+ *
+ * The one question both `durability` and a completed link ask, so it is asked in one place:
+ * whether this user carries a Google provider at all is the whole of the browser-bound/linked
+ * distinction, and its `email` is the address the front door names the account by. Read off the
+ * provider rather than off `user.email`, which is the account's address rather than that
+ * provider's and is only the same value by coincidence. The dictionary owns what a missing one is
+ * called on screen (decision #20); this file's business is only whether there is one.
+ */
+function googleOn(user: User | null): UserInfo | null {
   return (
-    user.providerData.find((provider) => provider.providerId === GoogleAuthProvider.PROVIDER_ID)
-      ?.email ?? null
+    user?.providerData.find((provider) => provider.providerId === GoogleAuthProvider.PROVIDER_ID) ??
+    null
   );
 }
 
