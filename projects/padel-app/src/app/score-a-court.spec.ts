@@ -192,20 +192,21 @@ describe('scoring a court', () => {
       expect(app.shows('0.0')).toBe(false);
     });
 
-    it('ranks by points per match, and expands a row for the detail behind it', async () => {
+    it('ranks on total points, and expands a row for the record behind them', async () => {
       const app = await createSession(FOUR);
       const sides = await score(app, 17);
       await app.tap('Standings');
 
       const [winner] = sides.a.split(' & ');
       const [loser] = sides.b.split(' & ');
-      expect(app.isOnScreen(`1 ${winner} 17.0`)).toBe(true);
-      expect(app.isOnScreen(`3 ${loser} 7.0`)).toBe(true);
+      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(true);
+      expect(app.isOnScreen(`3 ${loser} 7`)).toBe(true);
 
-      await app.tap(`1 ${winner} 17.0`);
+      await app.tap(`1 ${winner} 17`);
 
+      expect(app.shows('W–T–L 1–0–0')).toBe(true);
       expect(app.shows('Matches played 1')).toBe(true);
-      expect(app.shows('Total points 17')).toBe(true);
+      expect(app.shows('Benched 0')).toBe(true);
     });
 
     it('repeats a joint position and skips the place it uses up', async () => {
@@ -215,14 +216,14 @@ describe('scoring a court', () => {
       await app.tap('Standings');
 
       for (const name of decided.a.split(' & ')) {
-        expect(app.isOnScreen(`1 ${name} 24.0`)).toBe(true);
+        expect(app.isOnScreen(`1 ${name} 24`)).toBe(true);
       }
       // Two players share first, so second is used up and the next four are joint third.
       for (const name of [...drawn.a.split(' & '), ...drawn.b.split(' & ')]) {
-        expect(app.isOnScreen(`3 ${name} 12.0`)).toBe(true);
+        expect(app.isOnScreen(`3 ${name} 12`)).toBe(true);
       }
       for (const name of decided.b.split(' & ')) {
-        expect(app.isOnScreen(`7 ${name} 0.0`)).toBe(true);
+        expect(app.isOnScreen(`7 ${name} 0`)).toBe(true);
       }
     });
 
@@ -232,7 +233,7 @@ describe('scoring a court', () => {
       const [winner] = sides.a.split(' & ');
 
       await app.tap('Standings');
-      expect(app.isOnScreen(`1 ${winner} 17.0`)).toBe(true);
+      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(true);
 
       await app.tap('Round');
       await app.tap('Enter score for Court 1');
@@ -240,8 +241,8 @@ describe('scoring a court', () => {
       await app.tap('Save');
       await app.tap('Standings');
 
-      expect(app.isOnScreen(`1 ${winner} 20.0`)).toBe(true);
-      expect(app.isOnScreen(`1 ${winner} 17.0`)).toBe(false);
+      expect(app.isOnScreen(`1 ${winner} 20`)).toBe(true);
+      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(false);
       app.expectStoredSessionValid();
     });
   });

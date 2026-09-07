@@ -376,15 +376,41 @@ export const copy = {
       action: 'End session',
     },
     /**
-     * Points per match, or a dash for somebody who has not been on a scored court yet.
+     * A competitor's total, or a dash for somebody the evening has not answered for yet.
      *
-     * A zero would be a claim about how they are playing. A dash says the evening has not
-     * answered the question, which before the first score is the truth about everybody.
+     * A zero would be a claim about how they are playing. A dash says nothing has happened to
+     * them, which before the first score is the truth about everybody — and stops being the truth
+     * the moment they are owed a bench credit, even though they have still not been on a court
+     * (ADR-0023 §2).
+     *
+     * Halves are real. An odd target score makes every credit one, so a total carries it rather
+     * than rounding the credit into something that is no longer exactly a drawn match. Whole
+     * totals stay whole: `.0` on every line to accommodate the one evening in two is noise.
      */
-    rate: (pointsPerMatch: number, matchesPlayed: number): string =>
-      matchesPlayed === 0 ? '–' : pointsPerMatch.toFixed(1),
+    total: (points: number, matchesPlayed: number, benched: number): string =>
+      matchesPlayed === 0 && benched === 0
+        ? '–'
+        : Number.isInteger(points)
+          ? String(points)
+          : points.toFixed(1),
+    /**
+     * Wins, ties and losses as one triple, labelled by the only thing that says which is which.
+     *
+     * The label carries the order because the figures cannot: a `0` in the middle is a number of
+     * ties only if the reader already knows where ties sit. En dashes rather than hyphens, which
+     * is the dash this app writes everywhere else.
+     */
+    record: 'W–T–L',
+    recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
     matchesPlayed: 'Matches played',
-    totalPoints: 'Total points',
+    /**
+     * Rounds sat out, beside the record rather than inside it.
+     *
+     * A bench round is not a result, so it is none of the three (ADR-0023 §5) — which leaves a
+     * total that the record alone cannot account for. This is the missing term, and without it a
+     * player who sat out twice reads their own line as a bug.
+     */
+    benched: 'Benched',
   },
 
   history: {

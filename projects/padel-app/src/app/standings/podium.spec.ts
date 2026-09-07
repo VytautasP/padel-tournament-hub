@@ -58,7 +58,10 @@ function standingsOf(positions: readonly number[], matchesPlayed = 4): readonly 
     joint: positions.filter((other) => other === position).length > 1,
     matchesPlayed,
     points: 0,
-    pointsPerMatch: 0,
+    won: 0,
+    tied: 0,
+    lost: 0,
+    benched: 0,
   }));
 }
 

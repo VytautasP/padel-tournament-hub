@@ -180,13 +180,13 @@ describe('running a Team Americano evening', () => {
     it('renders a joint position the way it does for players', async () => {
       const app = await createTeamAmericanoSession(TWO_TEAMS);
 
-      // Half the target each: the two teams are level on points per match, on total points and on
-      // the head-to-head, so the engine declares them joint first and the app does not break it.
+      // Half the target each: the two teams are level on total points and on the head-to-head,
+      // so the engine declares them joint first and the app does not break it.
       await score(app, 12);
       await app.tap('Standings');
 
-      expect(app.shows('1 Ana & Ben 12.0')).toBe(true);
-      expect(app.shows('1 Cara & Dov 12.0')).toBe(true);
+      expect(app.shows('1 Ana & Ben 12')).toBe(true);
+      expect(app.shows('1 Cara & Dov 12')).toBe(true);
     });
   });
 
@@ -246,7 +246,7 @@ describe('running a Team Americano evening', () => {
       await repair(app, 'Gita');
 
       await app.tap('Standings');
-      expect(app.shows(`${partner} & Gita 17.0`)).toBe(true);
+      expect(app.shows(`${partner} & Gita 17`)).toBe(true);
       expect(pointsOf(app, teamId)).toBe(17);
       app.expectStoredSessionValid();
     });

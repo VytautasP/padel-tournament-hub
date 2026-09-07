@@ -5,14 +5,18 @@
  * table from the recorded scores, so a correction typed into the Round tab is already in this
  * table before it is looked at — there is no refresh, no invalidation and nothing to keep in step.
  *
- * A row shows the three things asked at the side of a court — where am I, who am I, how am I
- * scoring — and hides the two things asked afterwards behind a tap. Matches played and total
- * points explain a position rather than establish one, and a table that shows everything at once
- * is a table nobody can read across a court in the dark.
+ * A row shows the three things asked at the side of a court — where am I, who am I, how many
+ * points have I got — and hides what is asked afterwards behind a tap. The record, the matches
+ * played and the rounds benched explain a total rather than establish one, and a table that shows
+ * everything at once is a table nobody can read across a court in the dark.
  *
  * A row is a competitor rather than a player: the same table ranks teams in Team Americano, and
  * the only thing that changes is the name in the middle column (ADR-0011). The store decides
  * which ladder this session has; nothing on this screen asks what mode it is.
+ *
+ * The figure beside a name is the competitor's total, bench credits and all (ADR-0023). The app
+ * neither computes it nor explains it: the expansion shows the terms and the reader does the
+ * arithmetic if they want to.
  *
  * Positions come from the engine and are rendered exactly as given: a joint second is `2` twice
  * and the next player is `4`. The app never invents a separator and never renumbers, because the

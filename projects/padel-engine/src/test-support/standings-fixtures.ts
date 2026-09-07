@@ -24,19 +24,27 @@ export interface MatchSpec {
  *
  * Each inner array is one round's courts, numbered from 1 in the order given. The roster is
  * `p1..pN` for the players mentioned, or `playerCount` of them when a test needs someone who
- * never got on court.
+ * never got on court. `arrivals` narrows a player's window to the rounds they are in the session
+ * for, which is what separates a bench from an absence where bench credits are concerned.
  */
 export function scoredSession(
   rounds: readonly (readonly MatchSpec[])[],
-  options: { readonly playerCount?: number; readonly targetScore?: number } = {},
+  options: {
+    readonly playerCount?: number;
+    readonly targetScore?: number;
+    readonly arrivals?: Readonly<
+      Partial<Record<PlayerId, { joinedAtRound?: number; leftAfterRound?: number }>>
+    >;
+  } = {},
 ): Session {
   const playerCount = options.playerCount ?? highestMentioned(rounds);
+  const arrivals = options.arrivals ?? {};
 
   return {
     id: 'session-1',
     mode: 'americano',
     status: 'in-progress',
-    roster: roster(playerCount),
+    roster: roster(playerCount).map((entry) => ({ ...entry, ...arrivals[entry.id] })),
     courtCount: Math.max(1, ...rounds.map((round) => round.length)),
     targetScore: options.targetScore ?? 24,
     rounds: rounds.map((matches, index) => buildRound(matches, index + 1)),

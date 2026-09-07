@@ -38,13 +38,17 @@ describe('computeStandings', () => {
       joint: false,
       matchesPlayed: 2,
       points: 36,
-      pointsPerMatch: 18,
+      won: 2,
+      tied: 0,
+      lost: 0,
+      benched: 0,
     });
   });
 
-  it('ranks by points per match, so a player who sat out is not overtaken on volume', () => {
-    // p2 scores nearly twice p1's total — over twice as many matches. Points per match is what
-    // decides, so the bench costs p1 nothing.
+  it('ranks on total points, so playing more is worth more than averaging more', () => {
+    // p1 sat out two of the three rounds and won the one they played by the length of the court;
+    // p2 played twice and scored more in total. Under a rate p1 would lead the table on one
+    // result. Under a total, the evening is what counts (ADR-0023 §1).
     const standings = computeStandings(
       scoredSession([
         [{ sideA: ['p1', 'p5'], sideB: ['p3', 'p4'], score: [20, 4] }],
@@ -53,102 +57,186 @@ describe('computeStandings', () => {
       ]),
     );
 
-    expect(orderOf(standings).slice(0, 3)).toEqual(['p1', 'p5', 'p2']);
-    expect(standingOf(standings, 'p1').points).toBe(20);
-    expect(standingOf(standings, 'p2').points).toBe(36);
+    expect(orderOf(standings).slice(0, 3)).toEqual(['p5', 'p2', 'p1']);
+    expect(standingOf(standings, 'p1')).toMatchObject({ points: 44, matchesPlayed: 1, benched: 2 });
+    expect(standingOf(standings, 'p2')).toMatchObject({ points: 48, matchesPlayed: 2, benched: 1 });
   });
 
-  it('counts only the matches actually played in a partly scored session', () => {
+  it('records a win, a tie and a loss from the score of each match', () => {
     const standings = computeStandings(
       scoredSession([
         [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
-        [{ sideA: ['p1', 'p3'], sideB: ['p2', 'p4'] }],
+        [{ sideA: ['p1', 'p3'], sideB: ['p2', 'p4'], score: [12, 12] }],
+        [{ sideA: ['p1', 'p4'], sideB: ['p2', 'p3'], score: [8, 16] }],
       ]),
     );
 
     expect(standingOf(standings, 'p1')).toMatchObject({
-      matchesPlayed: 1,
-      points: 16,
-      pointsPerMatch: 16,
+      matchesPlayed: 3,
+      won: 1,
+      tied: 1,
+      lost: 1,
+      benched: 0,
     });
   });
 
-  it('gives a player who has not been on court no matches and no points', () => {
-    const standings = computeStandings(
-      scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }]], {
-        playerCount: 5,
-      }),
-    );
+  describe('the bench credit', () => {
+    it('pays a benched player half the target score for the round they sat out', () => {
+      const standings = computeStandings(
+        scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }]], {
+          playerCount: 5,
+        }),
+      );
 
-    expect(standingOf(standings, 'p5')).toMatchObject({
-      position: 5,
-      matchesPlayed: 0,
-      points: 0,
-      pointsPerMatch: 0,
+      expect(standingOf(standings, 'p5')).toMatchObject({
+        points: 12,
+        benched: 1,
+        matchesPlayed: 0,
+        won: 0,
+        tied: 0,
+        lost: 0,
+      });
+    });
+
+    it('pays half of a target score that does not halve', () => {
+      const standings = computeStandings(
+        scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [11, 10] }]], {
+          playerCount: 5,
+          targetScore: 21,
+        }),
+      );
+
+      expect(standingOf(standings, 'p5').points).toBe(10.5);
+    });
+
+    it('pays nothing for a round whose courts have not all reported', () => {
+      const standings = computeStandings(
+        scoredSession(
+          [
+            [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
+            [{ sideA: ['p1', 'p3'], sideB: ['p2', 'p4'] }],
+          ],
+          { playerCount: 5 },
+        ),
+      );
+
+      expect(standingOf(standings, 'p5')).toMatchObject({ points: 12, benched: 1 });
+      expect(standingOf(standings, 'p1')).toMatchObject({ matchesPlayed: 1, points: 16 });
+    });
+
+    it('pays nobody for a round that has not been generated', () => {
+      // The slot exists because the organizer asked for the rounds, not because anyone played
+      // one. Every match in it is scored only in the sense that there are none.
+      const standings = computeStandings(
+        scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }], []], {
+          playerCount: 5,
+        }),
+      );
+
+      expect(standingOf(standings, 'p1')).toMatchObject({ points: 16, benched: 0 });
+      expect(standingOf(standings, 'p5')).toMatchObject({ points: 12, benched: 1 });
+    });
+
+    it('pays nobody for the rounds they were not in the session for', () => {
+      // p5 arrives for round 3 and p6 goes home after round 1. Being absent is not being benched
+      // (ADR-0023 §3): p6 is paid for the round they were here and sat out, p5 for nothing.
+      const standings = computeStandings(
+        scoredSession(
+          [
+            [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
+            [{ sideA: ['p1', 'p3'], sideB: ['p2', 'p4'], score: [16, 8] }],
+          ],
+          {
+            playerCount: 6,
+            arrivals: { p5: { joinedAtRound: 3 }, p6: { leftAfterRound: 1 } },
+          },
+        ),
+      );
+
+      expect(standingOf(standings, 'p6')).toMatchObject({ points: 12, benched: 1 });
+      expect(standingOf(standings, 'p5')).toMatchObject({ points: 0, benched: 0 });
+    });
+
+    it('ranks a benched player above one who played and scored nothing', () => {
+      // The bench is paid a drawn match; a whitewash is paid what it scored. This is the whole
+      // shape of the decision, and it is worth stating rather than leaving to arithmetic.
+      const standings = computeStandings(
+        scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [24, 0] }]], {
+          playerCount: 5,
+        }),
+      );
+
+      expect(standingOf(standings, 'p5').points).toBe(12);
+      expect(positionOf(standings, 'p5')).toBeLessThan(positionOf(standings, 'p3'));
     });
   });
 
   describe('tie-breaks', () => {
-    it('breaks a tie on points per match by total points', () => {
-      // p1 and p5 both average 16. Nothing else separates them: they never met, so head-to-head
-      // has nothing to say, and the two rounds p1 played are the difference.
+    it('breaks a tie on total points by head-to-head', () => {
+      // p1 and p2 finish on 36 from three matches each, nobody benched. They met once, in round
+      // one, and p1 took that meeting 20-4.
       const standings = computeStandings(
         scoredSession([
-          [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
-          [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
-          [{ sideA: ['p5', 'p6'], sideB: ['p7', 'p8'], score: [16, 8] }],
+          [
+            { sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [20, 4] },
+            { sideA: ['p3', 'p7'], sideB: ['p4', 'p8'], score: [12, 12] },
+          ],
+          [
+            { sideA: ['p1', 'p7'], sideB: ['p3', 'p4'], score: [8, 16] },
+            { sideA: ['p2', 'p8'], sideB: ['p5', 'p6'], score: [20, 4] },
+          ],
+          [
+            { sideA: ['p1', 'p5'], sideB: ['p4', 'p8'], score: [8, 16] },
+            { sideA: ['p2', 'p3'], sideB: ['p6', 'p7'], score: [12, 12] },
+          ],
         ]),
       );
 
-      expect(standingOf(standings, 'p1').pointsPerMatch).toBe(
-        standingOf(standings, 'p5').pointsPerMatch,
-      );
-      expect(positionOf(standings, 'p1')).toBe(1);
-      expect(positionOf(standings, 'p5')).toBe(3);
-    });
-
-    it('breaks a tie on points per match and total points by head-to-head', () => {
-      // p1 and p2 finish on 36 points from three matches each. They met once, in round 1, and
-      // p1 took that meeting 20-4.
-      const standings = computeStandings(
-        scoredSession([
-          [{ sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [20, 4] }],
-          [{ sideA: ['p1', 'p7'], sideB: ['p3', 'p4'], score: [8, 16] }],
-          [{ sideA: ['p1', 'p7'], sideB: ['p3', 'p4'], score: [8, 16] }],
-          [{ sideA: ['p2', 'p8'], sideB: ['p3', 'p4'], score: [16, 8] }],
-          [{ sideA: ['p2', 'p8'], sideB: ['p3', 'p4'], score: [16, 8] }],
-        ]),
-      );
-
-      expect(standingOf(standings, 'p1')).toMatchObject({ points: 36, pointsPerMatch: 12 });
-      expect(standingOf(standings, 'p2')).toMatchObject({ points: 36, pointsPerMatch: 12 });
+      expect(standingOf(standings, 'p1')).toMatchObject({
+        points: 36,
+        matchesPlayed: 3,
+        benched: 0,
+      });
+      expect(standingOf(standings, 'p2')).toMatchObject({
+        points: 36,
+        matchesPlayed: 3,
+        benched: 0,
+      });
       expect(positionOf(standings, 'p1')).toBe(positionOf(standings, 'p2') - 1);
       expect(standingOf(standings, 'p1').joint).toBe(false);
     });
 
     it('ranks three tied players on how they did against each other', () => {
-      // p1, p2 and p3 all finish on 48 from four matches. They met each other once apiece: p1
-      // won both of its meetings, p2 won the one that was left, and p3 lost both.
+      // p1, p2 and p3 all finish on 58 from five matches, nobody benched. They met each other
+      // once apiece — p1 beat p2, p1 beat p3, p2 beat p3 — and the last two rounds level their
+      // totals without any of the three facing another.
       const standings = computeStandings(
         scoredSession([
-          [{ sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [20, 4] }],
-          [{ sideA: ['p1', 'p5'], sideB: ['p3', 'p6'], score: [20, 4] }],
-          [{ sideA: ['p2', 'p5'], sideB: ['p3', 'p6'], score: [20, 4] }],
-          [{ sideA: ['p1', 'p7'], sideB: ['p5', 'p6'], score: [4, 20] }],
-          [{ sideA: ['p1', 'p7'], sideB: ['p5', 'p6'], score: [4, 20] }],
-          [{ sideA: ['p2', 'p7'], sideB: ['p5', 'p6'], score: [12, 12] }],
-          [{ sideA: ['p2', 'p7'], sideB: ['p5', 'p6'], score: [12, 12] }],
-          [{ sideA: ['p3', 'p7'], sideB: ['p5', 'p6'], score: [20, 4] }],
-          [{ sideA: ['p3', 'p7'], sideB: ['p5', 'p6'], score: [20, 4] }],
+          [
+            { sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [14, 10] },
+            { sideA: ['p3', 'p7'], sideB: ['p4', 'p8'], score: [12, 12] },
+          ],
+          [
+            { sideA: ['p1', 'p6'], sideB: ['p3', 'p5'], score: [14, 10] },
+            { sideA: ['p2', 'p7'], sideB: ['p4', 'p8'], score: [12, 12] },
+          ],
+          [
+            { sideA: ['p2', 'p5'], sideB: ['p3', 'p6'], score: [14, 10] },
+            { sideA: ['p1', 'p7'], sideB: ['p4', 'p8'], score: [12, 12] },
+          ],
+          [
+            { sideA: ['p1', 'p2'], sideB: ['p5', 'p6'], score: [8, 16] },
+            { sideA: ['p3', 'p7'], sideB: ['p4', 'p8'], score: [16, 8] },
+          ],
+          [
+            { sideA: ['p1', 'p3'], sideB: ['p5', 'p7'], score: [10, 14] },
+            { sideA: ['p2', 'p6'], sideB: ['p4', 'p8'], score: [14, 10] },
+          ],
         ]),
       );
 
       for (const playerId of ['p1', 'p2', 'p3']) {
-        expect(standingOf(standings, playerId)).toMatchObject({
-          points: 48,
-          pointsPerMatch: 12,
-          joint: false,
-        });
+        expect(standingOf(standings, playerId)).toMatchObject({ points: 58, joint: false });
       }
       expect(positionOf(standings, 'p1')).toBeLessThan(positionOf(standings, 'p2'));
       expect(positionOf(standings, 'p2')).toBeLessThan(positionOf(standings, 'p3'));
@@ -164,36 +252,34 @@ describe('computeStandings', () => {
     });
 
     it('declares a joint position when the tied players never met each other', () => {
-      // p1, p2 and p8 all finish on 36 from three matches, and none of them ever faced another.
-      // There is no evidence to separate them, so the standings say so rather than pick one.
+      // Two courts, one round: the winners of each are level on points and have no evidence
+      // between them, because they were never on the same court.
       const standings = computeStandings(
         scoredSession([
-          [{ sideA: ['p1', 'p5'], sideB: ['p3', 'p4'], score: [20, 4] }],
-          [{ sideA: ['p1', 'p7'], sideB: ['p3', 'p4'], score: [8, 16] }],
-          [{ sideA: ['p1', 'p7'], sideB: ['p3', 'p4'], score: [8, 16] }],
-          [{ sideA: ['p2', 'p8'], sideB: ['p3', 'p4'], score: [12, 12] }],
-          [{ sideA: ['p2', 'p8'], sideB: ['p3', 'p4'], score: [12, 12] }],
-          [{ sideA: ['p2', 'p8'], sideB: ['p3', 'p4'], score: [12, 12] }],
+          [
+            { sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] },
+            { sideA: ['p5', 'p6'], sideB: ['p7', 'p8'], score: [16, 8] },
+          ],
         ]),
       );
 
-      const shared = positionOf(standings, 'p1');
-      expect(positionOf(standings, 'p2')).toBe(shared);
-      expect(positionOf(standings, 'p8')).toBe(shared);
+      expect(positionOf(standings, 'p5')).toBe(positionOf(standings, 'p1'));
       expect(standingOf(standings, 'p1').joint).toBe(true);
     });
 
     it('declines head-to-head for the whole group when one member never met it', () => {
-      // p1, p2 and p8 all finish on 24 from two matches. p1 and p2 met, and p1 took the meeting —
-      // but p8 met neither of them, and there is no place to put a player with no record. Half a
-      // tier would rank p8 on nothing, so the tier declines and all three stand joint.
+      // p1, p2, p5 and p8 all finish on 24. p8 partnered p2 and faced neither of the others, so
+      // there is no place to put them: half a tier would rank p8 on nothing, and the tie stands.
       const standings = computeStandings(
         scoredSession([
-          [{ sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [20, 4] }],
-          [{ sideA: ['p1', 'p7'], sideB: ['p3', 'p4'], score: [4, 20] }],
-          [{ sideA: ['p2', 'p7'], sideB: ['p3', 'p4'], score: [20, 4] }],
-          [{ sideA: ['p8', 'p5'], sideB: ['p3', 'p4'], score: [12, 12] }],
-          [{ sideA: ['p8', 'p5'], sideB: ['p3', 'p4'], score: [12, 12] }],
+          [
+            { sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [20, 4] },
+            { sideA: ['p3', 'p4'], sideB: ['p7', 'p8'], score: [20, 4] },
+          ],
+          [
+            { sideA: ['p1', 'p5'], sideB: ['p3', 'p4'], score: [4, 20] },
+            { sideA: ['p2', 'p8'], sideB: ['p6', 'p7'], score: [20, 4] },
+          ],
         ]),
       );
 
@@ -210,20 +296,6 @@ describe('computeStandings', () => {
 
       expect(standings.map((standing) => standing.position)).toEqual([1, 1, 3, 3]);
     });
-  });
-
-  it('does not rank a benched player above or below one who played and scored nothing', () => {
-    // p5 has been on the bench all evening and p3 and p4 were whitewashed. Neither has a point,
-    // and nothing in a session says which of them is better, so the standings do not pretend.
-    const standings = computeStandings(
-      scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [24, 0] }]], {
-        playerCount: 5,
-      }),
-    );
-
-    const shared = positionOf(standings, 'p5');
-    expect(positionOf(standings, 'p3')).toBe(shared);
-    expect(standingOf(standings, 'p5').joint).toBe(true);
   });
 
   describe('as a derived view', () => {

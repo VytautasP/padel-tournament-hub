@@ -100,7 +100,7 @@ describe('running the evening at a desk', () => {
       const app = await createSession(FOUR, 1, 24, 'desk');
       await score(app, 17);
 
-      expect(app.shows('17.0')).toBe(true);
+      expect(app.shows('17')).toBe(true);
     });
   });
 
