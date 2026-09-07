@@ -2,9 +2,10 @@
  * The repository the app runs on: one document per session in Firestore (ADR-0025).
  *
  * **This is the only file in the app that imports the Firebase SDK** (decision #19), which is why
- * it also answers for `Identity`: anonymous sign-in is the same vendor and belongs behind the same
- * door. Everything above this line — the store, the screens, the tests — knows only
- * `SessionRepository` and `Identity`, and the in-memory fake answers for both.
+ * it also answers for `Identity`: anonymous sign-in — and, since decision #14, linking a Google
+ * account to it — is the same vendor and belongs behind the same door. Everything above this line
+ * — the store, the screens, the tests — knows only `SessionRepository` and `Identity`, and the
+ * in-memory fake answers for both.
  *
  * Four things this file is holding that are worth reading before changing it:
  *
@@ -31,8 +32,14 @@
 import { Injectable } from '@angular/core';
 import type { SessionStatus } from 'padel-engine';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
-import type { Auth } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  linkWithPopup,
+  signInAnonymously,
+  signInWithCredential,
+} from 'firebase/auth';
+import type { Auth, AuthError, User, UserInfo } from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -50,7 +57,7 @@ import {
 } from 'firebase/firestore';
 import type { Firestore, Query, QueryConstraint, QuerySnapshot } from 'firebase/firestore';
 import { SESSIONS, firebaseConfig } from './firebase-config';
-import type { Identity } from './identity';
+import type { Durability, Identity, LinkOutcome } from './identity';
 import type { SessionRecord } from './session-record';
 import type { SessionRepository } from './session-repository';
 
@@ -123,6 +130,47 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
     this.uid = user.uid;
 
     return user.uid;
+  }
+
+  /**
+   * Whether the uid in hand is attached to a Google account, read off the user rather than
+   * remembered (ADR-0028 §1).
+   *
+   * `providerData` is the list of ways this one account can be signed in to, and linking appends
+   * to it without touching the uid — which is the whole of what makes linking safe for a session
+   * whose `ownerUid` can never move (ADR-0024 §2). An anonymous user's list is empty.
+   */
+  durability(): Durability {
+    const google = googleOn(this.auth.currentUser);
+
+    return google === null ? { kind: 'browser' } : { kind: 'linked', account: google.email };
+  }
+
+  /**
+   * Attach a Google account to the anonymous uid, keeping every session it owns (decision #14).
+   *
+   * `linkWithPopup` rather than the bare `linkWithCredential` decision #14 names: the popup is what
+   * fetches the credential in a browser, and it hands it to the same operation underneath. A
+   * redirect is the alternative and is the one to reach for if an installed iOS PWA turns out not
+   * to open the popup — it costs a whole reload of the app and a `getRedirectResult` at startup,
+   * which is machinery this does not need until that is known rather than feared (ADR-0028 §3).
+   *
+   * Nothing here writes to Firestore and nothing has to: the uid is unchanged, so every document
+   * carrying it is still this organizer's and still passes every rule it passed a moment ago.
+   */
+  async linkGoogle(): Promise<LinkOutcome> {
+    const user = this.auth.currentUser;
+    if (user === null) {
+      throw new Error('The app is not signed in. `signIn()` settles before an account is linked.');
+    }
+
+    try {
+      const linked = await linkWithPopup(user, new GoogleAuthProvider());
+
+      return { kind: 'linked', account: googleOn(linked.user)?.email ?? null };
+    } catch (error) {
+      return this.refusalOf(error);
+    }
   }
 
   async loadActive(): Promise<SessionRecord | null> {
@@ -219,6 +267,59 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
     return query(collection(this.db, SESSIONS), where('ownerUid', '==', this.owner()), ...clauses);
   }
 
+  /**
+   * What a refused link was refused for, in the four words the app above can act on.
+   *
+   * The one that matters is `auth/credential-already-in-use`: the account belongs to another uid,
+   * and Firebase hands back the credential it just fetched so that signing in as that account
+   * needs no second popup. That matters more than it looks — the sign-in happens after a
+   * confirmation, by which point the tap is no longer the gesture a browser would open a popup
+   * for, so a second one could simply be blocked. Reusing this one is what makes the recovery a
+   * question the organizer can take their time over (ADR-0028 §2).
+   *
+   * Everything that is not a dismissal is one word, `unavailable`, and is logged: the organizer's
+   * move is the same for a blocked popup and a dead network, and the difference between them
+   * belongs in the console rather than on the front door.
+   */
+  private refusalOf(error: unknown): LinkOutcome {
+    // Read defensively rather than cast, because this is the one place in the file that has to
+    // survive whatever it is handed. Everything Firebase rejects with carries a `code`, but a
+    // rejection is not a promise about its own shape, and reading a property off a `null` here
+    // would throw out of `linkGoogle` — past a caller that is not expecting one, leaving a button
+    // that appears to do nothing at all.
+    const code = codeOf(error);
+
+    if (code === 'auth/credential-already-in-use') {
+      const credential = GoogleAuthProvider.credentialFromError(error as AuthError);
+      if (credential !== null) {
+        return {
+          kind: 'taken',
+          account: (error as AuthError).customData.email ?? null,
+          adopt: async () => {
+            const { user } = await signInWithCredential(this.auth, credential);
+            this.uid = user.uid;
+
+            return user.uid;
+          },
+        };
+      }
+    }
+
+    // Closing the Google window, and the race that fires when a second one is asked for while the
+    // first is open. Neither is a failure and neither has anything to say.
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      return { kind: 'dismissed' };
+    }
+
+    // Everything else, including the collision above arriving without the credential it is
+    // supposed to carry. That last one is a Firebase refusing to say which account it refused
+    // over, which is a bug rather than a state the organizer is in — so it is logged like the
+    // rest rather than given a sentence of its own that nobody could act on either.
+    console.error('Linking a Google account failed.', error);
+
+    return { kind: 'unavailable' };
+  }
+
   private owner(): string {
     if (this.uid === null) {
       throw new Error('The app is not signed in. `signIn()` settles before any session is read.');
@@ -226,6 +327,35 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
 
     return this.uid;
   }
+}
+
+/**
+ * The `code` on a rejection, where there is a rejection with a `code` on it.
+ *
+ * `null` for anything else — a string thrown, a `null` rejection, a `TypeError` from inside the
+ * SDK. All of those are `unavailable`, which is where the four named codes' `default` goes anyway.
+ */
+function codeOf(error: unknown): string | null {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code: unknown }).code)
+    : null;
+}
+
+/**
+ * The Google half of a user, or `null` for one that has never been linked.
+ *
+ * The one question both `durability` and a completed link ask, so it is asked in one place:
+ * whether this user carries a Google provider at all is the whole of the browser-bound/linked
+ * distinction, and its `email` is the address the front door names the account by. Read off the
+ * provider rather than off `user.email`, which is the account's address rather than that
+ * provider's and is only the same value by coincidence. The dictionary owns what a missing one is
+ * called on screen (decision #20); this file's business is only whether there is one.
+ */
+function googleOn(user: User | null): UserInfo | null {
+  return (
+    user?.providerData.find((provider) => provider.providerId === GoogleAuthProvider.PROVIDER_ID) ??
+    null
+  );
 }
 
 /**

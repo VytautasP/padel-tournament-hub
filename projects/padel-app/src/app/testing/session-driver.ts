@@ -46,7 +46,24 @@ export async function createSession(
   targetScore = 24,
   tier?: Tier,
 ): Promise<AppHarness> {
-  const app = await AppHarness.launch({ tier });
+  return await createSessionOn(await AppHarness.launch({ tier }), names, courtCount, targetScore);
+}
+
+/**
+ * The same walk on an app that is already open, rather than on one this driver launches.
+ *
+ * Two functions rather than one with an optional harness, because nearly every spec wants the
+ * launch and says nothing about it. The one that does not is `keep-history-with-google.spec.ts`,
+ * which is about the browser the app is running in — a second evening there has to be created in
+ * the browser the spec has already put into a particular state, and a launch of its own would
+ * throw that state away.
+ */
+export async function createSessionOn(
+  app: AppHarness,
+  names: readonly string[],
+  courtCount = 1,
+  targetScore = 24,
+): Promise<AppHarness> {
   await app.tap('New session');
   await app.tap('Americano');
 

@@ -157,7 +157,7 @@ confirm the score lands**. That is the entire justification for one source of tr
 it is that a Firestore write promise settles on the *server* acknowledgement — never, on a court
 with no signal — so `FirestoreSessionRepository` dispatches its writes and does not await them.
 
-The Firebase SDK takes the initial bundle to roughly 960 kB raw and **244 kB transferred**, against
+The Firebase SDK takes the initial bundle to roughly 970 kB raw and **246 kB transferred**, against
 the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. The budget in
 `angular.json` is set on raw size and errors at 1.1 MB, which leaves little room on purpose: the
 binding constraint on this project is bandwidth, not Firestore reads.
@@ -171,10 +171,20 @@ firebase deploy --only firestore:rules,firestore:indexes
 firebase deploy --only hosting        # decision #22: the deploy stays manual
 ```
 
-The one thing that is not in this repository is **Anonymous sign-in**, which has to be enabled once
-under Authentication → Sign-in method in the Firebase console. Until a device has signed in once it
-has no uid and therefore no sessions, which is why a fresh install with no network gets a screen
-saying so rather than a spinner (ADR-0025 §4).
+**A Google account can be linked to that uid, and linking keeps it**
+([ADR-0028](docs/adr/0028-linking-keeps-the-uid-and-a-taken-account-is-a-question.md)). The foot of
+the front door says whether history is kept on this browser or with an account, and offers the one
+thing that changes it. `linkWithPopup` appends a provider to the anonymous user, so the uid is
+unchanged and no document is touched — which is the only shape compatible with an immutable
+`ownerUid`. When the account already belongs to another uid the app offers to sign in as it
+instead, naming what that costs: a browser holding nothing is being recovered, and a browser
+holding evenings leaves them behind for good, because `ownerUid` cannot move.
+
+The two things that are not in this repository are **Anonymous sign-in** and **Google sign-in**,
+each enabled once under Authentication → Sign-in method in the Firebase console; Google also needs
+the deployed origin listed under Authentication → Settings → Authorized domains. Until a device has
+signed in once it has no uid and therefore no sessions, which is why a fresh install with no
+network gets a screen saying so rather than a spinner (ADR-0025 §4).
 
 ## Getting started
 
