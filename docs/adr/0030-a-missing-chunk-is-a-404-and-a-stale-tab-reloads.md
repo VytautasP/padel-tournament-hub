@@ -16,11 +16,16 @@ the `qrcode` encoder of §4. A deploy changes those names. A tab that was open a
 still asking for the old ones, so it asks for a file that no longer exists, and hosting hands it the
 front page with a `200`. The browser then tries to run HTML as a module, and the import rejects.
 
-That is what was actually happening on a phone that reported "The QR needs a connection to draw"
-with four bars of signal. Every guard in the app was working correctly on a fact that was wrong: the
-share sheet caught a rejected import, and the only meaning a rejected import had was "no network".
-A phone is where this surfaces because a phone keeps a tab alive for days, while the laptop it was
-deployed from reloads a dozen times an afternoon.
+This was found while chasing a phone that reported "The QR needs a connection to draw" with four
+bars of signal, and it turned out **not** to be the cause of that — the encoder was arriving and
+then failing to be called, which is a bundling bug fixed in `qr-matrix.ts` and not a decision. The
+rewrite is written up anyway because it is a real defect standing on its own: it is the reason a
+stranded tab would have been silently misdiagnosed as offline rather than reported as a `404`, and
+a phone is exactly where it would have surfaced, since a phone keeps a tab alive for days while the
+laptop it was deployed from reloads a dozen times an afternoon.
+
+Either way the share sheet had only one meaning for a rejected import, and "no network" was not
+always it.
 
 ## Decision
 

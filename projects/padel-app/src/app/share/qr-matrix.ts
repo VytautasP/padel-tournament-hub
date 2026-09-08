@@ -41,7 +41,20 @@ export const QR_ENCODER = new InjectionToken<QrEncoder>('QrEncoder');
  * either: a QR that will not scan is retyped from the ten characters printed underneath it.
  */
 export const qrEncoder: QrEncoder = async (text) => {
-  const { create } = await import('qrcode');
+  /*
+   * `qrcode` is CommonJS, and what a CommonJS module looks like on the other side of `await
+   * import()` is decided by whoever compiled the call — the production bundler and the test
+   * runner do not agree. Asking for the namespace and reaching through `default` where there is
+   * one is the shape that survives both.
+   *
+   * This is not defensiveness for its own sake. Written as `const { create } = await
+   * import('qrcode')` the production build emitted a chunk with no `export` statement in it at
+   * all, so `create` arrived `undefined`, and calling it threw a `TypeError` that landed in the
+   * same `catch` as a failed fetch — a QR that could not be drawn on a phone with full signal.
+   * No test saw it, because the test runner's interop handed back the named export it asked for.
+   */
+  const qrcode = await import('qrcode');
+  const { create } = qrcode.default ?? qrcode;
   const { size, data } = create(text).modules;
 
   return { size, path: pathOf(size, data) };
