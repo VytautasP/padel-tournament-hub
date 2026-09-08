@@ -14,12 +14,20 @@
  * the test runner's configuration.
  */
 
+/**
+ * The one segment `/s/...` is spelled in, which the pattern and the path are both built from.
+ *
+ * Written once rather than twice in this file, which would be exactly the drift this file exists
+ * to prevent, one level down.
+ */
+const SPECTATOR = 's';
+
 /** The router's pattern for the spectator view. Relative, because a `Routes` entry is. */
-export const SPECTATOR_ROUTE = 's/:code';
+export const SPECTATOR_ROUTE = `${SPECTATOR}/:code`;
 
 /** Where a spectator goes on this origin — the path half of the link, and what a test navigates. */
 export function spectatorPath(code: string): string {
-  return `/s/${code}`;
+  return `/${SPECTATOR}/${code}`;
 }
 
 /** Where a spectator goes: the origin the organizer is on, and the code as the path. */

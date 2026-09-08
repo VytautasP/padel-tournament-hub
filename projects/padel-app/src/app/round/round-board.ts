@@ -44,8 +44,8 @@ import {
   Component,
   computed,
   input,
+  linkedSignal,
   output,
-  signal,
   untracked,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
@@ -84,25 +84,34 @@ export class RoundBoard {
   readonly roundWanted = output<void>();
 
   /**
-   * The page the reader has asked for, or `null` while they have not asked for one.
+   * Which evening this board is showing, as the one value that says "a different one".
    *
-   * Set when they page and moved by nothing else — in particular not by a score landing, which is
-   * the whole of ADR-0016 §3.
+   * A `computed` rather than the expression inline in `requested`'s source, and that is
+   * load-bearing: a source function reading `session()` makes the *session* the dependency, so
+   * every score would look like a new evening and reset the page. Memoised into a string, the
+   * dependency is the id, and a score changes nothing about it.
    */
-  private readonly requested = signal<number | null>(null);
+  private readonly watching = computed(() => this.session().id);
 
   /**
-   * The page this board opened on, taken once and then held.
+   * The page the reader is on: where the board opened, until they page away from it.
    *
-   * An evening in progress opens where it is. A finished one opens at round one, because it has
-   * no "where it is" left — the lowest unscored round of a session that has ended is a round
-   * nobody played, and opening a record there would show an empty court instead of the evening.
+   * An evening in progress opens where it is — the lowest-numbered round still holding an unscored
+   * match. A finished one opens at round one, because it has no "where it is" left: the lowest
+   * unscored round of a session that has ended is a round nobody played, and opening a record
+   * there would show an empty court instead of the evening.
    *
-   * Held in a plain field rather than derived, because "where the evening is" moves as scores
-   * land and this must not: a board that re-read it would walk itself forward under the organizer
-   * the moment the last court of the round they are reading was scored.
+   * A `linkedSignal` is what makes both halves true at once. Everything the opening page is
+   * computed from is read `untracked`, so a score landing does not move the screen (ADR-0016 §3);
+   * and the source is `watching`, the session's id, so a board handed a *different* evening — which
+   * is what `/s/A` becoming `/s/B` does to the one the router keeps — opens on that evening's own
+   * round rather than staying on page four of somebody else's night.
    */
-  private openedOn: number | null = null;
+  private readonly requested = linkedSignal<string, number>({
+    source: this.watching,
+    computation: () =>
+      untracked(() => (this.ended() ? FIRST_ROUND : currentRoundNumber(this.session()))),
+  });
 
   protected readonly copy = copy;
 
@@ -147,7 +156,7 @@ export class RoundBoard {
    * asks the engine for a round it has already refused to give.
    */
   protected readonly showing = computed(() =>
-    Math.min(Math.max(this.requested() ?? this.opening(), FIRST_ROUND), this.lastPage()),
+    Math.min(Math.max(this.requested(), FIRST_ROUND), this.lastPage()),
   );
 
   /** Whether the page on screen is the Add round card rather than a round. */
@@ -214,20 +223,5 @@ export class RoundBoard {
   /** Open the sheet for one court, which is the caller's business rather than this board's. */
   protected score(court: CourtView): void {
     this.scored.emit(court);
-  }
-
-  /**
-   * Where this board opened, worked out on the first read and never again.
-   *
-   * `untracked` is what makes "never again" true rather than nearly true: read normally, the page
-   * would be a dependency of every recomputation of `showing`, and the field's cache would be the
-   * only thing standing between a score landing and the screen moving on its own.
-   */
-  private opening(): number {
-    this.openedOn ??= untracked(() =>
-      this.ended() ? FIRST_ROUND : currentRoundNumber(this.session()),
-    );
-
-    return this.openedOn;
   }
 }

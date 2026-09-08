@@ -80,24 +80,20 @@ export interface LaunchOptions {
 }
 
 export class AppHarness {
+  /**
+   * What this app was launched with, kept so that a reload is the same app opened again.
+   *
+   * Nothing reads it as an answer: a spec that wants to know the tier has to find out the way an
+   * organizer would. It is held because reopening has to be the same device — the same tier, the
+   * same identity that could not sign in, the same browser that could not fetch the QR encoder,
+   * and the same address, which for a spectator is the whole of where they are.
+   */
   private constructor(
     private readonly fixture: ComponentFixture<App>,
     readonly repository: InMemorySessionRepository,
     /** What the share sheet copied to, and the only way to ask whether it copied at all. */
     readonly clipboard: RecordingClipboard,
-    // Kept only so a reload reopens the app in the shape it was closed in. Nothing reads it as an
-    // answer: a spec that wants to know the tier has to find out the way an organizer would.
-    private readonly tier: Tier,
-    // Kept for the same reason as the tier: reopening the app on a device that still has no
-    // signal has to be the same device, or the spec would be reloading its way out of the state
-    // it is about.
-    private readonly identity: Identity | undefined,
-    // And for the same reason again: a browser that cannot fetch the QR encoder is still that
-    // browser after the app is closed and opened.
-    private readonly qrCode: QrEncoder,
-    // And again: reopening the app is reopening it at the address it was opened at, which for a
-    // spectator is the whole of where they are.
-    private readonly at: string | undefined,
+    private launchedWith: LaunchOptions,
   ) {}
 
   static async launch({
@@ -129,7 +125,13 @@ export class AppHarness {
     });
 
     const fixture = TestBed.createComponent(App);
-    const harness = new AppHarness(fixture, repository, clipboard, tier, identity, qrCode, at);
+    const harness = new AppHarness(fixture, repository, clipboard, {
+      repository,
+      tier,
+      identity,
+      qrCode,
+      at,
+    });
     // The outlet has to exist before there is anywhere for a route to be rendered, which is why
     // this navigates after the first render rather than before it.
     fixture.detectChanges();
@@ -146,13 +148,20 @@ export class AppHarness {
   async reload(): Promise<AppHarness> {
     this.fixture.destroy();
 
-    return AppHarness.launch({
-      repository: this.repository,
-      tier: this.tier,
-      identity: this.identity,
-      qrCode: this.qrCode,
-      at: this.at,
-    });
+    return AppHarness.launch(this.launchedWith);
+  }
+
+  /**
+   * Go to another address in this app, the way a browser does when a second link is opened.
+   *
+   * The one navigation these specs need: a phone that scans a QR while already holding a
+   * spectator page open, which is one component being handed a different share code rather than a
+   * fresh app. A reload after this reopens where the app now is rather than where it started.
+   */
+  async visit(path: string): Promise<void> {
+    this.launchedWith = { ...this.launchedWith, at: path };
+    await TestBed.inject(Router).navigateByUrl(path);
+    await this.settle();
   }
 
   /**

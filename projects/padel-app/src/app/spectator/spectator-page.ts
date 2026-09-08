@@ -74,7 +74,12 @@ export class SpectatorPage {
      * the cleanup is what stops the old evening reporting into the new one.
      */
     effect((onCleanup) => {
-      onCleanup(this.repository.watch(this.code(), (record) => this.held.set(record)));
+      const code = this.code();
+      // Back to knowing nothing before the new code is asked. Without this, `/s/A` becoming
+      // `/s/B` would go on rendering A's round until B answered — one share code showing another
+      // evening, which is the one thing an unlisted address must never do.
+      this.held.set(undefined);
+      onCleanup(this.repository.watch(code, (record) => this.held.set(record)));
     });
   }
 }

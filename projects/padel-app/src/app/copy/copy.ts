@@ -273,14 +273,15 @@ export const copy = {
     /**
      * The state a share code can be in besides working (decision #10's hard delete).
      *
-     * It says the evening is gone rather than that the code is wrong, because from here those are
-     * indistinguishable and only one of them is worth reading: a code that never existed and a
-     * code whose evening was deleted are the same non-answer, and neither is anything the person
-     * holding the phone can fix. There is no retry, for the reason the front door has none.
+     * It says the evening is not there rather than naming a cause, because from here the causes are
+     * indistinguishable: a code whose evening was deleted and a code that never named one are the
+     * same non-answer, and neither is anything the person holding the phone can fix. Blaming a
+     * deletion would be the app guessing out loud, in front of somebody who may simply have
+     * mistyped. There is no retry either, for the reason the front door has none.
      */
     gone: {
       heading: 'This session is gone',
-      lead: 'Whoever ran this evening has deleted it. A deleted session is deleted for everybody, and there is nothing left to watch.',
+      lead: 'There is no evening at this code. A session that has been deleted is deleted for everybody, and nothing here can be recovered.',
     },
   },
 

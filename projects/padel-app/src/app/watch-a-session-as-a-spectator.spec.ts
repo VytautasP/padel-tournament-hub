@@ -25,9 +25,18 @@ import { copy } from './copy/copy';
 import { spectatorPath } from './share/share-link';
 import { AppHarness } from './testing/app-harness';
 import type { SessionRecord } from './session/session-record';
-import { createSession, endSession, score, sidesOn, storedSession } from './testing/session-driver';
+import {
+  createSession,
+  createSessionOn,
+  endSession,
+  score,
+  sidesOn,
+  storedSession,
+} from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
+/** A second evening, named so that a spec can tell at a glance which one is on screen. */
+const ANOTHER_FOUR = ['Eve', 'Finn', 'Gus', 'Hana'];
 
 /** An evening somebody else ran, and the app of somebody watching it by its code. */
 async function watching(organizer: AppHarness): Promise<AppHarness> {
@@ -189,6 +198,36 @@ describe('watching a session as a spectator', () => {
   });
 
   /*
+   * A second QR scanned on a phone that is already watching one. The router keeps the page and
+   * hands it a different code, which is the one way this component is ever reused — so both the
+   * evening it is rendering and the round it is standing on have to be the new one's. Holding
+   * either would put one share code's page in front of another share code's evening.
+   */
+  it('opens the evening it is sent to when the code changes underneath it', async () => {
+    const organizer = await createSession(FOUR);
+    const first = codeOf(organizer);
+    await endSession(organizer);
+    await organizer.tap(copy.session.done);
+    await createSessionOn(organizer, ANOTHER_FOUR);
+    const second = codeOf(organizer);
+
+    const spectator = await AppHarness.launch({
+      repository: organizer.repository,
+      at: spectatorPath(first),
+    });
+    const rounds = storedSession(organizer).rounds.length;
+    await spectator.tap(copy.round.next);
+    expect(spectator.shows(copy.round.heading(2, rounds))).toBe(true);
+    expect(spectator.shows(FOUR[0])).toBe(true);
+
+    await spectator.visit(spectatorPath(second));
+
+    expect(spectator.shows(ANOTHER_FOUR[0])).toBe(true);
+    expect(spectator.shows(FOUR[0])).toBe(false);
+    expect(spectator.shows(copy.round.heading(1, rounds))).toBe(true);
+  });
+
+  /*
    * The desk wears the rail and the aside, exactly as the organizer's shell does (ADR-0022 §2):
    * the spectator's route is the same shell with the controls gone, not a second design. Standings
    * is on screen without being a destination, which is the whole of that tier's argument.
@@ -210,6 +249,17 @@ describe('watching a session as a spectator', () => {
   /* The organizer's front door is still the front door: the router did not move anything else. */
   it('leaves the organizer at the address they had', async () => {
     const app = await AppHarness.launch();
+
+    expect(app.isOnScreen(copy.landing.newSession)).toBe(true);
+  });
+
+  /*
+   * An address this product does not have. Hosting rewrites every path to `index.html`, so a
+   * mistyped link arrives inside the app rather than at a 404 — and the honest answer to it is the
+   * front door, not a router error in a console nobody is looking at.
+   */
+  it('sends an address that is not a route to the front door', async () => {
+    const app = await AppHarness.launch({ at: '/nothing/here' });
 
     expect(app.isOnScreen(copy.landing.newSession)).toBe(true);
   });
