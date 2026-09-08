@@ -12,9 +12,16 @@
     The end of a share code, said once and with nothing to tap. There is no retry, for the reason
     the front door has none: reopening the page is the retry, and a deleted evening will be just as
     deleted the second time.
+
+    Set exactly as `connection-needed` is, because it is the same kind of screen: the app talking
+    about itself rather than about an evening, centred and quiet, with no card and no brand colour
+    anywhere — nothing here is an action. It takes the app's column like every other screen, or it
+    would sit against the left edge of a laptop window with a metre of nothing beside it.
   -->
-  <section class="flex h-screen flex-col justify-center gap-3 px-6">
+  <main
+    class="page-column flex min-h-screen flex-col justify-center gap-4 px-6 py-14 text-center xl:max-w-[560px]"
+  >
     <h1 class="text-title font-bold text-ink">{{ copy.spectator.gone.heading }}</h1>
-    <p class="text-lead text-ink-muted">{{ copy.spectator.gone.lead }}</p>
-  </section>
+    <p class="text-lead text-pretty text-ink-muted">{{ copy.spectator.gone.lead }}</p>
+  </main>
 }

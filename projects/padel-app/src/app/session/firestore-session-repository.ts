@@ -244,10 +244,19 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
    * reports an uncached document immediately and offline, and it is reporting that it does not
    * know rather than that there is nothing. Passing that on would tell a spectator in a basement
    * that the evening they are standing at had been deleted.
+   *
+   * **`includeMetadataChanges` is what makes that skip safe, and it is not optional.** By default a
+   * listener raises nothing when only metadata moves — so a code the cache already holds as absent
+   * answers once, from the cache, is skipped here, and is never spoken of again: a spectator on
+   * their second visit to a dead code would sit in front of a blank page for ever. Asking for the
+   * metadata means the cache's "I do not know" is followed by the server's "there is nothing", and
+   * the second one is the answer. Found by opening the same wrong code twice in a browser, which
+   * no test in this project could have done: the fake has no cache to miss.
    */
   watch(sessionId: string, onChange: (record: SessionRecord | null) => void): () => void {
     return onSnapshot(
       doc(this.db, SESSIONS, sessionId),
+      { includeMetadataChanges: true },
       (snapshot) => {
         if (snapshot.exists()) {
           onChange(recordOf(snapshot.data() as SessionDocument));
