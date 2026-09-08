@@ -150,12 +150,22 @@ project listable, share codes included.
 npm run test:rules   # rules, against the Firestore emulator — needs a JDK 21+
 ```
 
-One acceptance criterion has no automated test and is checked by hand on a real device, because
-what it is about is a radio: **record a score with the device in airplane mode, reconnect, and
-confirm the score lands**. That is the entire justification for one source of truth rather than two
+Two acceptance criteria have no automated test and are checked by hand in a real browser, because
+both are about things the fake repository has none of — a radio and a cache.
+
+The first: **record a score with the device in airplane mode, reconnect, and confirm the score
+lands**. That is the entire justification for one source of truth rather than two
 (ADR-0025 §1), so it is run against every build that touches the repository. The mechanism behind
 it is that a Firestore write promise settles on the *server* acknowledgement — never, on a court
 with no signal — so `FirestoreSessionRepository` dispatches its writes and does not await them.
+
+The second: **open a spectator link for a code that names nothing, twice**. Both visits have to say
+the session is gone. The first one always did; the second is the one that broke, because the
+persistent cache answers a document it already knows is absent without going to the server, and a
+document listener raises nothing when only its metadata moves. The spectator's listener therefore
+asks for `includeMetadataChanges` (ADR-0029 §1) — the cache's "I do not know" is skipped, and the
+server's "there is nothing" is the answer. No test in this project can hold that: the fake
+repository has no cache to miss.
 
 A share icon in the session header opens the sheet that gets that code onto everybody else's phone
 ([ADR-0026](docs/adr/0026-the-spectator-is-a-route-in-this-app-and-sharing-is-a-header-sheet.md)

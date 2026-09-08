@@ -32,6 +32,14 @@ second half is not fussiness: with persistence on, the SDK answers a document it
 immediately and offline, and passing that on would tell a spectator standing at the court that the
 evening had been deleted.
 
+Skipping that snapshot is only safe because the listener asks for `includeMetadataChanges`. Without
+it, a listener raises nothing when only metadata moves — so a code the cache already holds as absent
+would answer once, from the cache, be skipped, and never be spoken of again, leaving every visit
+after the first in front of a blank page for ever. With it, the cache's "I do not know" is followed
+by the server's "there is nothing", and the second one is the answer. This was found by opening the
+same wrong code twice in a browser and cannot be found by a test here: the fake has no cache to
+miss, which is why the README carries it as a manual check beside the airplane-mode one.
+
 **2. The spectator route does not sign in.** ADR-0025 §4 made anonymous sign-in the first thing that
 happens at startup, because the organizer's every read is scoped to a uid. None of that is true
 here: a spectator has no identity (ADR-0026 §3), the rules ask for none on a `get`, and an anonymous
