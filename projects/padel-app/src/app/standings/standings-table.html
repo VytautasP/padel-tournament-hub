@@ -1,0 +1,129 @@
+<!--
+  The podium is a block rather than three lighter rows at the top of the table. It is the one
+  warm thing on the screen — the three metals are the only colour in the app that is not the
+  teal or the neutral ramp — and it is the whole reason the evening was played.
+-->
+@if (podium().length > 0) {
+  <section class="flex flex-col gap-3 rounded-[20px] border border-brand bg-brand-wash p-[18px]">
+    <h2 class="text-micro font-bold text-brand uppercase">{{ copy.standings.podium }}</h2>
+    <ol class="flex flex-col gap-[10px]">
+      @for (place of podium(); track place.standing.id) {
+        <li class="flex items-center gap-3">
+          <!--
+            The position and its medal are one thing wearing one colour, so the metal is set
+            once here and the medal takes it as `currentColor`. Two bindings for one fact is how
+            a bronze number ends up beside a silver medal.
+          -->
+          <span class="flex items-center gap-3" [class]="metalInk[place.metal]">
+            <span class="text-name w-4 font-bold tabular-nums">{{ place.standing.position }}</span>
+            <svg
+              class="block shrink-0"
+              width="22"
+              height="32"
+              viewBox="0 0 32 46"
+              fill="none"
+              aria-hidden="true"
+            >
+              <polygon points="3,1 11,1 21,24 13,24" class="fill-brand-strong" />
+              <polygon points="29,1 21,1 11,24 19,24" class="fill-brand" />
+              <circle cx="16" cy="31" r="13" fill="currentColor" />
+              <!--
+                The ring is the page's own ground showing through the disc rather than a colour
+                of its own, which is what `surface` is: exactly what the dark board draws, and
+                a whisker off white on the light one where nothing at 45% can tell.
+              -->
+              <circle
+                cx="16"
+                cy="31"
+                r="8.6"
+                class="stroke-surface"
+                stroke-width="1"
+                opacity="0.45"
+              />
+            </svg>
+          </span>
+          <span class="text-name min-w-0 flex-1 truncate text-ink">{{ place.standing.name }}</span>
+          <span class="text-name font-bold tabular-nums text-ink">
+            {{
+              copy.standings.total(
+                place.standing.points,
+                place.standing.matchesPlayed,
+                place.standing.benched
+              )
+            }}
+          </span>
+        </li>
+      }
+    </ol>
+  </section>
+}
+
+<!--
+  One row per competitor, divided rather than carded: the table is read down a column of totals,
+  and a gap between every line is a gap the eye has to cross seven times.
+
+  An expanded row takes a brand outline instead of its divider, which is what makes the figures
+  underneath read as belonging to the name above them rather than to the row below.
+
+  The first and last rows round with the list. The list clips its own corners, so a square
+  outline on the row at either end is cut through by the curve and reads as a broken box; the
+  radius is the list's 20px less its 1px border, which is where the row's own edge sits.
+-->
+<ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+  @for (standing of standings(); track standing.id) {
+    <li
+      [class]="
+        isExpanded(standing.id)
+          ? 'border border-brand first:rounded-t-[19px] last:rounded-b-[19px]'
+          : 'border-b border-line last:border-b-0'
+      "
+    >
+      <button
+        type="button"
+        class="flex w-full items-baseline gap-[14px] px-[18px] pt-[15px] text-left"
+        [class]="isExpanded(standing.id) ? 'pb-2' : 'pb-[15px]'"
+        [attr.aria-expanded]="isExpanded(standing.id)"
+        (click)="toggle(standing.id)"
+      >
+        <span class="text-meta w-[22px] tabular-nums text-ink-muted">{{ standing.position }}</span>
+        <span class="text-row min-w-0 flex-1 truncate text-ink">{{ standing.name }}</span>
+        <!-- A dash is not a score, so it is not weighted like one. -->
+        <span
+          class="text-name font-bold tabular-nums"
+          [class]="
+            standing.matchesPlayed === 0 && standing.benched === 0 ? 'text-ink-muted' : 'text-ink'
+          "
+        >
+          {{ copy.standings.total(standing.points, standing.matchesPlayed, standing.benched) }}
+        </span>
+      </button>
+
+      @if (isExpanded(standing.id)) {
+        <!--
+          Indented past the position column, so the figures line up under the name.
+
+          The three of them are one sentence read left to right: what happened on court, how many
+          courts that was, and how many rounds it was not. The last is there because the total
+          above includes a bench credit for each of them (ADR-0023 §2) — without the count, a
+          record of three matches beside a total of four rounds' points looks like a bug.
+        -->
+        <dl class="text-meta flex gap-[22px] pt-0 pr-[18px] pb-[14px] pl-9 text-ink-muted">
+          <div class="flex gap-2">
+            <dt>{{ copy.standings.record }}</dt>
+            <dd class="tabular-nums text-ink">
+              {{ copy.standings.recordOf(standing.won, standing.tied, standing.lost) }}
+            </dd>
+          </div>
+          <div class="flex gap-2">
+            <dt>{{ copy.standings.matchesPlayed }}</dt>
+            <dd class="tabular-nums text-ink">{{ standing.matchesPlayed }}</dd>
+          </div>
+          <div class="flex gap-2">
+            <dt>{{ copy.standings.benched }}</dt>
+            <dd class="tabular-nums text-ink">{{ standing.benched }}</dd>
+          </div>
+        </dl>
+      }
+    </li>
+  }
+</ul>

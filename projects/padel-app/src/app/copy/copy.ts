@@ -256,6 +256,35 @@ export const copy = {
   },
 
   /**
+   * What the other end of a share code reads (ADR-0026 §2).
+   *
+   * A spectator is not an organizer with the buttons taken away — they are somebody standing on a
+   * court holding a phone, and the two things they need said are which evening this is and that
+   * nothing they do here changes it. Everything else on the route is the session itself, in the
+   * same words the organizer reads: the roster, the courts and the table are one vocabulary, and a
+   * second set of them for watchers would be two apps describing one night.
+   */
+  spectator: {
+    /**
+     * The line under the app's name on the spectator's header — the same sentence the rail says
+     * about the same evening, because it answers the same question.
+     */
+    summary: modeAndSize,
+    /**
+     * The state a share code can be in besides working (decision #10's hard delete).
+     *
+     * It says the evening is gone rather than that the code is wrong, because from here those are
+     * indistinguishable and only one of them is worth reading: a code that never existed and a
+     * code whose evening was deleted are the same non-answer, and neither is anything the person
+     * holding the phone can fix. There is no retry, for the reason the front door has none.
+     */
+    gone: {
+      heading: 'This session is gone',
+      lead: 'Whoever ran this evening has deleted it. A deleted session is deleted for everybody, and there is nothing left to watch.',
+    },
+  },
+
+  /**
    * Getting a share code from the organizer's phone onto everybody else's (ADR-0026 §4).
    *
    * The one surface in the app that shows a share code to a human, which is what ADR-0024's choice

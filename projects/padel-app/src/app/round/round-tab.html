@@ -1,143 +1,17 @@
-<section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
-  <header class="flex items-center justify-between gap-3">
-    <button
-      type="button"
-      class="flex size-[46px] items-center justify-center rounded-full border border-line bg-surface-raised text-name text-ink-muted disabled:opacity-30"
-      [attr.aria-label]="copy.round.previous"
-      [disabled]="!canPage().back"
-      (click)="previous()"
-    >
-      {{ copy.round.previousGlyph }}
-    </button>
-
-    <h1 class="text-header text-center font-bold text-ink">
-      @if (pastTheLastRound()) {
-        {{ copy.round.addRound.heading }}
-      } @else {
-        {{ copy.round.heading(showing(), roundCount()) }}
-      }
-    </h1>
-
-    <button
-      type="button"
-      class="flex size-[46px] items-center justify-center rounded-full border border-line bg-surface-raised text-name text-ink-muted disabled:opacity-30"
-      [attr.aria-label]="copy.round.next"
-      [disabled]="!canPage().forward"
-      (click)="next()"
-    >
-      {{ copy.round.nextGlyph }}
-    </button>
-  </header>
-
-  @if (canReturnToCurrentRound()) {
-    <button
-      type="button"
-      class="text-meta self-center font-bold text-brand underline"
-      (click)="backToCurrentRound()"
-    >
-      {{ copy.round.backToCurrent }}
-    </button>
-  }
-
-  @if (round(); as view) {
-    <!--
-      Two-up from the middle tier, one court per row below it (ADR-0022 §1). The grid is the whole
-      of what widening the Round tab means, which is why it is a utility and not a signal: nothing
-      here is a different screen at a different width, it is the same courts in more room.
-    -->
-    <ul class="grid gap-3 md:grid-cols-2">
-      @for (court of view.courts; track court.courtNumber) {
-        <li>
-          @if (ended()) {
-            <div
-              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
-              [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
-            >
-              <ng-container
-                [ngTemplateOutlet]="card"
-                [ngTemplateOutletContext]="{ $implicit: court }"
-              />
-            </div>
-          } @else {
-            <button
-              type="button"
-              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
-              [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
-              [attr.aria-label]="copy.round.enterScore(court.name)"
-              (click)="score(court)"
-            >
-              <ng-container
-                [ngTemplateOutlet]="card"
-                [ngTemplateOutletContext]="{ $implicit: court }"
-              />
-            </button>
-          }
-        </li>
-      }
-    </ul>
-
-    <!--
-      The three notes are one group rather than three siblings, because that is what they are on
-      the artboard: footnotes to the courts, set close together, and one step further from the
-      courts than they are from each other. The outer `@if` is what keeps that true when none of
-      them applies — an empty group would still take the section's gap on both sides.
-    -->
-    @if (view.hasSameGenderPair || view.bench.length > 0 || view.bye.length > 0) {
-      <div class="flex flex-col gap-2">
-        @if (view.hasSameGenderPair) {
-          <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
-        }
-
-        @if (view.bench.length > 0) {
-          <p class="text-meta text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
-        }
-
-        @if (view.bye.length > 0) {
-          <p class="text-meta text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
-        }
-      </div>
-    }
-
-    <!--
-      The advance card sits at the bottom of the screen, not under the last note. `min-h-full`
-      above plus this spacer is what puts it there without pinning it: a round with more courts
-      than fit simply scrolls, and the button arrives at the end of the scroll rather than
-      floating over it.
-    -->
-    <div class="flex-1"></div>
-
-    @if (advanceTo(); as nextRound) {
-      <button
-        type="button"
-        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
-        (click)="show(nextRound)"
-      >
-        {{ copy.round.advance(nextRound) }}
-      </button>
-    }
-  } @else if (pastTheLastRound()) {
-    <div class="space-y-3 rounded-[18px] border border-dashed border-line p-4 text-center">
-      <p class="text-meta text-ink-muted">{{ copy.round.addRound.lead }}</p>
-      <button
-        type="button"
-        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
-        (click)="addRound()"
-      >
-        {{ copy.round.addRound.action }}
-      </button>
-    </div>
-  }
-</section>
-
 <!--
-  One court, instantiated twice: as a button while the evening is running, and as plain content
-  once it has ended. The card is identical either way — what changes is whether it can be tapped —
-  so the alternative is two copies of it drifting apart a line at a time.
+  The Round tab is the board, plus the two things only the organizer of this evening can do with
+  it: tap a court to score it, and ask for one more round (ADR-0026 §2).
 
-  The card itself is `app-court-card`, which is written once and instantiated by both branches. It
-  says everything a court says, the result included; what the two branches above add is the frame
-  around it.
+  There is no board before there is a session. The shell renders this tab inside a session, so the
+  empty branch is the impossible one and renders nothing rather than a screen apologising for a
+  state the app cannot be in.
 -->
-<ng-template #card let-court>
-  <app-court-card [court]="court" />
-</ng-template>
+@if (session(); as session) {
+  <app-round-board
+    [session]="session"
+    [courtNames]="courtNames()"
+    [organizing]="true"
+    (scored)="score($event)"
+    (roundWanted)="addRound()"
+  />
+}

@@ -15,6 +15,8 @@
  * in twice.
  */
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { routes } from './app.routes';
 import { BrowserClipboard, CLIPBOARD } from './share/clipboard';
 import { BreakpointLayout } from './layout/breakpoint-layout';
 import { LAYOUT } from './layout/layout';
@@ -26,6 +28,12 @@ import { SESSION_REPOSITORY } from './session/session-repository';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    /*
+     * The router ADR-0026 brought, and the one option it is configured with. Component input
+     * binding is what hands `/s/:code` to the spectator page as an input, so the page is a
+     * component with a share code rather than a component that knows it is being routed to.
+     */
+    provideRouter(routes, withComponentInputBinding()),
     FirestoreSessionRepository,
     { provide: SESSION_REPOSITORY, useExisting: FirestoreSessionRepository },
     { provide: IDENTITY, useExisting: FirestoreSessionRepository },

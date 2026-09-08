@@ -37,15 +37,12 @@ import type { OnDestroy } from '@angular/core';
 import {
   addPlayer,
   addRound,
-  computeStandings,
   assignPartner,
-  computeTeamStandings,
   createSession,
   finishSession,
   generateRemaining,
   recordScore,
   removePlayer,
-  teamsNeedingPartner,
   type Gender,
   type OrphanedTeam,
   type PlayerId,
@@ -56,13 +53,13 @@ import {
   type Team,
   type TeamId,
 } from 'padel-engine';
-import { rowsOfPlayers, rowsOfTeams } from '../standings/standing-row';
+import { rowsOf } from '../standings/standing-row';
 import type { StandingRow } from '../standings/standing-row';
 import { currentRoundNumber } from './current-round';
 import { IDENTITY } from './identity';
 import type { Durability, LinkOutcome, TakenAccount } from './identity';
 import { newShareCode } from './share-code';
-import { teamNameOf } from './teams';
+import { orphanedTeamsIn } from './teams';
 import type { SessionRecord } from './session-record';
 import { SESSION_REPOSITORY } from './session-repository';
 import { summarise } from './session-summary';
@@ -229,7 +226,7 @@ export class SessionStore implements OnDestroy {
   readonly history = computed<readonly SessionSummary[]>(() =>
     [...this.endedRecords()]
       .sort((a, b) => (b.endedAt ?? '').localeCompare(a.endedAt ?? ''))
-      .map((record) => summarise(record, this.tableOf(record.session))),
+      .map((record) => summarise(record, rowsOf(record.session))),
   );
 
   /**
@@ -295,12 +292,12 @@ export class SessionStore implements OnDestroy {
    * table is computed from, so the table needs no freezing of its own (ADR-0009 §4).
    *
    * One table for every mode, because there is one ladder (ADR-0011): Team Americano hands it
-   * teams where the others hand it players, and `tableOf` is the single line that knows which.
+   * teams where the others hand it players, and `rowsOf` is the single function that knows which.
    */
   readonly standings = computed<readonly StandingRow[]>(() => {
     const session = this.openSession();
 
-    return session === null ? [] : this.tableOf(session);
+    return session === null ? [] : rowsOf(session);
   });
 
   /**
@@ -313,9 +310,7 @@ export class SessionStore implements OnDestroy {
   readonly teamsNeedingPartner = computed<readonly OrphanedTeam[]>(() => {
     const session = this.openSession();
 
-    return session === null || session.mode !== 'team-americano'
-      ? []
-      : teamsNeedingPartner(session);
+    return session === null ? [] : orphanedTeamsIn(session);
   });
 
   /**
@@ -589,19 +584,6 @@ export class SessionStore implements OnDestroy {
    * is one engine call — everything else about them, including the fact that neither is stored
    * yet, is the same interaction.
    */
-  /**
-   * The table for one session: the ladder its mode ranks, as rows the screens can render.
-   *
-   * The mode is read here and nowhere else. Team Americano ranks teams and every other mode ranks
-   * players (ADR-0011), the engine refuses the wrong question of either, and a screen asking both
-   * and picking one would be this check in a second place.
-   */
-  private tableOf(session: Session): readonly StandingRow[] {
-    return session.mode === 'team-americano'
-      ? rowsOfTeams(computeTeamStandings(session), (teamId) => teamNameOf(session, teamId))
-      : rowsOfPlayers(computeStandings(session));
-  }
-
   /**
    * Everything one organizer's uid owns: the evening in progress, the evenings already played, and
    * a listener following the first of them (ADR-0025 §3).

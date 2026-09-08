@@ -169,15 +169,31 @@ the library's SVG renderer, which bakes two hex colours into its markup — so t
 are tokens like every other colour in the app, and they are the one pair `styles.css` does not
 theme, because a camera decodes contrast rather than a palette.
 
-What that QR and that link point at — `/s/<code>`, the spectator route — is the *next* slice
-(ADR-0026 §1). Until it lands, a scanned code reaches an app that has no route for it: this half is
-the one that gets the code off the organizer's phone, and it is deliberately shipped first because
-the sheet is what the route is worth having for.
+What that QR and that link point at is **`/s/<code>`, the spectator route** (ADR-0026 §1,
+[ADR-0029](docs/adr/0029-the-spectator-watches-one-document-and-signs-in-to-nothing.md)). It is the
+same application behind a router with two lazily-loaded routes, so a spectator downloads the round
+card and the table without the wizard, the score sheet or the auth flow, and the organizer pays
+nothing for the spectator's view either.
 
-The Firebase SDK takes the initial bundle to roughly 978 kB raw and **248 kB transferred**, against
-the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. `qrcode` is not in
-that figure: it is imported dynamically and arrives as a 25 kB lazy chunk (8 kB transferred) the
-first time an organizer opens the share sheet, and never for one who does not. The budget in
+A spectator sees the whole evening read-only — the three tabs of ADR-0016, live on a listener over
+the one document — and signs in to nothing: the rules allow a `get` of a session to anybody holding
+its id, which is the whole of what makes the code the credential. Read-only is structural rather
+than a disabled control: each tab is split into a board that renders (`app-round-board`,
+`app-standings-table`, `app-roster-list`) and a tab that acts, and the spectator's shell holds the
+boards and no store to write with. A code that opens nothing — a deleted evening, or a code that
+never named one — renders a sentence saying the session is gone rather than a permission error.
+
+`X-Robots-Tag: noindex` on `/s/**` is a Hosting header, with `robots.txt` disallowing the same path
+(ADR-0026 §5). Not an injected meta tag: a privacy promise should not depend on a crawler executing
+Angular.
+
+The Firebase SDK takes the initial bundle to roughly 886 kB raw and **228 kB transferred**, against
+the ~500 kB figure `DECISIONS.md` uses to work out the 360 MB/day Hosting cap. Neither route is in
+that figure: the organizer's is a 131 kB lazy chunk (29 kB transferred) and the spectator's is a
+4.5 kB one (1.6 kB). The SDK is not lazy and is downloaded by both, because one file provides the
+repository for the whole application (decision #19) — splitting it per route is the thing to do
+first if the transfer cap ever becomes the binding constraint (ADR-0026 §1). `qrcode` is lazy too,
+and arrives the first time an organizer opens the share sheet and never for one who does not. The budget in
 `angular.json` is set on raw size and errors at 1.1 MB, which leaves little room on purpose: the
 binding constraint on this project is bandwidth, not Firestore reads.
 

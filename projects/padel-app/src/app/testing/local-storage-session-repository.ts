@@ -59,6 +59,8 @@ interface StoredHistory {
 @Injectable()
 export class LocalStorageSessionRepository implements SessionRepository {
   private watchers = new Set<(record: SessionRecord | null) => void>();
+  /** The spectator's listeners, by the code each is watching. */
+  private readonly codeWatchers = new Map<string, Set<(record: SessionRecord | null) => void>>();
 
   async loadActive(): Promise<SessionRecord | null> {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -108,16 +110,56 @@ export class LocalStorageSessionRepository implements SessionRepository {
     return () => this.watchers.delete(onChange);
   }
 
+  /**
+   * The spectator's listener over this store, which knows both places a session can be.
+   *
+   * A code names one evening for the whole of its life (ADR-0024 §1), and ending one moves it
+   * from the active document into the history document without changing what it is called. So
+   * this looks in both rather than in the one the evening happened to be in when the listener
+   * opened, exactly as the real repository's `get` finds one document either way.
+   */
+  watch(sessionId: string, onChange: (record: SessionRecord | null) => void): () => void {
+    const watching = this.codeWatchers.get(sessionId) ?? new Set();
+    watching.add(onChange);
+    this.codeWatchers.set(sessionId, watching);
+    void this.find(sessionId).then(onChange);
+
+    return () => watching.delete(onChange);
+  }
+
   private async announce(): Promise<void> {
     const record = await this.loadActive();
     for (const watcher of this.watchers) {
       watcher(record);
     }
+
+    await this.announceToSpectators();
+  }
+
+  /** The other half of a write, told to whoever is watching a code. */
+  private async announceToSpectators(): Promise<void> {
+    for (const [sessionId, watching] of this.codeWatchers) {
+      const held = await this.find(sessionId);
+      for (const watcher of watching) {
+        watcher(held);
+      }
+    }
+  }
+
+  /** The session at this code, wherever it is being kept, or `null` if it is kept nowhere. */
+  private async find(sessionId: string): Promise<SessionRecord | null> {
+    const active = await this.loadActive();
+    if (active !== null && active.session.id === sessionId) {
+      return active;
+    }
+
+    return (await this.loadHistory()).find((held) => held.session.id === sessionId) ?? null;
   }
 
   private async writeHistory(records: readonly SessionRecord[]): Promise<void> {
     const history: StoredHistory = { version: FORMAT_VERSION, records };
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    await this.announceToSpectators();
   }
 }
 

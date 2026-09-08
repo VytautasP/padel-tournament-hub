@@ -1,0 +1,149 @@
+<!--
+  Divided rather than carded, like the standings table: the list is read straight down a column
+  of names, and a gap between every line is a gap the eye has to cross once per player.
+
+  A row that has opened takes a brand outline instead of its divider, which is what makes the
+  control underneath read as belonging to the name above it rather than to the row below.
+-->
+<ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+  @for (row of rows(); track row.id) {
+    <!--
+      An open row pulls itself up a pixel so its outline lands *on* the divider it replaces
+      rather than beside it, which is what stops the whole list below shifting as one opens.
+    -->
+    <li
+      class="flex flex-col gap-[10px] px-[18px] pt-[9px]"
+      [class]="
+        isExpanded(row)
+          ? '-mt-px border border-brand pb-[14px]'
+          : 'border-b border-line pb-[9px] last:border-b-0'
+      "
+    >
+      <!--
+        The line stands at its drawn height whether or not it carries the overflow, so a row that
+        has nothing to offer is not visibly shorter than the ones around it.
+      -->
+      <div class="flex min-h-[30px] items-center gap-[10px]">
+        <!--
+          A player who has gone home is present-but-finished rather than deleted, so their name
+          goes quiet and stays. It is still there because it is still holding their standings
+          line.
+        -->
+        <span
+          class="text-row min-w-0 flex-1 truncate"
+          [class]="row.gone ? 'text-ink-muted' : 'text-ink'"
+        >
+          {{ row.name }}
+        </span>
+
+        <!--
+          What the row has to say about this player, in the order it becomes true: the pairing is
+          the fact that holds all evening, and sitting out is the fact that holds this round.
+
+          The two exceptional states stand alone. `Went home` and `Needs partner` are not another
+          thing that is also true of somebody — they are the whole of what their row is now
+          reporting, and setting a pairing beside either of them dilutes the one line on the
+          screen that has to be noticed.
+        -->
+        @if (row.gone) {
+          <span
+            class="text-meta shrink-0 rounded-full border border-line bg-surface-sunken px-[11px] py-[5px] text-ink-muted"
+          >
+            {{ copy.players.gone }}
+          </span>
+        } @else if (row.needsPartner) {
+          <!--
+            The one warning on this screen, in the one pair of tokens that means warning. It is a
+            problem the organizer has to solve before the evening can field this team again —
+            unlike everything else a row says, which is only a report.
+          -->
+          <span
+            class="text-meta shrink-0 rounded-full border border-warning bg-warning-surface px-[11px] py-[5px] font-bold text-warning"
+          >
+            {{ copy.players.needsPartner }}
+          </span>
+        } @else {
+          @if (row.team !== null) {
+            <!--
+              The canvas sets the pairing in Space Grotesk at 12px. The scale binds that face to
+              the four roles that carry a title or a number and to nothing smaller (`styles.css`),
+              and it says in as many words that a step per drawing is not a scale — so this takes
+              the nearest role it has rather than earning one of its own.
+            -->
+            <span class="text-meta shrink-0 text-ink-muted">{{ row.team }}</span>
+          }
+
+          @if (row.benched) {
+            <span
+              class="text-meta shrink-0 rounded-full bg-surface-sunken px-[11px] py-[5px] text-ink-muted"
+            >
+              {{ copy.players.benched }}
+            </span>
+          }
+        }
+
+        @if (organizing() && !row.gone && row.canGoHome) {
+          <!--
+            The tap target is the full 44px; the ring inside it is what is drawn. It hangs
+            past the row's padding so that the *ring* sits where the canvas puts it while the
+            target stays the full size a thumb needs.
+          -->
+          <button
+            type="button"
+            class="-mr-2 flex size-11 shrink-0 items-center justify-center"
+            [attr.aria-label]="copy.players.options(row.name)"
+            [attr.aria-expanded]="isOpen(row.id)"
+            (click)="toggleOptions(row.id)"
+          >
+            <span
+              class="text-control flex size-[34px] items-center justify-center rounded-full border"
+              [class]="isOpen(row.id) ? 'border-brand text-brand' : 'border-line text-ink-muted'"
+            >
+              {{ copy.players.optionsGlyph }}
+            </span>
+          </button>
+        }
+      </div>
+
+      <!--
+        The fix where the problem is displayed (decision #2b, ADR-0012). It is under the flag
+        rather than in line with it because it is a whole control rather than a second badge, and
+        a row asked to carry `Needs partner` and the repair on one line ends up carrying neither
+        at a size that can be read at arm's length.
+      -->
+      <!-- The second half is the template type-checker's, not a second rule: `canAssignPartner`
+           has already asked it, and a method call is not a narrowing Angular can follow. -->
+      @if (canAssignPartner(row) && row.team !== null) {
+        <button
+          type="button"
+          class="text-control flex h-12 items-center justify-center rounded-[14px] bg-brand font-bold text-brand-ink"
+          [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
+          (click)="assignPartner(row)"
+        >
+          {{ copy.players.assignPartner }}
+        </button>
+      }
+
+      <!--
+        Going home is weighted as the ordinary thing it is — the brand, never `danger`. Nothing
+        about the evening so far changes: the player keeps their matches and their standings line
+        and is simply in no later round. A red button would be saying somebody is about to be
+        deleted, which is exactly what this is not (CONTEXT.md, ADR-0015).
+
+        It is set exactly as the repair above it. The two canvas boards draw these at different
+        weights, and the app has already answered that question everywhere else it fills a button
+        with the brand: one weight, so a row's control is not read as two different kinds of
+        thing depending on which board it was drawn on.
+      -->
+      @if (isOpen(row.id)) {
+        <button
+          type="button"
+          class="text-control flex h-12 items-center justify-center rounded-[14px] bg-brand font-bold text-brand-ink"
+          (click)="goHome(row)"
+        >
+          {{ copy.players.wentHome }}
+        </button>
+      }
+    </li>
+  }
+</ul>

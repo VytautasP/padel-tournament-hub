@@ -1,0 +1,8 @@
+# A spectator route is unlisted, not private (ADR-0024 §4, ADR-0026 §5). The share code is the
+# whole of the permission, so a code sitting in a search index is a code handed to everybody.
+#
+# This is the second of the two mechanisms and the weaker one: Hosting sets `X-Robots-Tag: noindex`
+# on `/s/**` (firebase.json), which is what actually keeps a crawled page out of an index. This
+# file asks crawlers not to fetch it in the first place.
+User-agent: *
+Disallow: /s/

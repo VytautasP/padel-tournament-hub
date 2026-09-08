@@ -1,82 +1,40 @@
 /*
  * The Standings tab: the table, live, and the button that makes it final (decision #17, ADR-0008).
  *
+ * The table is `app-standings-table`, which is the same component the spectator's route renders
+ * (ADR-0026 §2). What this tab adds is the one thing an organizer can do from here, and that is
+ * the whole of the difference between the two screens.
+ *
  * Nothing is computed here. The store asks the engine on every read and the engine derives the
  * table from the recorded scores, so a correction typed into the Round tab is already in this
  * table before it is looked at — there is no refresh, no invalidation and nothing to keep in step.
- *
- * A row shows the three things asked at the side of a court — where am I, who am I, how many
- * points have I got — and hides what is asked afterwards behind a tap. The record, the matches
- * played and the rounds benched explain a total rather than establish one, and a table that shows
- * everything at once is a table nobody can read across a court in the dark.
- *
- * A row is a competitor rather than a player: the same table ranks teams in Team Americano, and
- * the only thing that changes is the name in the middle column (ADR-0011). The store decides
- * which ladder this session has; nothing on this screen asks what mode it is.
- *
- * The figure beside a name is the competitor's total, bench credits and all (ADR-0023). The app
- * neither computes it nor explains it: the expansion shows the terms and the reader does the
- * arithmetic if they want to.
- *
- * Positions come from the engine and are rendered exactly as given: a joint second is `2` twice
- * and the next player is `4`. The app never invents a separator and never renumbers, because the
- * places a joint position occupies are used up (decision #8).
  *
  * **End session is in this footer** rather than on a screen of its own, because the evening ends
  * when the table is final and the table is what the organizer is looking at when they decide that
  * (ADR-0016 §6). What it leaves behind is a podium above the same table on the same tab: the top
  * three *are* the standings, so a podium screen would render the same rows twice.
  */
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { PlayerId, TeamId } from 'padel-engine';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
 import { SessionStore } from '../session/session-store';
-import { podiumOf } from './podium';
-import type { Metal } from './podium';
-
-/**
- * The token each metal is drawn in, named here rather than in the template.
- *
- * A three-way choice written as nested ternaries in a class binding is unreadable, and written as
- * an `@switch` it is the medal drawn three times over. This is the one fact that changes between
- * the three places, so it is the only thing that varies.
- */
-const METAL_INK: Record<Metal, string> = {
-  gold: 'text-podium-gold',
-  silver: 'text-podium-silver',
-  bronze: 'text-podium-bronze',
-};
+import { StandingsTable } from './standings-table';
 
 @Component({
   selector: 'app-standings-tab',
+  imports: [StandingsTable],
   templateUrl: './standings-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StandingsTab {
   private readonly store = inject(SessionStore);
   private readonly confirm = inject(Confirm);
-  /** Which rows are open, by competitor id — a player's, or a team's (ADR-0011). */
-  private readonly expanded = signal<readonly (PlayerId | TeamId)[]>([]);
 
   protected readonly copy = copy;
   protected readonly standings = this.store.standings;
 
   /** Whether this table is a record rather than a scoreboard: the evening has been ended. */
   protected readonly ended = this.store.ended;
-
-  protected readonly podium = computed(() => podiumOf(this.standings()));
-  protected readonly metalInk = METAL_INK;
-
-  protected isExpanded(id: PlayerId | TeamId): boolean {
-    return this.expanded().includes(id);
-  }
-
-  protected toggle(id: PlayerId | TeamId): void {
-    this.expanded.update((open) =>
-      open.includes(id) ? open.filter((held) => held !== id) : [...open, id],
-    );
-  }
 
   /**
    * End the evening, once the organizer has read what that freezes.

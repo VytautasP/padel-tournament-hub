@@ -10,12 +10,34 @@
  * is a second chance to read it differently, and the strip under the courts and the schedule
  * disagreeing about who is playing is a bug the organizer cannot resolve, standing next to them.
  */
-import type { PlayerId, Session, Team, TeamId } from 'padel-engine';
+import {
+  teamsNeedingPartner,
+  type OrphanedTeam,
+  type PlayerId,
+  type Session,
+  type Team,
+  type TeamId,
+} from 'padel-engine';
 import { copy } from '../copy/copy';
 
 /** Whether this session's competitor is a pair rather than a person. */
 export function playsAsTeams(session: Session): boolean {
   return session.mode === 'team-americano';
+}
+
+/**
+ * The teams that are one player short, and the half of each still here (decision #2b, ADR-0012).
+ *
+ * The engine answers this of a Team Americano session and refuses the question of any other, so
+ * the mode is asked here rather than by each screen that renders a roster — the organizer's tab
+ * through the store, the spectator's route directly.
+ *
+ * Read off the session on every call, like the table: `needs partner` is a team's line-up seen
+ * against the roster rather than a field anybody stores, so a repair clears the flag by being made
+ * and a departure raises it the same way.
+ */
+export function orphanedTeamsIn(session: Session): readonly OrphanedTeam[] {
+  return playsAsTeams(session) ? teamsNeedingPartner(session) : [];
 }
 
 /** The teams, in the order the organizer paired them. Empty in the modes that rotate partners. */

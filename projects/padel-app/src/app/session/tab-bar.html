@@ -1,0 +1,13 @@
+<nav class="page-column flex border-t border-line bg-surface-raised">
+  @for (destination of destinations(); track destination.id) {
+    <button
+      type="button"
+      class="text-meta flex-1 py-3"
+      [class]="current() === destination.id ? 'font-bold text-brand' : 'text-ink-muted'"
+      [attr.aria-current]="current() === destination.id ? 'page' : null"
+      (click)="chose.emit(destination.id)"
+    >
+      {{ destination.label }}
+    </button>
+  }
+</nav>

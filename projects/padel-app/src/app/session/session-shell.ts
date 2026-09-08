@@ -29,6 +29,11 @@
  * a scroll offset of its own. One scroller shared between them would hand the standings the
  * round's offset and lose both.
  *
+ * The rail, the bar and the list of destinations are their own files, because the spectator's
+ * shell wears the same two arrangements around the same three panels (ADR-0026 §2). What is left
+ * here is what only an organizer's session has: the share control, the door out of an ended one,
+ * and the three tabs rather than the three boards underneath them.
+ *
  * **An ended session has a door, and only an ended session.** ADR-0016's "no back button" is a rule
  * about an evening in progress: leaving one is ending it or discarding it, and both of those are
  * elsewhere on purpose. A finished session is not an evening being run — it is a record being
@@ -44,32 +49,20 @@ import {
   signal,
 } from '@angular/core';
 import { copy } from '../copy/copy';
+import { destinationsAt, panelAt } from './destinations';
+import type { Panel } from './destinations';
 import { LAYOUT } from '../layout/layout';
 import { PlayersTab } from '../players/players-tab';
 import { RoundTab } from '../round/round-tab';
+import { SessionRail } from './session-rail';
 import { SessionStore } from './session-store';
 import { Share } from '../share/share-sheet';
 import { StandingsTab } from '../standings/standings-tab';
-
-/**
- * The three panels this shell holds. Not the same list as the destinations: at the desk the
- * standings are a panel nobody navigates to, which is the whole of ADR-0022 §2.
- */
-type Panel = 'round' | 'standings' | 'players';
-
-/** One place the navigation offers: what it is called, and the panel it shows. */
-interface Destination {
-  readonly id: Panel;
-  readonly label: string;
-}
-
-const ROUND: Destination = { id: 'round', label: copy.session.round };
-const STANDINGS: Destination = { id: 'standings', label: copy.session.standings };
-const PLAYERS: Destination = { id: 'players', label: copy.session.players };
+import { TabBar } from './tab-bar';
 
 @Component({
   selector: 'app-session-shell',
-  imports: [PlayersTab, RoundTab, StandingsTab],
+  imports: [PlayersTab, RoundTab, SessionRail, StandingsTab, TabBar],
   templateUrl: './session-shell.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -92,29 +85,11 @@ export class SessionShell {
   /** Whether the shell is wearing the rail and the aside rather than the bottom bar. */
   protected readonly atDesk = computed(() => this.tier() === 'desk');
 
-  /**
-   * The destinations there are, which is the whole of what the two shapes differ by.
-   *
-   * The bar has three and the rail has two. Written as one derivation rather than as two lists in
-   * the template, because "Standings is not a destination at the desk" is a single fact and a
-   * template that stated it twice could come to state it inconsistently.
-   */
-  protected readonly destinations = computed<readonly Destination[]>(() =>
-    this.atDesk() ? [ROUND, PLAYERS] : [ROUND, STANDINGS, PLAYERS],
-  );
+  /** The destinations there are at this tier, which is the whole of what the two shapes differ by. */
+  protected readonly destinations = computed(() => destinationsAt(this.atDesk()));
 
-  /**
-   * The panel actually on screen, derived rather than clamped on the way in.
-   *
-   * An organizer standing on the Standings tab who drags the window past 1280 has just lost the
-   * destination they were on. The table is not gone — it is in the aside beside them — so the
-   * main area falls back to the round rather than to a panel with no way back to it.
-   */
-  protected readonly current = computed<Panel>(() => {
-    const asked = this.requested();
-
-    return this.atDesk() && asked === 'standings' ? 'round' : asked;
-  });
+  /** The panel actually on screen, which is not always the one that was asked for. */
+  protected readonly current = computed(() => panelAt(this.atDesk(), this.requested()));
 
   /** Which evening this rail belongs to: the line under the app's name. */
   protected readonly summary = computed(() => {
