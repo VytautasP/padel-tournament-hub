@@ -25,8 +25,11 @@
  */
 import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { assertSessionValid } from 'padel-engine';
 import { App } from '../app';
+import { routes } from '../app.routes';
 import { FixedLayout } from '../layout/fixed-layout';
 import { LAYOUT } from '../layout/layout';
 import type { Tier } from '../layout/layout';
@@ -58,6 +61,14 @@ export interface LaunchOptions {
    */
   readonly identity?: Identity;
   /**
+   * The address the app is opened at. The organizer's front door unless a spec says otherwise.
+   *
+   * The one thing a spec passes here is a spectator's path, because that is the one address this
+   * product has (ADR-0026 §1) — built with `spectatorPath` rather than spelled out, so a spec
+   * cannot be testing a URL the router no longer answers.
+   */
+  readonly at?: string;
+  /**
    * An encoder for the share sheet's QR. The real one unless a spec is about not getting it.
    *
    * The real library is used by default rather than a stub that returns a fixed grid, because a
@@ -69,21 +80,20 @@ export interface LaunchOptions {
 }
 
 export class AppHarness {
+  /**
+   * What this app was launched with, kept so that a reload is the same app opened again.
+   *
+   * Nothing reads it as an answer: a spec that wants to know the tier has to find out the way an
+   * organizer would. It is held because reopening has to be the same device — the same tier, the
+   * same identity that could not sign in, the same browser that could not fetch the QR encoder,
+   * and the same address, which for a spectator is the whole of where they are.
+   */
   private constructor(
     private readonly fixture: ComponentFixture<App>,
     readonly repository: InMemorySessionRepository,
     /** What the share sheet copied to, and the only way to ask whether it copied at all. */
     readonly clipboard: RecordingClipboard,
-    // Kept only so a reload reopens the app in the shape it was closed in. Nothing reads it as an
-    // answer: a spec that wants to know the tier has to find out the way an organizer would.
-    private readonly tier: Tier,
-    // Kept for the same reason as the tier: reopening the app on a device that still has no
-    // signal has to be the same device, or the spec would be reloading its way out of the state
-    // it is about.
-    private readonly identity: Identity | undefined,
-    // And for the same reason again: a browser that cannot fetch the QR encoder is still that
-    // browser after the app is closed and opened.
-    private readonly qrCode: QrEncoder,
+    private launchedWith: LaunchOptions,
   ) {}
 
   static async launch({
@@ -91,12 +101,18 @@ export class AppHarness {
     tier = 'phone',
     identity,
     qrCode = qrEncoder,
+    at,
   }: LaunchOptions = {}): Promise<AppHarness> {
     const clipboard = new RecordingClipboard();
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        // The router the app runs on, with the location the browser would otherwise own. A spec
+        // navigates rather than rendering a route's component directly, because what is being
+        // tested about `/s/:code` includes that the address reaches it at all.
+        provideRouter(routes, withComponentInputBinding()),
+        provideLocationMocks(),
         { provide: SESSION_REPOSITORY, useValue: repository },
         // The same object behind both tokens, exactly as the running app wires it (ADR-0025 §4):
         // a fake that could store a session without being anybody would be a fake of a store this
@@ -109,7 +125,17 @@ export class AppHarness {
     });
 
     const fixture = TestBed.createComponent(App);
-    const harness = new AppHarness(fixture, repository, clipboard, tier, identity, qrCode);
+    const harness = new AppHarness(fixture, repository, clipboard, {
+      repository,
+      tier,
+      identity,
+      qrCode,
+      at,
+    });
+    // The outlet has to exist before there is anywhere for a route to be rendered, which is why
+    // this navigates after the first render rather than before it.
+    fixture.detectChanges();
+    await TestBed.inject(Router).navigateByUrl(at ?? '/');
     await harness.settle();
 
     return harness;
@@ -122,12 +148,32 @@ export class AppHarness {
   async reload(): Promise<AppHarness> {
     this.fixture.destroy();
 
-    return AppHarness.launch({
-      repository: this.repository,
-      tier: this.tier,
-      identity: this.identity,
-      qrCode: this.qrCode,
-    });
+    return AppHarness.launch(this.launchedWith);
+  }
+
+  /**
+   * Go to another address in this app, the way a browser does when a second link is opened.
+   *
+   * The one navigation these specs need: a phone that scans a QR while already holding a
+   * spectator page open, which is one component being handed a different share code rather than a
+   * fresh app. A reload after this reopens where the app now is rather than where it started.
+   */
+  async visit(path: string): Promise<void> {
+    this.launchedWith = { ...this.launchedWith, at: path };
+    await TestBed.inject(Router).navigateByUrl(path);
+    await this.settle();
+  }
+
+  /**
+   * Let this app catch up with something that changed outside it.
+   *
+   * Every other way of moving this app forward is a tap or a keystroke, which settles on the way
+   * out. A spectator's app is moved by neither: what changes it is the organizer's app writing to
+   * the repository they share, and the only thing a spec can do about that is wait for the
+   * listener to land (ADR-0026 §2).
+   */
+  async catchUp(): Promise<void> {
+    await this.settle();
   }
 
   /** Everything the organizer can read on screen right now, whitespace-normalised. */

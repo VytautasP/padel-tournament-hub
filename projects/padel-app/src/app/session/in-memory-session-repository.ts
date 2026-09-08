@@ -1,6 +1,9 @@
 /*
  * The repository the tests run on, and the identity they run as (decision #19).
  *
+ * It answers the spectator's listener as well, out of the same pile: `watch` is the one operation
+ * here that is not scoped to whoever is signed in, because a share code is not (ADR-0029 §1).
+ *
  * It stores the record the way the real one does — as JSON — rather than holding the object it
  * was handed. A fake that kept the live object would let a session carrying something
  * unserialisable pass every test and fail the first time an organizer closed the app, which is
@@ -46,6 +49,8 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
   /** Which uid each Google account belongs to. Firebase's side of the line, so it outlives a uid. */
   private readonly accounts = new Map<string, string>();
   private readonly watchers = new Set<(record: SessionRecord | null) => void>();
+  /** The spectator's listeners, by the code each is watching (ADR-0029 §1). */
+  private readonly codeWatchers = new Map<string, Set<(record: SessionRecord | null) => void>>();
   private uid = FAKE_UID;
   private browsers = 0;
 
@@ -112,12 +117,14 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
       { ...record, ownerUid: this.uid },
       ...this.historyRecords(),
     ]);
+    this.announceToSpectators();
   }
 
   async deleteFromHistory(sessionId: string): Promise<void> {
     this.owned().history = JSON.stringify(
       this.historyRecords().filter((held) => held.session.id !== sessionId),
     );
+    this.announceToSpectators();
   }
 
   /**
@@ -131,6 +138,28 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
     this.watchers.add(onChange);
 
     return () => this.watchers.delete(onChange);
+  }
+
+  /**
+   * The spectator's listener, which is the one operation here that is not about whose sessions
+   * these are.
+   *
+   * Every other method on this fake reads and writes the pile belonging to the uid it is signed in
+   * as, because that is what ADR-0028 is about. This one looks through all of them: a spectator is
+   * not the organizer, holds no uid of theirs, and finds the evening by the code alone — which is
+   * exactly what `allow get: if true` means in `firestore.rules`. A fake scoped to the caller's
+   * own sessions could not tell a spectator watching somebody else's evening from an organizer
+   * reading their own, which is the whole of what this route is.
+   *
+   * It reports at once, as a document listener does: the first snapshot is the state now.
+   */
+  watch(sessionId: string, onChange: (record: SessionRecord | null) => void): () => void {
+    const watching = this.codeWatchers.get(sessionId) ?? new Set();
+    watching.add(onChange);
+    this.codeWatchers.set(sessionId, watching);
+    onChange(this.find(sessionId));
+
+    return () => watching.delete(onChange);
   }
 
   /**
@@ -160,5 +189,47 @@ export class InMemorySessionRepository implements SessionRepository, Identity {
     for (const watcher of this.watchers) {
       watcher(record);
     }
+
+    this.announceToSpectators();
+  }
+
+  /**
+   * The other half of a write, told to whoever is watching a code.
+   *
+   * Separate from the active listeners because the two are told by different writes. Ending an
+   * evening writes the history and then empties the active slot, and a spectator is watching the
+   * same session through both — while the organizer's listener has nothing to hear from the first
+   * of them, and hearing an echo of the evening it has just let go of would be a screen reopening
+   * a session that had ended.
+   */
+  private announceToSpectators(): void {
+    for (const [sessionId, watching] of this.codeWatchers) {
+      const held = this.find(sessionId);
+      for (const watcher of watching) {
+        watcher(held);
+      }
+    }
+  }
+
+  /**
+   * The session at this code, in whosever pile it is being kept, or `null` if it is kept nowhere.
+   *
+   * Both places an evening can be, because a code names one evening for the whole of its life
+   * (ADR-0024 §1): ending moves the record from the active slot into the history without changing
+   * what it is called, and a spectator watching at that moment is watching the same evening.
+   */
+  private find(sessionId: string): SessionRecord | null {
+    for (const owned of this.owners.values()) {
+      const held = [
+        ...(owned.active === null ? [] : [JSON.parse(owned.active) as SessionRecord]),
+        ...(JSON.parse(owned.history) as readonly SessionRecord[]),
+      ];
+      const found = held.find((record) => record.session.id === sessionId);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+
+    return null;
   }
 }

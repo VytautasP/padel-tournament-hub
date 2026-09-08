@@ -232,6 +232,37 @@ export class FirestoreSessionRepository implements SessionRepository, Identity {
   }
 
   /**
+   * The spectator's listener: one document, by the code that names it (ADR-0029 §1).
+   *
+   * `doc` rather than a query, which is the whole difference between this and `watchActive`. A
+   * `get` of one document is allowed to anybody holding the code and needs no uid, so this route
+   * never signs in — a spectator has no identity to have (ADR-0026 §3) and anonymous accounts
+   * minted for people who only watch would be a growing pile of nothing.
+   *
+   * A document that is not there is `null`, which the route renders as an evening that is gone.
+   * The one snapshot that is not an answer is a miss from the cache: with persistence on, the SDK
+   * reports an uncached document immediately and offline, and it is reporting that it does not
+   * know rather than that there is nothing. Passing that on would tell a spectator in a basement
+   * that the evening they are standing at had been deleted.
+   */
+  watch(sessionId: string, onChange: (record: SessionRecord | null) => void): () => void {
+    return onSnapshot(
+      doc(this.db, SESSIONS, sessionId),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          onChange(recordOf(snapshot.data() as SessionDocument));
+        } else if (!snapshot.metadata.fromCache) {
+          onChange(null);
+        }
+      },
+      // Nothing above can act on this and nothing below should be taken off the screen for it:
+      // a spectator watching an evening whose listener has failed keeps the last state it held,
+      // exactly as the organizer does.
+      (error) => console.error('The spectator listener stopped.', error),
+    );
+  }
+
+  /**
    * Write the record at `sessions/{shareCode}`, stamped with its owner and its status.
    *
    * `setDoc` rather than `updateDoc` because one session is one document (decision #13) and the
@@ -359,28 +390,38 @@ function googleOn(user: User | null): UserInfo | null {
 }
 
 /**
- * The records a snapshot holds, with the mirrored status dropped on the way out.
+ * The records a query snapshot holds.
  *
  * `ownerUid` comes back because `SessionRecord` carries it; `status` does not, because the record
  * has never had one — the session inside it does, and that is the field every rule in the engine
  * is enforced against. Handing both up would be two answers to one question.
  */
 function recordsIn(snapshot: QuerySnapshot): SessionRecord[] {
-  return snapshot.docs.map((held) => {
-    const { session, createdAt, courtNames, endedAt, ownerUid } = held.data() as SessionDocument;
+  return snapshot.docs.map((held) => recordOf(held.data() as SessionDocument));
+}
 
-    // Named field by field rather than spread-minus-status, so that a document carrying something
-    // this app has never written cannot reach the store by accident. `endedAt` is put back only
-    // where it was there: `SessionRecord` says an evening in progress carries no key for it, and
-    // an explicit `undefined` is a different shape from an absent one.
-    return {
-      session,
-      createdAt,
-      courtNames,
-      ownerUid,
-      ...(endedAt === undefined ? {} : { endedAt }),
-    };
-  });
+/**
+ * One stored document as the record the app above reads, with the mirrored status dropped.
+ *
+ * Named field by field rather than spread-minus-status, so that a document carrying something this
+ * app has never written cannot reach a store or a screen by accident. `endedAt` is put back only
+ * where it was there: `SessionRecord` says an evening in progress carries no key for it, and an
+ * explicit `undefined` is a different shape from an absent one.
+ */
+function recordOf({
+  session,
+  createdAt,
+  courtNames,
+  endedAt,
+  ownerUid,
+}: SessionDocument): SessionRecord {
+  return {
+    session,
+    createdAt,
+    courtNames,
+    ownerUid,
+    ...(endedAt === undefined ? {} : { endedAt }),
+  };
 }
 
 /**

@@ -1,0 +1,75 @@
+<!--
+  The organizer's two arrangements, with nothing in them that changes the evening.
+
+  The rail, the bar, the board, the table and the roster are the components the organizer's shell
+  renders (ADR-0026 §2). What this template does not have is the header's controls, the Add round
+  card, the score sheet and End session — none of which is hidden here, because none of them is
+  rendered here at all.
+-->
+<div class="flex h-screen flex-col xl:flex-row">
+  @if (atDesk()) {
+    <app-session-rail
+      [destinations]="destinations()"
+      [current]="current()"
+      [summary]="summary()"
+      (chose)="show($event)"
+    />
+  }
+
+  <div class="page-column flex min-w-0 flex-1 flex-col">
+    <!--
+      Which evening this is, said once, under a thumb only. A spectator arrived by scanning a
+      square and has no other way to know what they are looking at; at the desk the rail says it
+      already, and a screen that said it twice would be answering a question nobody asked twice.
+    -->
+    @if (!atDesk()) {
+      <header class="border-b border-line bg-surface-raised px-4 py-2">
+        <p class="text-meta text-ink-muted">{{ summary() }}</p>
+      </header>
+    }
+
+    <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'round'">
+      <app-round-board [session]="session()" [courtNames]="courtNames()" />
+    </div>
+
+    <!--
+      Standings are a panel here and an aside there — never both, for the reason the organizer's
+      shell keeps them apart: one table under one heading, wherever the tier puts it.
+    -->
+    @if (!atDesk()) {
+      <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'standings'">
+        <ng-container [ngTemplateOutlet]="table" />
+      </div>
+    }
+
+    <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'players'">
+      <section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
+        <h1 class="text-title font-bold text-ink">{{ copy.session.players }}</h1>
+        <app-roster-list [rows]="players()" />
+      </section>
+    </div>
+  </div>
+
+  @if (atDesk()) {
+    <aside class="w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface-raised">
+      <ng-container [ngTemplateOutlet]="table" />
+    </aside>
+  }
+
+  @if (!atDesk()) {
+    <app-tab-bar [destinations]="destinations()" [current]="current()" (chose)="show($event)" />
+  }
+</div>
+
+<!--
+  The table, instantiated once as a panel and once as the aside — never both (ADR-0022 §2). One
+  template rather than two copies, for the reason the round board has one card: the two would drift
+  a line at a time, and a spectator moving a window past 1280px would watch the standings change
+  shape.
+-->
+<ng-template #table>
+  <section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
+    <h1 class="text-title font-bold text-ink">{{ copy.session.standings }}</h1>
+    <app-standings-table [standings]="standings()" />
+  </section>
+</ng-template>

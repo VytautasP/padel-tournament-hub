@@ -4,7 +4,7 @@
  * The interface is the whole of the vendor boundary: `FirestoreSessionRepository` is the only file
  * in the app that touches a storage API, and the only one that imports the Firebase SDK
  * (ADR-0025). Everything above this line — the store, the screens, the tests — knows only these
- * seven operations, and two test doubles answer for them.
+ * eight operations, and two test doubles answer for them.
  *
  * They returned promises from the first day, months before anything behind them was asynchronous,
  * because the implementation that would replace `localStorage` was never going to be. That bet is
@@ -54,6 +54,26 @@ export interface SessionRepository {
    * ending or discarding one looks like from here.
    */
   watchActive(onChange: (record: SessionRecord | null) => void): () => void;
+
+  /**
+   * Call `onChange` with the session at this share code whenever it changes, until the returned
+   * function is called (ADR-0026 §2, ADR-0029 §1).
+   *
+   * The eighth operation, and the spectator's only one. ADR-0027 left open whether watching a
+   * session by id was a widening of `watchActive` or an operation of its own; it is its own,
+   * because the two are different queries against different rules. `watchActive` is an
+   * owner-scoped `list` over a collection and cannot be asked without a uid; this is a `get` of
+   * one document, allowed to anybody holding the code, which is the whole of what makes the code
+   * the credential (ADR-0024 §3).
+   *
+   * `onChange` fires with `null` when there is no session at this code — deleted, or never a code
+   * at all. Those are one answer on purpose: from the spectator's end they are indistinguishable,
+   * and neither is anything the person holding the phone can act on.
+   *
+   * Nothing is reported until an answer is known. A device that is offline with nothing cached has
+   * not been told the session is gone, and saying so would turn a signal problem into a bereavement.
+   */
+  watch(sessionId: string, onChange: (record: SessionRecord | null) => void): () => void;
 }
 
 export const SESSION_REPOSITORY = new InjectionToken<SessionRepository>('SessionRepository');

@@ -12,7 +12,16 @@
  * player's id in the rotating modes and a team's in Team Americano, which is exactly the shift
  * decision #2c describes — the competitor changes, and nothing else does.
  */
-import type { PlayerId, Standing, TeamId, TeamStanding } from 'padel-engine';
+import {
+  computeStandings,
+  computeTeamStandings,
+  type PlayerId,
+  type Session,
+  type Standing,
+  type TeamId,
+  type TeamStanding,
+} from 'padel-engine';
+import { teamNameOf } from '../session/teams';
 
 export interface StandingRow {
   /** The competitor's id: a player's, or a team's where the team is the unit. */
@@ -29,6 +38,24 @@ export interface StandingRow {
   readonly tied: number;
   readonly lost: number;
   readonly benched: number;
+}
+
+/**
+ * The one ladder, asked of whichever competitor this evening ranks (ADR-0011).
+ *
+ * The mode is read here and nowhere else. Team Americano ranks teams and every other mode ranks
+ * players, the engine refuses the wrong question of either, and a screen asking both and picking
+ * one would be this check in a second place. Both screens that show a table — the organizer's tab
+ * through the store, the spectator's route directly — come through this function, so there is one
+ * answer to "who is on the ladder" rather than one each.
+ *
+ * It is computed on every read and stored nowhere (decision #17): a corrected score changes the
+ * session, and the table is whatever the engine says about it now.
+ */
+export function rowsOf(session: Session): readonly StandingRow[] {
+  return session.mode === 'team-americano'
+    ? rowsOfTeams(computeTeamStandings(session), (teamId) => teamNameOf(session, teamId))
+    : rowsOfPlayers(computeStandings(session));
 }
 
 /** The players' table as a row apiece. */

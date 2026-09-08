@@ -1,0 +1,20 @@
+<!--
+  One of three things: the evening, the sentence saying it is gone, or nothing at all while the
+  code is still being answered.
+
+  The empty branch is deliberate and is the same nothing the organizer's shell renders until its
+  restore settles. A spinner over a lookup that takes a moment is a screen that flashes.
+-->
+@if (record(); as watched) {
+  <app-spectator-shell [record]="watched" />
+} @else if (gone()) {
+  <!--
+    The end of a share code, said once and with nothing to tap. There is no retry, for the reason
+    the front door has none: reopening the page is the retry, and a deleted evening will be just as
+    deleted the second time.
+  -->
+  <section class="flex h-screen flex-col justify-center gap-3 px-6">
+    <h1 class="text-title font-bold text-ink">{{ copy.spectator.gone.heading }}</h1>
+    <p class="text-lead text-ink-muted">{{ copy.spectator.gone.lead }}</p>
+  </section>
+}

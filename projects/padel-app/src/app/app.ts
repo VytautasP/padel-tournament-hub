@@ -1,62 +1,24 @@
 /*
- * The app shell: read the repository once, then show one of three screens.
+ * The root of the application: an outlet, and nothing else (ADR-0026 §1).
  *
- * There is no router. Every surface in this slice is a screen the organizer is *on* rather than a
- * place they can link to or navigate back from — ADR-0016 is explicit that a session has no back
- * button — and a URL for the wizard's second step would be a promise the app cannot keep.
+ * There are two routes and there will not be a third soon. `/` is the organizer's app, which is
+ * every screen this project had before there was a router; `/s/:code` is the spectator's, which
+ * is the one surface in this product that is genuinely a place — it has an address somebody else
+ * holds, it is arrived at by scanning a square on a phone, and it can be reloaded into.
  *
- * The restore runs through `PendingTasks` so the app is genuinely unstable until it settles.
- * Without that, "stable" would mean "the first paint happened", and every test would be racing a
- * promise it could not see. Since step 3 the restore signs in before it reads (ADR-0025 §4), so
- * what the app is unstable until is now the first *auth* as well as the first read — and the one
- * device that cannot get there gets a screen of its own rather than a fourth kind of nothing.
+ * Both are lazily loaded, which is the whole point of them being routes at all. A spectator who
+ * scanned a QR at the side of a court downloads the round card and the table; they do not
+ * download the creation wizard, the score sheet or the Firebase auth flow, none of which they
+ * could reach and all of which they would be paying for. The organizer pays nothing for the
+ * spectator's view in return.
  */
-import { ChangeDetectionStrategy, Component, inject, PendingTasks, signal } from '@angular/core';
-import { ConnectionNeeded } from './startup/connection-needed';
-import { CreateWizard } from './wizard/create-wizard';
-import { Landing } from './landing/landing';
-import { SessionShell } from './session/session-shell';
-import { SessionStore } from './session/session-store';
-
-type Screen = 'landing' | 'wizard' | 'session';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [ConnectionNeeded, CreateWizard, Landing, SessionShell],
-  templateUrl: './app.html',
+  imports: [RouterOutlet],
+  template: '<router-outlet />',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class App {
-  private readonly store = inject(SessionStore);
-  private readonly screen = signal<Screen>('landing');
-
-  protected readonly ready = this.store.ready;
-  /** The one thing that can stand between a settled restore and a screen (ADR-0025 §4). */
-  protected readonly needsConnection = this.store.needsConnection;
-  protected readonly current = this.screen.asReadonly();
-
-  constructor() {
-    inject(PendingTasks).run(() => this.store.restore());
-  }
-
-  protected show(screen: Screen): void {
-    this.screen.set(screen);
-  }
-
-  /**
-   * Put one session on screen: the evening in progress, or one read out of history.
-   *
-   * One entry point for both, because the session screen is the same screen either way — what
-   * differs is the session's status, and the tabs read that for themselves (ADR-0013).
-   */
-  protected open(sessionId: string): void {
-    this.store.open(sessionId);
-    this.show('session');
-  }
-
-  /** Leave a finished session. Nothing else leaves the session screen (ADR-0016). */
-  protected leave(): void {
-    this.store.leave();
-    this.show('landing');
-  }
-}
+export class App {}

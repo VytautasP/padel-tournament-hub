@@ -1,9 +1,12 @@
 /*
  * The address a share code has on the web (ADR-0026 §1).
  *
- * `/s/:code` is the spectator route, and this is the one expression of it in the organizer's half
- * of the app. It is a pure function of the origin and the code rather than a method on anything,
- * because a link is a fact about two strings — what needs injecting is the origin, and that is the
+ * `/s/:code` is the spectator route, and this file is the one expression of it anywhere: the
+ * router's table names the pattern below and the share sheet builds its link out of the function
+ * below that, so the square a spectator scans and the route that answers it cannot drift apart.
+ *
+ * The link is a pure function of the origin and the code rather than a method on anything, because
+ * a link is a fact about two strings — what needs injecting is the origin, and that is the
  * caller's problem in the one file that has a document to read it from.
  *
  * Exported so the spec can build the same link rather than spelling one out: the tests do not know
@@ -11,7 +14,23 @@
  * the test runner's configuration.
  */
 
+/**
+ * The one segment `/s/...` is spelled in, which the pattern and the path are both built from.
+ *
+ * Written once rather than twice in this file, which would be exactly the drift this file exists
+ * to prevent, one level down.
+ */
+const SPECTATOR = 's';
+
+/** The router's pattern for the spectator view. Relative, because a `Routes` entry is. */
+export const SPECTATOR_ROUTE = `${SPECTATOR}/:code`;
+
+/** Where a spectator goes on this origin — the path half of the link, and what a test navigates. */
+export function spectatorPath(code: string): string {
+  return `/${SPECTATOR}/${code}`;
+}
+
 /** Where a spectator goes: the origin the organizer is on, and the code as the path. */
 export function shareLink(origin: string, code: string): string {
-  return `${origin}/s/${code}`;
+  return `${origin}${spectatorPath(code)}`;
 }

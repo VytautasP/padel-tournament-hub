@@ -1,10 +1,9 @@
 /*
  * The Players tab: who is here, who is out this round, and the two ways a roster moves.
  *
- * The list answers the question the organizer is asked most between rounds and cannot answer from
- * the Round tab without paging — **am I out?** — by badging whoever this round leaves off a court.
- * The badge and the bench strip are one derivation (`bench.ts`), because two of them drift the
- * first time a roster changes under a generated round.
+ * The list of names is `app-roster-list`, which is the same component the spectator's route
+ * renders (ADR-0026 §2). What this tab holds is everything that changes a roster: the two openings
+ * a row offers, the arrival field under the list, and the preview each of them rides.
  *
  * **Adding is inline at the bottom of the list**, the same single input the wizard's roster step
  * is, so the interaction is learned once and a late arrival is typed the way the first eleven
@@ -47,7 +46,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { Gender, PlayerId } from 'padel-engine';
+import type { Gender } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { MINIMUM_PLAYERS, TEAMS_PER_COURT } from '../session/round-defaults';
 import { playsAsTeams } from '../session/teams';
@@ -55,13 +54,14 @@ import { newPlayer, SessionStore } from '../session/session-store';
 import type { RosterChange } from '../session/session-store';
 import { GenderToggle } from './gender-toggle';
 import { Partner } from './partner-sheet';
+import { RosterList } from './roster-list';
 import { RosterPreview } from './roster-preview';
 import { rosterView } from './roster-view';
 import type { PlayerRow } from './roster-view';
 
 @Component({
   selector: 'app-players-tab',
-  imports: [GenderToggle],
+  imports: [GenderToggle, RosterList],
   templateUrl: './players-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -69,9 +69,6 @@ export class PlayersTab {
   private readonly store = inject(SessionStore);
   private readonly preview = inject(RosterPreview);
   private readonly partner = inject(Partner);
-
-  /** The one row whose overflow is open, if any. One at a time, like the Resume card's. */
-  private readonly openRow = signal<PlayerId | null>(null);
 
   /** The field is absent on a session that has ended, so this is not required. */
   private readonly field = viewChild<ElementRef<HTMLInputElement>>('field');
@@ -131,36 +128,6 @@ export class PlayersTab {
   protected readonly canAnybodyGoHome = computed(() =>
     this.rows().some((row) => !row.gone && row.canGoHome),
   );
-
-  protected isOpen(playerId: PlayerId): boolean {
-    return this.openRow() === playerId;
-  }
-
-  /**
-   * Whether this row is offering the repair for the team it is the surviving half of.
-   *
-   * Asked as one question rather than spelled out at each of the two places the answer is needed —
-   * the button itself and the outline the row wears while it is showing one — because those two
-   * disagreeing is a row drawn as open with nothing open in it.
-   */
-  protected canAssignPartner(row: PlayerRow): boolean {
-    return !this.ended() && row.needsPartner && row.team !== null;
-  }
-
-  /**
-   * Whether this row is currently carrying a control under its name.
-   *
-   * That is the whole of what the outline means: not "this player is interesting", but "what is
-   * below this line belongs to this line". Both openings are the same fact to a reader, so both
-   * are the same fact here.
-   */
-  protected isExpanded(row: PlayerRow): boolean {
-    return this.isOpen(row.id) || this.canAssignPartner(row);
-  }
-
-  protected toggleOptions(playerId: PlayerId): void {
-    this.openRow.update((open) => (open === playerId ? null : playerId));
-  }
 
   protected onType(event: Event): void {
     this.typed.set((event.target as HTMLInputElement).value);
@@ -224,8 +191,6 @@ export class PlayersTab {
 
   /** Record that this player has gone home, once the organizer has read what it reschedules. */
   protected async wentHome(row: PlayerRow): Promise<void> {
-    this.openRow.set(null);
-
     await this.previewed(
       this.store.planGoingHome(row.id),
       copy.players.preview.confirmDeparture(row.name),

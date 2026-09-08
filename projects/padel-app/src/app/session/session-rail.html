@@ -1,0 +1,63 @@
+<nav
+  class="flex w-[248px] shrink-0 flex-col gap-[26px] border-r border-line bg-surface-raised px-5 py-7"
+>
+  <div class="flex flex-col gap-1 px-2">
+    <!--
+      The drawn size, taken as the role that is that size — which is `text-name`, and so
+      Verdana rather than the board's Space Grotesk. The whole role or none of it: the face is
+      bound to the four display roles in `styles.css` and not in templates, because a role is
+      face, size, tracking and figures together, and `text-name font-display` would be three
+      quarters of a decision that then has nothing to drift against.
+
+      The cost is that the name sets over two lines. 248px of rail leaves 208px of line, and
+      `Padel Tournament Hub` measures 219px in Verdana at 17 and 227px in Space Grotesk at 21
+      — every role the scale has wraps here, so one line was never on offer without inventing
+      a fifth display role at 17px, and a step per drawing is not a scale. Two lines of the
+      name is a taller rail header than the board draws and nothing else.
+    -->
+    <span class="text-name font-bold text-ink">{{ copy.appName }}</span>
+    <p class="text-meta text-ink-muted">{{ summary() }}</p>
+  </div>
+
+  <div class="flex flex-col gap-1">
+    @for (destination of destinations(); track destination.id) {
+      <button
+        type="button"
+        class="text-lead flex h-[46px] items-center gap-3 rounded-[13px] px-[14px] text-left"
+        [class]="
+          current() === destination.id ? 'bg-surface-sunken font-bold text-brand' : 'text-ink-muted'
+        "
+        [attr.aria-current]="current() === destination.id ? 'page' : null"
+        (click)="chose.emit(destination.id)"
+      >
+        <!--
+          A court seen from above, and two people. Decoration beside a word rather than a
+          label of their own, which is why they are hidden from the accessibility tree and why
+          the rail reads as its two words to the seam and to a screen reader alike.
+        -->
+        <svg
+          class="block shrink-0"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          @if (destination.id === 'round') {
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M12 4v16M3 12h18" />
+          } @else if (destination.id === 'players') {
+            <circle cx="9" cy="8" r="3" />
+            <path d="M3 19a6 6 0 0 1 12 0" />
+            <path d="M16 6.5a3 3 0 0 1 0 5.8M18 19a5.5 5.5 0 0 0-2-4.2" />
+          }
+        </svg>
+        {{ destination.label }}
+      </button>
+    }
+  </div>
+</nav>
