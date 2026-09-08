@@ -19,6 +19,7 @@ import { qrEncoder } from './share/qr-matrix';
 import type { QrEncoder } from './share/qr-matrix';
 import { shareLink } from './share/share-link';
 import { AppHarness } from './testing/app-harness';
+import { RecordingBuildReload } from './testing/recording-build-reload';
 import {
   createSession,
   createSessionOn,
@@ -105,6 +106,29 @@ describe('sharing a session', () => {
 
     expect(app.hasImage(copy.share.qr)).toBe(false);
     expect(app.shows(copy.share.qrUnavailable)).toBe(true);
+    expect(app.shows(code)).toBe(true);
+  });
+
+  /*
+   * The other way that same fetch fails, and the reason this is two specs rather than one: a tab
+   * left open across a deploy asks for a chunk that no longer has that name, is handed the front
+   * page instead, and cannot run it as a module (ADR-0030). It looks identical from here — the
+   * encoder rejected — and it is the opposite evening. The organizer has signal; what they do not
+   * have is this build. Telling them to read the code out would be answering a question nobody
+   * asked, so the sheet says nothing and the page goes and gets itself.
+   */
+  it('goes and gets the current build when the QR chunk is one deploy stale', async () => {
+    const stale = new RecordingBuildReload().reloading();
+    const app = await AppHarness.launch({
+      qrCode: () => Promise.reject(new SyntaxError('expected a module, got a page')),
+      buildReload: stale,
+    });
+    await createSessionOn(app, FOUR);
+
+    const code = await anEveningBeingShared(app);
+
+    expect(stale.asked).toBe(1);
+    expect(app.shows(copy.share.qrUnavailable)).toBe(false);
     expect(app.shows(code)).toBe(true);
   });
 

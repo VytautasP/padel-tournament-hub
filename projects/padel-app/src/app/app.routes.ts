@@ -24,10 +24,11 @@ export const routes: Routes = [
     loadComponent: async () => (await import('./organizer/organizer')).Organizer,
   },
   /*
-   * Anything else is the front door. Hosting rewrites every path to `index.html` (ADR-0026 §1),
-   * so a mistyped address arrives here rather than at a 404 the app never sees — and the honest
-   * answer to a URL this product does not have is the app itself, not a router error in a console
-   * nobody is looking at.
+   * Anything else is the front door. Hosting rewrites every address a person could type to
+   * `index.html` (ADR-0030), so a mistyped one arrives here rather than at a 404 the app never
+   * sees — and the honest answer to a URL this product does not have is the app itself, not a
+   * router error in a console nobody is looking at. A path with a file extension in it is not
+   * such an address: those are this build's own chunks, and a missing one has to say so.
    */
   { path: '**', redirectTo: '' },
 ];

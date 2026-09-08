@@ -20,6 +20,7 @@ import {
   PendingTasks,
   signal,
 } from '@angular/core';
+import { BUILD_RELOAD } from './build-reload';
 import { copy } from '../copy/copy';
 import { QR_ENCODER } from './qr-matrix';
 import type { QrMatrix } from './qr-matrix';
@@ -54,6 +55,7 @@ export class QrCode {
   readonly text = input.required<string>();
 
   private readonly encode = inject(QR_ENCODER);
+  private readonly reload = inject(BUILD_RELOAD);
   private readonly tasks = inject(PendingTasks);
   private readonly matrix = signal<QrMatrix | null>(null);
   private readonly failed = signal(false);
@@ -93,7 +95,14 @@ export class QrCode {
       this.failed.set(false);
     } catch {
       // The encoder did not arrive. Nothing else here can fail — a link is always encodable — so
-      // this is a network, and the sheet's answer is the code printed underneath it.
+      // this is the fetch, and there are two ways it goes wrong: a court with no signal, or a tab
+      // that has been open across a deploy and is asking for a chunk that no longer has that name
+      // (ADR-0030). Only the first is the sentence below, and only `BuildReload` can tell them
+      // apart; where it reloads, this component is about to stop existing and says nothing.
+      if (this.reload.attempt()) {
+        return;
+      }
+
       this.matrix.set(null);
       this.failed.set(true);
     }

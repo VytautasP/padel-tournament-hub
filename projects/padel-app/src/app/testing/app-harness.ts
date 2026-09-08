@@ -39,9 +39,11 @@ import type { ScoreEmphasis } from '../round/court-card';
 import { IDENTITY } from '../session/identity';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
+import { BUILD_RELOAD } from '../share/build-reload';
 import { CLIPBOARD } from '../share/clipboard';
 import { qrEncoder, QR_ENCODER } from '../share/qr-matrix';
 import type { QrEncoder } from '../share/qr-matrix';
+import { RecordingBuildReload } from './recording-build-reload';
 import { RecordingClipboard } from './recording-clipboard';
 import { SHEET_PANEL } from '../sheet/sheets';
 import type { SheetPosition } from '../sheet/sheets';
@@ -77,6 +79,15 @@ export interface LaunchOptions {
    * (ADR-0026 §4).
    */
   readonly qrCode?: QrEncoder;
+  /**
+   * What a refused chunk means on this device. A network failure unless a spec says otherwise.
+   *
+   * The default is the phone with no signal, because that is what a failed lazy import meant
+   * before deploys could strand a tab. A spec passes one that is `reloading()` to be the other
+   * device: a tab left open across a deploy, asking for a chunk that no longer has that name
+   * (ADR-0030).
+   */
+  readonly buildReload?: RecordingBuildReload;
 }
 
 export class AppHarness {
@@ -101,6 +112,7 @@ export class AppHarness {
     tier = 'phone',
     identity,
     qrCode = qrEncoder,
+    buildReload = new RecordingBuildReload(),
     at,
   }: LaunchOptions = {}): Promise<AppHarness> {
     const clipboard = new RecordingClipboard();
@@ -121,6 +133,7 @@ export class AppHarness {
         { provide: LAYOUT, useValue: new FixedLayout(tier) },
         { provide: CLIPBOARD, useValue: clipboard },
         { provide: QR_ENCODER, useValue: qrCode },
+        { provide: BUILD_RELOAD, useValue: buildReload },
       ],
     });
 
@@ -130,6 +143,7 @@ export class AppHarness {
       tier,
       identity,
       qrCode,
+      buildReload,
       at,
     });
     // The outlet has to exist before there is anywhere for a route to be rendered, which is why
