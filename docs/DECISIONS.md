@@ -29,11 +29,11 @@ Outcome of the design interview. Each entry is a decision, not a suggestion.
 | 13 | **One Firestore document per session.** | Spectator listener = 1 read per change, not N. ~30 KB typical vs 1 MiB limit. |
 | 14 | **Anonymous Auth + optional Google linking** (`linkWithCredential`, same uid). | Zero-friction start; durable history once linked. Build the link path now, not later. |
 | 15 | **Full PWA + offline.** Service worker app shell + Firestore offline persistence. | Home-screen icon, no app stores. Needs `SwUpdate` prompt and an iOS "Add to Home Screen" hint. |
-| 16 | **Tailwind + Angular CDK.** No Material. | Own visual identity; CDK supplies accessible behavior only. |
+| 16 | **Tailwind + Angular CDK.** No Material. Identity is *Court at dusk* ([ADR-0021](adr/0021-the-identity-is-court-at-dusk-and-verdana-carries-the-text.md)); ~~dark mode follows the OS with no in-app toggle~~ theme is a **preference** with three answers — system, light, dark ([ADR-0031](adr/0031-the-app-has-a-settings-sheet-and-a-preference-belongs-to-the-browser.md)). | Own visual identity; CDK supplies accessible behavior only. The app has a settings sheet, and a preference belongs to the browser rather than to the account. |
 | 17 | **Standalone components + signals + service store, zoneless.** No NgRx. | Standings are `computed()` from rounds — derived, never stored, so corrections recompute free. |
 | 18 | **Buildable `padel-engine` library** in the Angular workspace. | Build-level boundary enforcement. Also publishable / server-reusable later. |
 | 19 | **`SessionRepository` interface**; `FirestoreSessionRepository` is the only file importing the Firebase SDK. | Vendor swap stays real. In-memory fake makes tests trivial. |
-| 20 | **English-only UI, all strings in a typed dictionary.** No hardcoded template text. | Adding Transloco later is wiring, not template archaeology. |
+| 20 | ~~**English-only UI**~~, all strings in a typed dictionary. No hardcoded template text. The UI is **English and Lithuanian**, as two typed dictionaries rather than Transloco ([ADR-0032](adr/0032-two-typed-dictionaries-and-switching-language-reloads.md)). | Adding Transloco later is wiring, not template archaeology — and the bet paid: the second language was a file and a review, not template archaeology. English wording now costs two files. |
 
 ## Process
 

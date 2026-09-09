@@ -194,3 +194,27 @@ A place shared by competitors who are still level after every tie-break the evid
 places a joint position occupies are used up: a joint second is followed by fourth. List order
 within a joint position means nothing.
 _Avoid_: Tie, draw, shared rank
+
+### The app itself
+
+Every section above is about the evening. These three are not: they are about the thing the evening
+is run on, and they are the only terms here that outlive a session.
+
+**Preference**:
+A choice that belongs to the browser and never leaves it. Theme and language are the two. A
+preference needs no network, is readable before anything has loaded, and is not carried by a
+**device identity** — which only exists once a browser has reached Firebase — nor attached to a
+**linked account**. Two browsers belonging to the same organizer are entitled to disagree.
+_Avoid_: Setting (the sheet is settings; the stored choice is a preference), profile, config,
+account preference
+
+**Theme**:
+Whether the app draws itself light or dark. Three answers: **system**, which follows the phone and
+is what an organizer who never opens the sheet gets, and **light** and **dark**, which override it.
+_Avoid_: Mode (**mode** is which format the session plays), dark mode, colour scheme, appearance
+
+**Language**:
+Which of the two languages the app speaks: English or Lithuanian. English on every browser until
+somebody chooses otherwise, a spectator's included. Player names, court names and session titles
+are never translated — they are what the organizer typed.
+_Avoid_: Locale, i18n, translation, localisation
