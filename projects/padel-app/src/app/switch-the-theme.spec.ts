@@ -18,9 +18,13 @@
  * whole of what `styles.css` keys the dark palette on, so it is the honest seam: an app that
  * stamped it wrongly would be an app drawn wrongly.
  */
+import { copy } from './copy/copy';
 import { AppHarness } from './testing/app-harness';
 import { THEME_KEY } from './preference/theme';
 import { RecordingPreferenceStorage } from './testing/recording-preference-storage';
+import { createSession, endSession } from './testing/session-driver';
+
+const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 
 describe('switching the theme', () => {
   describe('with nothing stored', () => {
@@ -206,9 +210,76 @@ describe('switching the theme', () => {
       expect(app.theme()).toBe('dark');
     });
   });
+
+  /*
+   * The second gear, and the reason there is one (ADR-0031 §2, amending ADR-0026 §4).
+   *
+   * A screen that is unreadable in the light you are standing in is a problem you have *while*
+   * playing, so the fix cannot live only on the front door — which is the one screen an organizer
+   * running an evening has already left. What is asserted here is the arrangement rather than the
+   * sheet: the sheet is the same component, and everything it does is tested above.
+   *
+   * Both tiers are asked, because the shell is the one screen in this app that genuinely
+   * restructures with width (ADR-0022 §5), and a control that survived one rearrangement and not
+   * the other would be a gear that vanished at the desk.
+   */
+  describe('the gear in the session header', () => {
+    it('is on the header of a running session', async () => {
+      const app = await createSession(FOUR);
+
+      expect(app.isOnScreen(copy.settings.open)).toBe(true);
+    });
+
+    it('is still there at the desk tier', async () => {
+      const app = await createSession(FOUR, 1, 24, 'desk');
+
+      expect(app.isOnScreen(copy.settings.open)).toBe(true);
+    });
+
+    it('opens the same sheet the front door opens', async () => {
+      const app = await createSession(FOUR);
+
+      await openSettings(app);
+
+      expect(app.shows(copy.settings.heading)).toBe(true);
+      expect(app.isPressed('System')).toBe(true);
+    });
+
+    it('changes the theme from inside the evening', async () => {
+      const app = await createSession(FOUR);
+
+      await openSettings(app);
+      await app.tap('Dark');
+
+      expect(app.theme()).toBe('dark');
+    });
+
+    /*
+     * A finished session is still a screen somebody is reading, so it keeps the gear — and it is
+     * the state where the arrangement matters most, because it is the only one with a control on
+     * the right. Share and the gear stay paired on the left; **Done** keeps the edge alone.
+     */
+    it('is on the header of an ended session too, beside share', async () => {
+      const app = await createSession(FOUR);
+      await endSession(app);
+
+      expect(app.isOnScreen(copy.settings.open)).toBe(true);
+      expect(app.isOnScreen(copy.share.open)).toBe(true);
+      expect(app.isOnScreen(copy.session.done)).toBe(true);
+    });
+
+    it('opens the sheet from an ended session', async () => {
+      const app = await createSession(FOUR);
+      await endSession(app);
+
+      await openSettings(app);
+
+      expect(app.shows(copy.settings.heading)).toBe(true);
+    });
+  });
 });
 
-/** The gear on the landing header, and what it opens. */
+/** The gear, wherever it is being tapped from — the two headers open one component. */
 async function openSettings(app: AppHarness): Promise<void> {
-  await app.tap('Settings');
+  await app.tap(copy.settings.open);
 }

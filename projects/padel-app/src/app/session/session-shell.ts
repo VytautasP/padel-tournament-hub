@@ -31,8 +31,15 @@
  *
  * The rail, the bar and the list of destinations are their own files, because the spectator's
  * shell wears the same two arrangements around the same three panels (ADR-0026 §2). What is left
- * here is what only an organizer's session has: the share control, the door out of an ended one,
- * and the three tabs rather than the three boards underneath them.
+ * here is what only an organizer's session has: the share control, the gear beside it, the door
+ * out of an ended one, and the three tabs rather than the three boards underneath them.
+ *
+ * **The header carries two controls that open something and one that leaves** (ADR-0031 §2,
+ * amending ADR-0026 §4's "one piece of chrome"). Share and settings are paired on the left; Done
+ * has the right edge alone, so it is not read as a third thing that opens. The gear is on screen
+ * during a round, which is chrome competing with the game, and it earns that by being the only
+ * way to fix a screen that is unreadable in the light the organizer is actually standing in — a
+ * problem you have *while* playing rather than before.
  *
  * **An ended session has a door, and only an ended session.** ADR-0016's "no back button" is a rule
  * about an evening in progress: leaving one is ending it or discarding it, and both of those are
@@ -56,6 +63,7 @@ import { PlayersTab } from '../players/players-tab';
 import { RoundTab } from '../round/round-tab';
 import { SessionRail } from './session-rail';
 import { SessionStore } from './session-store';
+import { Settings } from '../settings/settings-sheet';
 import { Share } from '../share/share-sheet';
 import { StandingsTab } from '../standings/standings-tab';
 import { TabBar } from './tab-bar';
@@ -69,6 +77,7 @@ import { TabBar } from './tab-bar';
 export class SessionShell {
   private readonly store = inject(SessionStore);
   private readonly sharing = inject(Share);
+  private readonly settings = inject(Settings);
   private readonly tier = inject(LAYOUT).tier;
 
   /** The destination the organizer asked for. Held here; what is shown is `current`. */
@@ -100,6 +109,16 @@ export class SessionShell {
 
   protected show(panel: Panel): void {
     this.requested.set(panel);
+  }
+
+  /**
+   * Open the settings sheet, which is the landing page's sheet and not a second one.
+   *
+   * Nothing about it is a session's, so there is nothing to hand it — which is exactly why the
+   * two headers can share one component rather than each growing a variant of it.
+   */
+  protected async openSettings(): Promise<void> {
+    await this.settings.open();
   }
 
   /**

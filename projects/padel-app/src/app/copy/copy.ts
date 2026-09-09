@@ -332,7 +332,10 @@ export const copy = {
    */
   share: {
     /**
-     * The one control ADR-0026 adds to a session's header, and the whole of its accessible name.
+     * The control ADR-0026 adds to a session's header, and the whole of its accessible name.
+     *
+     * The first of the two that header now carries: the gear was paired with it on the left by
+     * ADR-0031 §2, and `settings.open` is named the same way for the same reason.
      *
      * A glyph on screen and a sentence to a screen reader, like the paging arrows: the icon is all
      * a thumb needs beside a screen that is plainly a session, and "Share" alone would not say

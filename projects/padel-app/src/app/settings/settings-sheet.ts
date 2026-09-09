@@ -1,5 +1,6 @@
 /*
- * The app's first settings surface, and so far the whole of it (ADR-0031 §1).
+ * The app's first settings surface, and so far the whole of it (ADR-0031 §1). One component for
+ * both gears — the masthead's and the session header's — because nothing in it is a session's.
  *
  * A sheet through `Sheets` rather than a route, because settings is a detour rather than a
  * departure: a page would be a screen the organizer navigates away from mid-evening, and the gear

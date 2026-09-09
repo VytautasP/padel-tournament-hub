@@ -50,7 +50,12 @@ crisp on every phone and printable if it ends up taped to a net post. A hosted Q
 rejected outright: the code is the credential (ADR-0024 §4) and it does not leave the device.
 
 This is an amendment to ADR-0016, not a detail. That ADR gives the session three tabs and no chrome;
-it now has one control in the header. The alternative was a screen shown once when the wizard
+it now has one control in the header. **Amended by [ADR-0031](0031-the-app-has-a-settings-sheet-and-a-preference-belongs-to-the-browser.md) §2:**
+it has two. A settings gear is paired with the share icon on the left of this header in every
+state, and Done keeps the right edge alone. The reasoning below is unchanged — a persistent
+affordance answers the question every time it is asked — and the gear is on that header for the
+same reason: a screen that is unreadable in the light you are standing in is a problem you have
+while playing, not before. The alternative was a screen shown once when the wizard
 finishes, at the moment everybody is standing around anyway — a better moment, but it only happens
 once, and people arrive late, phones lock, and somebody asks again in round four. A persistent
 affordance answers the question every time it is asked.

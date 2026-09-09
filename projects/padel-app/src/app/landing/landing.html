@@ -26,7 +26,8 @@
     <!--
       The gear sits beside the name rather than under it, so the masthead is one line of chrome
       wherever the column ends up (ADR-0031 §1). It is the only control on this header, and it
-      keeps the right edge in both arrangements.
+      keeps the right edge in both arrangements. The session header pairs its own gear with
+      share on the *left* instead, because that bar has a control that leaves (ADR-0031 §2).
     -->
     <div class="flex items-start justify-between gap-3">
       <h1 class="text-display font-bold text-ink">{{ copy.appName }}</h1>

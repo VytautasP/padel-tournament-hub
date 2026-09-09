@@ -134,7 +134,8 @@ describe('sharing a session', () => {
 
   /*
    * An ended session is a record being read rather than an evening being run, and its final table
-   * is exactly the thing somebody asks to be sent. The header keeps its one control.
+   * is exactly the thing somebody asks to be sent. The header keeps sharing, and — since
+   * ADR-0031 §2 — the gear beside it; ending an evening takes nothing off this bar.
    */
   it('shares an evening that has already ended', async () => {
     const app = await createSession(FOUR);
