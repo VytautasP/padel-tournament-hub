@@ -79,6 +79,29 @@ describe('switching the theme', () => {
       expect(app.colorScheme()).toBe('light');
     });
 
+    /*
+     * The bar behind the notch, and the one thing about it a unit test can see.
+     *
+     * `index.html` ships two `theme-color` metas selected by `prefers-color-scheme`, and the
+     * browser consults the first whose media matches. Colouring either of them in place would put
+     * the organizer's answer behind the OS's selection — a dark override on a light phone would
+     * either paint the bar the app is not, or paint a meta the phone never reads. So there has to
+     * be exactly one left standing, and it has to carry no media at all.
+     *
+     * This is asserted of an app the pre-paint script never ran for, because that is the browser
+     * the harness renders and it is also a real one: a content policy strict enough to refuse an
+     * inline script is the same browser `styles.css`'s guarded media query is written for.
+     */
+    it('leaves one notch bar standing, following nothing but the app', async () => {
+      const app = await AppHarness.launch({ systemTheme: 'light' });
+      expect(app.themeColorMedia()).toEqual([null]);
+
+      await openSettings(app);
+      await app.tap('Dark');
+
+      expect(app.themeColorMedia()).toEqual([null]);
+    });
+
     it('is given back by choosing System again', async () => {
       const app = await AppHarness.launch({ systemTheme: 'dark' });
       await openSettings(app);

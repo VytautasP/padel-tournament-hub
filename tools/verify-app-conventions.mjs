@@ -1,12 +1,13 @@
 /**
- * Proves the three conventions padel-app cannot enforce with a type (decision #20, ADR-0018 and
- * ADR-0021).
+ * Proves the four conventions padel-app cannot enforce with a type (decision #20, ADR-0018,
+ * ADR-0021 and ADR-0031).
  *
- * All three are the kind of rule that holds perfectly for a month and then quietly stops: someone
+ * All four are the kind of rule that holds perfectly for a month and then quietly stops: someone
  * adds a heading, someone reaches for `text-red-500` to make an error look like an error, someone
- * writes `text-sm` because the line looked big, and none of it shows up in a diff review because
- * none of it is wrong in any local sense. So they are checked here, over the app's templates and
- * component styles:
+ * writes `text-sm` because the line looked big, someone adds a token to one dark selector and not
+ * the other, and none of it shows up in a diff review because none of it is wrong in any local
+ * sense. So they are checked here, over the app's templates, its component styles, and the one
+ * file that holds the tokens:
  *
  *   1. **No visible string is written in a template.** Every word the organizer reads comes from
  *      the copy dictionary through an interpolation or a binding (decision #20).
@@ -20,6 +21,13 @@
  *      canvas needs sizes Tailwind's scale does not carry, and a role decides the face and the
  *      tracking as well as the size, so a component that reaches for a measurement gets a third
  *      of the answer and silently drops the rest (ADR-0021 §4).
+ *   4. **The two dark selectors carry the same tokens.** A theme can be chosen in the app now
+ *      (ADR-0031 §6), so the dark palette is reached two ways: `:root[data-theme='dark']` for an
+ *      explicit choice, and a guarded `prefers-color-scheme` block for the browser that ran no
+ *      script. The *values* are written once, under `--dark-*` — but a `@media` block cannot join
+ *      a selector list, so the map from palette token to dark value is written twice, and adding a
+ *      token to one copy and not the other is exactly the silent half-theme this file exists to
+ *      catch. This is the only rule here that reads `styles.css` rather than everything else.
  *
  * Like `verify-engine-boundary.mjs`, this script also checks itself: it runs every rule over
  * deliberate violations and over deliberate near-misses, and fails if a rule lets a violation
@@ -178,6 +186,65 @@ function colourNamesIn(source) {
   return found;
 }
 
+/**
+ * The declarations inside the one rule in `css` whose selector matches, whitespace-normalised.
+ *
+ * Comments and blank lines are taken out, so the two copies may explain themselves differently and
+ * still agree about what they do. The body is matched by counting braces rather than with a lazy
+ * regular expression, for the same reason `stripBlockHeaders` counts parentheses.
+ */
+function declarationsUnder(css, selector) {
+  const start = css.indexOf(selector);
+  if (start === -1) {
+    return null;
+  }
+
+  const open = css.indexOf('{', start + selector.length);
+  if (open === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let index = open;
+  while (index < css.length) {
+    if (css[index] === '{') depth += 1;
+    if (css[index] === '}') depth -= 1;
+    index += 1;
+    if (depth === 0) break;
+  }
+
+  return css
+    .slice(open + 1, index - 1)
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .split(';')
+    .map((declaration) => declaration.replace(/\s+/g, ' ').trim())
+    .filter((declaration) => declaration !== '');
+}
+
+/** The two ways the dark palette is reached, as the list of tokens each one sets. */
+function darkSelectorsIn(css) {
+  return [
+    declarationsUnder(css, ":root[data-theme='dark']"),
+    declarationsUnder(css, ":root:not([data-theme='light'])"),
+  ];
+}
+
+/** What one of the two dark selectors is missing that the other has. Empty where they agree. */
+function darkDriftIn(css) {
+  const [chosen, fallback] = darkSelectorsIn(css);
+  if (chosen === null || fallback === null) {
+    return ['one of the two dark selectors is missing entirely'];
+  }
+
+  const only = (these, those, side) =>
+    these.filter((one) => !those.includes(one)).map((one) => `only ${side} sets "${one}"`);
+
+  return [
+    ...only(chosen, fallback, 'the chosen-dark selector'),
+    ...only(fallback, chosen, 'the dark-OS fallback'),
+  ];
+}
+
 /** Every file under `src` with one of these extensions, except the token file itself. */
 function sourceFiles(root, extensions) {
   const found = [];
@@ -249,6 +316,20 @@ for (const file of sourceFiles(appSource, ['.css', '.ts'])) {
   }
 }
 
+/*
+ * Rule 4, over the token file the other three exempt.
+ *
+ * `styles.css` is where colour lives, which is why rules 2 and 3 skip it — and it is the only file
+ * this one looks at, because it is the only file with two copies of anything to keep in step.
+ */
+const tokenFile = path.join(appSource, 'styles.css');
+for (const drift of darkDriftIn(fs.readFileSync(tokenFile, 'utf8'))) {
+  failures.push(
+    `${path.relative(repoRoot, tokenFile)} has a half-applied dark theme: ${drift} — ` +
+      `the two dark selectors have to carry the same tokens.`,
+  );
+}
+
 // The rules have to reject these, or they are not rules.
 const violations = [
   ['a bare heading', 'template', '<h1>Round 1</h1>'],
@@ -318,6 +399,43 @@ for (const [label, kind, source] of allowances) {
   }
 }
 
+/*
+ * Rule 4 shown biting, on two stylesheets small enough to read.
+ *
+ * The near-miss is the one that matters: the two copies are written in a different order and with
+ * a comment in one of them, which is exactly how they will look different on the page without
+ * being different in fact, and a rule that called that drift would be a rule somebody turns off.
+ */
+const DRIFTED = `
+  :root[data-theme='dark'] { --palette-ink: var(--dark-ink); --palette-line: var(--dark-line); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) { --palette-ink: var(--dark-ink); }
+  }
+`;
+
+const AGREEING = `
+  :root[data-theme='dark'] { --palette-ink: var(--dark-ink); --palette-line: var(--dark-line); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      /* The same two, said in the other order. */
+      --palette-line: var(--dark-line);
+      --palette-ink: var(--dark-ink);
+    }
+  }
+`;
+
+if (darkDriftIn(DRIFTED).length > 0) {
+  console.log('  ok      a token in one dark selector and not the other is rejected.');
+} else {
+  failures.push('a half-applied dark theme passes the convention check — the rule does not bite.');
+}
+
+if (darkDriftIn(AGREEING).length === 0) {
+  console.log('  ok      two dark selectors that agree are allowed.');
+} else {
+  failures.push('two dark selectors that agree are rejected — the convention check is too broad.');
+}
+
 if (failures.length > 0) {
   console.error('\npadel-app convention check FAILED:');
   for (const failure of failures) console.error(`  - ${failure}`);
@@ -327,6 +445,6 @@ if (failures.length > 0) {
 console.log(
   `\npadel-app conventions hold: ${checkedFiles.templates} template(s) write no visible string, ` +
     `and they and ${checkedFiles.styled} other source file(s) name no colour or type size of ` +
-    `their own — and the three rules were shown to reject ${violations.length} violations ` +
-    `without tripping on ${allowances.length} legitimate ones.`,
+    `their own — and the four rules were shown to reject ${violations.length + 1} violations ` +
+    `without tripping on ${allowances.length + 1} legitimate ones.`,
 );

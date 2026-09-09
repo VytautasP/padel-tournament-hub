@@ -33,6 +33,10 @@ import { routes } from '../app.routes';
 import { FixedLayout } from '../layout/fixed-layout';
 import { LAYOUT } from '../layout/layout';
 import type { Tier } from '../layout/layout';
+import { FixedSystemTheme } from '../preference/fixed-system-theme';
+import { PREFERENCE_STORAGE } from '../preference/preference-storage';
+import { SYSTEM_THEME } from '../preference/system-theme';
+import type { ResolvedTheme } from '../preference/theme';
 import type { Identity } from '../session/identity';
 import { SCORE_EMPHASIS } from '../round/court-card';
 import type { ScoreEmphasis } from '../round/court-card';
@@ -40,16 +44,12 @@ import { IDENTITY } from '../session/identity';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
 import { BUILD_RELOAD } from '../share/build-reload';
-import { FixedSystemTheme } from '../preference/fixed-system-theme';
-import { PREFERENCE_STORAGE } from '../preference/preference-storage';
-import { SYSTEM_THEME } from '../preference/system-theme';
-import type { ResolvedTheme } from '../preference/theme';
-import { RecordingPreferenceStorage } from './recording-preference-storage';
 import { CLIPBOARD } from '../share/clipboard';
 import { qrEncoder, QR_ENCODER } from '../share/qr-matrix';
 import type { QrEncoder } from '../share/qr-matrix';
 import { RecordingBuildReload } from './recording-build-reload';
 import { RecordingClipboard } from './recording-clipboard';
+import { RecordingPreferenceStorage } from './recording-preference-storage';
 import { SHEET_PANEL } from '../sheet/sheets';
 import type { SheetPosition } from '../sheet/sheets';
 
@@ -143,6 +143,7 @@ export class AppHarness {
   }: LaunchOptions = {}): Promise<AppHarness> {
     const clipboard = new RecordingClipboard();
     const system = new FixedSystemTheme(systemTheme);
+    shipTheDocumentsMetas();
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -453,6 +454,21 @@ export class AppHarness {
     );
   }
 
+  /**
+   * The `theme-color` metas standing in the document, each as the media it is selected by.
+   *
+   * `index.html` ships two of them, and the browser consults the first whose media matches — so
+   * under an override, colouring either of them in place would put the organizer's theme behind
+   * the OS's selection. Collapsing them to one that carries no media is what stops that, and it is
+   * the half of the notch bar a unit test can see: the colour itself comes from a stylesheet, and
+   * there is none here.
+   */
+  themeColorMedia(): (string | null)[] {
+    return [...this.document().querySelectorAll('meta[name="theme-color"]')].map((bar) =>
+      bar.getAttribute('media'),
+    );
+  }
+
   /** The organizer changing their phone's setting with the app open — a sunset, in one call. */
   async flipSystemTheme(theme: ResolvedTheme): Promise<void> {
     this.system.set(theme);
@@ -564,6 +580,32 @@ function isHidden(element: Element): boolean {
  * rendering as three columns with a gap between them. Reading them back without a separator would
  * make every test assert a string nobody can see.
  */
+/**
+ * Put the head back the way `index.html` ships it, before each launch.
+ *
+ * The unit test environment's document is one document for a whole file of specs, so without this
+ * the second launch would inherit the first app's collapsed `theme-color` and prove nothing. Two
+ * metas selected by `prefers-color-scheme` is the state every cold start actually begins in — the
+ * pre-paint script does not run here, which is also the browser `preferences.ts` has to be correct
+ * for on its own.
+ *
+ * They are shipped with no content. What they carry is a colour, and a colour is the one thing a
+ * test double in this project may not write down (`tools/verify-app-conventions.mjs`) — nor does
+ * it need to, because with no stylesheet loaded there is nothing to compare it against.
+ */
+function shipTheDocumentsMetas(): void {
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+    meta.remove();
+  }
+
+  for (const media of ['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)']) {
+    const bar = document.createElement('meta');
+    bar.name = 'theme-color';
+    bar.media = media;
+    document.head.appendChild(bar);
+  }
+}
+
 function visibleText(element: Element): string {
   if (isHidden(element)) {
     return '';

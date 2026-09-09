@@ -58,7 +58,7 @@ export class Landing {
   protected readonly history = this.store.history;
   protected readonly optionsOpen = this.overflow.asReadonly();
 
-  /** The gear on the masthead. The sheet it opens is the same one the session header opens. */
+  /** The gear on the masthead, and so far the only way into settings (ADR-0031 §1). */
   protected async openSettings(): Promise<void> {
     await this.settings.open();
   }
