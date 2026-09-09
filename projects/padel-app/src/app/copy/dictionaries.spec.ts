@@ -8,13 +8,6 @@
  * `(name: string, team: string) => string`. In a dictionary that is a Lithuanian sentence quietly
  * dropping the team out of the middle of itself, on a screen the compiler has just declared fine.
  *
- * `Function.length` answers half of that and the half it answers is the easier one. A translation
- * that *declares* both arguments and writes only one of them into its sentence has the same hole
- * in the same screen, and it is the likelier version, because a sentence with a hole in it reads
- * perfectly right up until somebody needs the word that is missing. So the sentences are also
- * spoken twice, with one argument changed, and an argument that moves one dictionary and not the
- * other has gone missing from one of them (#71).
- *
  * So the shapes are walked. It is done here rather than in `tools/verify-app-conventions.mjs`,
  * which is where ADR-0032 §1 said the parity check would go, and ADR-0033 records why it does not:
  * that file reads source *text* with regular expressions, and the two facts worth checking — how
@@ -22,6 +15,13 @@
  * same object — are facts about the loaded modules rather than about their text. A checker that
  * re-implemented a TypeScript parser to find them would be a second, worse compiler. The convention
  * check keeps its four rules, unchanged, and this runs beside it in the same `npm run verify`.
+ *
+ * `Function.length` answers half of that and the half it answers is the easier one. A translation
+ * that *declares* both arguments and writes only one of them into its sentence has the same hole
+ * in the same screen, and it is the likelier version, because a sentence with a hole in it reads
+ * perfectly right up until somebody needs the word that is missing. So the sentences are also
+ * spoken twice, with one argument changed, and an argument that moves one dictionary and not the
+ * other has gone missing from one of them (#71).
  */
 import { copyEn } from './copy.en';
 import { copyLt } from './copy.lt';
@@ -322,6 +322,27 @@ describe('the Lithuanian dictionary', () => {
   });
 });
 
+describe('the parity walk over the dictionaries', () => {
+  /*
+   * The walk, shown able to speak about every argument it is asked about.
+   *
+   * `carriesArgument` answers "no probe moved this one" by saying nothing, which is the honest
+   * answer and is also indistinguishable from a check that has quietly stopped working. A function
+   * added to the dictionaries whose arguments none of the pairs above can vary would be waved
+   * through in silence, and the parity claim would be a little smaller than it reads. So the
+   * silence is counted here: if this fails, the ladder needs a rung, not a suppression.
+   */
+  it('can speak about every argument the dictionaries take', () => {
+    const unprobed = functionsIn(copyEn, copyLt, 'copy').flatMap(([left, right, path]) =>
+      argumentsOf(left, right)
+        .filter((index) => carriesArgument(left, right, index) === null)
+        .map((index) => `${path} argument ${index + 1}`),
+    );
+
+    expect(unprobed).toEqual([]);
+  });
+});
+
 /** The numbers ADR-0032 §4 names: 11 and 21 disagree, and 111 agrees with 11 rather than with 1. */
 const SPOT_CHECKS = [1, 3, 11, 21, 111] as const;
 
@@ -329,10 +350,25 @@ function leavesBehind(evenings: number): string {
   return copyLt.identity.adoptConfirm('ana@example.com', evenings).lead;
 }
 
-/** Every plain string the two dictionaries write identically, named by the path it sits at. */
-function sharedStringsBetween(left: unknown, right: unknown, path: string): string[] {
-  if (typeof left === 'string' && typeof right === 'string') {
-    return left === right ? [path] : [];
+/**
+ * The two dictionaries walked together, and whatever `answer` has to say about each pair of values
+ * that sit at the same path. `null` from `answer` means "not what I am looking for, keep going
+ * down"; a list means it has answered and this branch is finished.
+ *
+ * Two of the three walks in this file are this one with a different question at the leaves —
+ * "are these the same string" and "are these both functions". `driftBetween` is deliberately not
+ * built on it: this walk descends into the keys the dictionaries *share*, and the whole of that
+ * one's job is the keys they do not.
+ */
+function walkingBoth<T>(
+  left: unknown,
+  right: unknown,
+  path: string,
+  answer: (left: unknown, right: unknown, path: string) => T[] | null,
+): T[] {
+  const answered = answer(left, right, path);
+  if (answered !== null) {
+    return answered;
   }
 
   if (typeof left !== 'object' || left === null || typeof right !== 'object' || right === null) {
@@ -343,7 +379,14 @@ function sharedStringsBetween(left: unknown, right: unknown, path: string): stri
   const theirs = right as Record<string, unknown>;
 
   return Object.keys(ours).flatMap((key) =>
-    key in theirs ? sharedStringsBetween(ours[key], theirs[key], `${path}.${key}`) : [],
+    key in theirs ? walkingBoth(ours[key], theirs[key], `${path}.${key}`, answer) : [],
+  );
+}
+
+/** Every plain string the two dictionaries write identically, named by the path it sits at. */
+function sharedStringsBetween(left: unknown, right: unknown, path: string): string[] {
+  return walkingBoth(left, right, path, (ours, theirs, at) =>
+    typeof ours === 'string' && typeof theirs === 'string' ? (ours === theirs ? [at] : []) : null,
   );
 }
 
@@ -397,52 +440,6 @@ function driftBetween(left: unknown, right: unknown, path: string): string[] {
   });
 }
 
-/*
- * The probe values, and the reason there is a ladder of them rather than one.
- *
- * An argument's presence in a sentence is found by handing the function two different values for
- * one parameter and seeing whether the sentence changes — which needs a pair of values that
- * parameter will actually accept. The dictionaries take six kinds of argument between them:
- * modes, genders, plain names, counts, lists of names, and an account that may be `null`, and
- * nothing at runtime says which is which. So each pair is tried in turn and the first one that
- * makes *either* dictionary's sentence move is the one that answers. A pair the parameter cannot
- * use either throws — `names.join` on a number — or produces the same answer twice, and both read
- * as "this pair says nothing", which is the next pair's cue.
- *
- * The zero is last and is there for one entry. `standings.total` reads two of its three arguments
- * without ever printing them: they choose between a dash and a figure (ADR-0023 §2), and no pair
- * of ordinary counts moves that branch. A pair that is zero on one side does, which is the
- * difference between an argument this walk can speak about and one it has to pass over.
- */
-const PROBES: readonly (readonly [unknown, unknown])[] = [
-  ['americano', 'mixicano'],
-  [3, 7],
-  [['Ana'], ['Benas']],
-  ['woman', 'man'],
-  [0, 4],
-];
-
-describe('the parity walk over the dictionaries', () => {
-  /*
-   * The walk, shown able to speak about every argument it is asked about.
-   *
-   * `carriesArgument` answers "no probe moved this one" by saying nothing, which is the honest
-   * answer and is also indistinguishable from a check that has quietly stopped working. A function
-   * added to the dictionaries whose arguments none of the pairs above can vary would be waved
-   * through in silence, and the parity claim would be a little smaller than it reads. So the
-   * silence is counted here: if this fails, the ladder needs a rung, not a suppression.
-   */
-  it('can speak about every argument the dictionaries take', () => {
-    const unprobed = functionsIn(copyEn, copyLt, 'copy').flatMap(([left, right, path]) =>
-      argumentsOf(left, right)
-        .filter((index) => carriesArgument(left, right, index, arityOf(left, right)) === null)
-        .map((index) => `${path} argument ${index + 1}`),
-    );
-
-    expect(unprobed).toEqual([]);
-  });
-});
-
 /**
  * One dictionary branch with a key taken out of it, for showing the drift walk bite.
  *
@@ -463,25 +460,42 @@ function declaring(arity: number, sentence: DictionaryFunction): DictionaryFunct
   return Object.defineProperty(sentence, 'length', { value: arity }) as DictionaryFunction;
 }
 
+/*
+ * The probe values, and the reason there is a ladder of them rather than one.
+ *
+ * An argument's presence in a sentence is found by handing the function two different values for
+ * one parameter and seeing whether the sentence changes — which needs a pair of values that
+ * parameter will actually accept. The dictionaries take five kinds of argument between them —
+ * modes, genders, plain names, counts and lists of names — and nothing at runtime says which is
+ * which. (`identity.kept` also accepts `null`, which needs no rung of its own: it is the absent
+ * half of an account the string pair already moves.) So each pair is tried in turn and the first
+ * one that makes *either* dictionary's sentence move is the one that answers. A pair the parameter cannot
+ * use either throws — `names.join` on a number — or produces the same answer twice, and both read
+ * as "this pair says nothing", which is the next pair's cue.
+ *
+ * The zero is last and is there for one entry. `standings.total` reads two of its three arguments
+ * without ever printing them: they choose between a dash and a figure (ADR-0023 §2), and no pair
+ * of ordinary counts moves that branch. A pair that is zero on one side does, which is the
+ * difference between an argument this walk can speak about and one it has to pass over.
+ */
+const PROBES: readonly (readonly [unknown, unknown])[] = [
+  ['americano', 'mixicano'],
+  [3, 7],
+  [['Ana'], ['Benas']],
+  ['woman', 'man'],
+  [0, 4],
+];
+
 /** Every place the two dictionaries both hold a function, paired up and named by its path. */
 function functionsIn(
   left: unknown,
   right: unknown,
   path: string,
 ): [DictionaryFunction, DictionaryFunction, string][] {
-  if (typeof left === 'function' && typeof right === 'function') {
-    return [[left as DictionaryFunction, right as DictionaryFunction, path]];
-  }
-
-  if (typeof left !== 'object' || left === null || typeof right !== 'object' || right === null) {
-    return [];
-  }
-
-  const ours = left as Record<string, unknown>;
-  const theirs = right as Record<string, unknown>;
-
-  return Object.keys(ours).flatMap((key) =>
-    key in theirs ? functionsIn(ours[key], theirs[key], `${path}.${key}`) : [],
+  return walkingBoth(left, right, path, (ours, theirs, at) =>
+    typeof ours === 'function' && typeof theirs === 'function'
+      ? [[ours as DictionaryFunction, theirs as DictionaryFunction, at]]
+      : null,
   );
 }
 
@@ -497,6 +511,7 @@ function arityOf(left: DictionaryFunction, right: DictionaryFunction): number {
   return Math.min(left.length, right.length);
 }
 
+/** The positions there are to ask about, as indices, so a caller can map over them. */
 function argumentsOf(left: DictionaryFunction, right: DictionaryFunction): number[] {
   return Array.from({ length: arityOf(left, right) }, (_, index) => index);
 }
@@ -507,7 +522,7 @@ function argumentsOf(left: DictionaryFunction, right: DictionaryFunction): numbe
  * Serialised rather than compared directly because `identity.adoptConfirm` answers with an object
  * — a lead and a confirmation — and an argument that vanished from either half of it has vanished.
  */
-function saying(entry: DictionaryFunction, args: readonly unknown[]): string | null {
+function sentenceOf(entry: DictionaryFunction, args: readonly unknown[]): string | null {
   try {
     return JSON.stringify(entry(...args)) ?? null;
   } catch {
@@ -523,17 +538,16 @@ function carriesArgument(
   left: DictionaryFunction,
   right: DictionaryFunction,
   index: number,
-  arity: number,
 ): readonly [boolean, boolean] | null {
   for (const [held, changed] of PROBES) {
-    const before = Array.from({ length: arity }, () => held);
+    const before = Array.from({ length: arityOf(left, right) }, () => held);
     const after = before.map((value, at) => (at === index ? changed : value));
 
     const said = [
-      saying(left, before),
-      saying(left, after),
-      saying(right, before),
-      saying(right, after),
+      sentenceOf(left, before),
+      sentenceOf(left, after),
+      sentenceOf(right, before),
+      sentenceOf(right, after),
     ];
     if (said.some((sentence) => sentence === null)) {
       continue;
@@ -562,7 +576,7 @@ function carriesArgument(
 function interpolationDriftBetween(left: unknown, right: unknown, path: string): string[] {
   return functionsIn(left, right, path).flatMap(([ours, theirs, at]) =>
     argumentsOf(ours, theirs).flatMap((index) => {
-      const carried = carriesArgument(ours, theirs, index, arityOf(ours, theirs));
+      const carried = carriesArgument(ours, theirs, index);
 
       return carried === null || carried[0] === carried[1]
         ? []
