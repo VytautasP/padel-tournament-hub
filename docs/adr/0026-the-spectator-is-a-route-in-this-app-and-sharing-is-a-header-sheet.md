@@ -2,8 +2,6 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-07
-- **Amended by:** [ADR-0031](0031-the-app-has-a-settings-sheet-and-a-preference-belongs-to-the-browser.md) §2,
-  which pairs a settings gear with the share icon in §4's header
 - **Relates to:** decisions #1, #10, #12 and #15 in [docs/DECISIONS.md](../DECISIONS.md), and
   [ADR-0016](0016-the-session-is-three-tabs-and-one-round-at-a-time.md),
   [ADR-0019](0019-the-app-has-no-router-and-the-repository-is-asynchronous.md) and

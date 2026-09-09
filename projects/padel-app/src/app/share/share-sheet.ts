@@ -73,8 +73,8 @@ export class ShareSheet {
  * (ADR-0031 §2).
  *
  * A service for the same reason `Confirm` and `Settings` are: the header offers sharing, and
- * knowing how a focused surface is opened is not part of offering it. This is also the only thing in the app
- * that needs the origin it is being served from — the code is the session's id and the link is
+ * knowing how a focused surface is opened is not part of offering it. This is also the only thing
+ * in the app that needs the origin it is being served from — the code is the session's id and the link is
  * that id at an address — so the document is read here and nowhere else.
  */
 @Injectable({ providedIn: 'root' })

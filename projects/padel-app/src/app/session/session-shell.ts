@@ -112,14 +112,6 @@ export class SessionShell {
   }
 
   /**
-   * Open the share sheet on the session in front of the organizer.
-   *
-   * The code it shares is the session's id, because those are one value (ADR-0024 §1) — there is
-   * no share code field to read and nothing to derive. The header is only rendered inside a
-   * session, so the null branch is the impossible one and does nothing rather than inventing a
-   * state for it.
-   */
-  /**
    * Open the settings sheet, which is the landing page's sheet and not a second one.
    *
    * Nothing about it is a session's, so there is nothing to hand it — which is exactly why the
@@ -129,6 +121,14 @@ export class SessionShell {
     await this.settings.open();
   }
 
+  /**
+   * Open the share sheet on the session in front of the organizer.
+   *
+   * The code it shares is the session's id, because those are one value (ADR-0024 §1) — there is
+   * no share code field to read and nothing to derive. The header is only rendered inside a
+   * session, so the null branch is the impossible one and does nothing rather than inventing a
+   * state for it.
+   */
   protected async share(): Promise<void> {
     const session = this.store.openSession();
 
