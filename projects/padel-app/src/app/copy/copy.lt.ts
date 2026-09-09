@@ -24,14 +24,25 @@
  * - **device identity** is `ši naršyklė` and a **linked account** is `Google paskyra`. The front
  *   door says which of the two is keeping the history, in those words, and never calls either one
  *   the other.
+ * - a **stranded evening** is `vakaras, kuris lieka jį sukūrusiai naršyklei` and an **orphaned
+ *   team** is one that `reikia partnerio` — an evening nobody can list again, and a team short a
+ *   player. Neither is called the other's word, and neither is called deleted.
  * - **joint position** is not a **tie**: `lygiosios` is one drawn match and lives only in the
  *   record triple, while the podium simply repeats a shared place rather than naming it.
+ *
+ * Two English pairs do collapse, and are called out rather than hidden. `Lentelė` is the word for
+ * **standings** that a Lithuanian club actually says, and it is also the word `CONTEXT.md` tells
+ * English to avoid — there is no second noun here to keep the two apart. And `nežaidžia` is true
+ * of a player who **went home** as well as of one on the **bench**; what keeps them apart on
+ * screen is that the badges never both appear on a row, not the words themselves.
  *
  * **Plurals are asked of `Intl.PluralRules`, never written as a ternary** (ADR-0032 §4). Lithuanian
  * has three forms where English has two and the rule is about the last two digits, so `11 žaidėjų`
  * and `21 žaidėjas` disagree in a way no hand-written modulo gets right at `111`. Case matters too:
  * a roster names itself in the nominative and is asked for in the genitive, which is two sets of
- * forms for one noun rather than one — `playerCountIn` and `playerCountOf` below.
+ * forms for one noun rather than one — `playerCountIn` and `genitive` below. The one number that
+ * does *not* go through the rules is the round a header names: `3 raundas` is an ordinal, and an
+ * ordinal does not agree with anything.
  *
  * **What is still English here is English on purpose** (ADR-0032 §5): the three mode names and the
  * product's, shared out of `names.ts` so that neither dictionary can translate them, and
@@ -42,6 +53,10 @@
  * says, and the drafter's answer to each is a proposal rather than a decision: `nežaidžia` for
  * **bench**, `reikia partnerio` for **needs partner**, `išėjo namo` for **went home**, and `prieš`
  * for **v** — one character in English and six here, in the middle of a scoreline.
+ *
+ * Four more are coinages rather than translations, and are named here so that the reviewer can
+ * find them without reading all 180: `Perg.–Lyg.–Pral.` for the record triple, `Pjedestalas` for
+ * the podium, `Lentelė` for the standings, and `Nežaidė raundų` for the count of rounds sat out.
  */
 import type { Gender, SessionMode } from 'padel-engine';
 import { LOCALES } from '../preference/language';
@@ -130,8 +145,9 @@ export const copyLt = {
       save: 'Išsaugoti',
       edit: (name: string): string => `Taisyti ${name}`,
       remove: (name: string): string => `Pašalinti ${name}`,
-      count: (playerCount: number): string => playerCountIn(playerCount),
-      tooFew: (minimum: number): string => `Sesijai reikia bent ${playerCountOf(minimum)}.`,
+      count: playerCountIn,
+      tooFew: (minimum: number): string =>
+        `Sesijai reikia bent ${genitive(minimum, 'žaidėjo', 'žaidėjų')}.`,
       genderMissing: 'Mixicano poruoja skirtingas lytis, todėl jos reikia kiekvienam žaidėjui.',
       oddRoster:
         'Team Americano žaidžiama pastoviomis poromis, todėl žaidėjų turi būti lyginis skaičius.',
@@ -214,7 +230,7 @@ export const copyLt = {
 
   round: {
     heading: (roundNumber: number, roundCount: number): string =>
-      `${roundNumber} raundas iš ${roundCountOf(roundCount)}`,
+      `${roundNumber} raundas iš ${genitive(roundCount, 'raundo', 'raundų')}`,
     courtName: (courtNumber: number): string => `Aikštelė ${courtNumber}`,
     side: (names: readonly string[]): string => names.join(' ir '),
     versus: 'prieš',
@@ -249,9 +265,9 @@ export const copyLt = {
     optionsGlyph: '⋯',
     wentHome,
     nobodyCanLeave: (minimum: number): string =>
-      `Sesijai reikia bent ${playerCountOf(minimum)}, todėl iš šios niekas negali išeiti namo.`,
+      `Sesijai reikia bent ${genitive(minimum, 'žaidėjo', 'žaidėjų')}, todėl iš šios niekas negali išeiti namo.`,
     noTeamCanLose: (teams: number): string =>
-      `Raundui reikia ${teamCountOf(teams)} su abiem žaidėjais, todėl iš šios sesijos niekas negali išeiti namo.`,
+      `Raundui reikia ${genitive(teams, 'komandos', 'komandų')} su abiem žaidėjais, todėl iš šios sesijos niekas negali išeiti namo.`,
     arrivalsJoinATeam:
       'Team Americano žaidžiama pastoviomis poromis, todėl naujas žaidėjas prisijungia prie komandos, kuriai reikia partnerio.',
     genderMissing: 'Mixicano poruoja skirtingas lytis, todėl jos reikia ir naujam žaidėjui.',
@@ -295,7 +311,7 @@ export const copyLt = {
         : Number.isInteger(points)
           ? String(points)
           : points.toFixed(1),
-    record: 'P–L–Pr',
+    record: 'Perg.–Lyg.–Pral.',
     recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
     matchesPlayed: 'Sužaista rungtynių',
     benched: 'Nežaidė raundų',
@@ -339,19 +355,17 @@ function playerCountIn(playerCount: number): string {
   return counted(playerCount, { one: 'žaidėjas', few: 'žaidėjai', other: 'žaidėjų' });
 }
 
-/** `bent 4 žaidėjų` — the same roster after `reikia`, which governs the genitive. */
-function playerCountOf(playerCount: number): string {
-  return counted(playerCount, { one: 'žaidėjo', few: 'žaidėjų', other: 'žaidėjų' });
-}
-
-/** `2 komandų` — teams after `reikia`, in the genitive for the same reason. */
-function teamCountOf(teams: number): string {
-  return counted(teams, { one: 'komandos', few: 'komandų', other: 'komandų' });
-}
-
-/** `iš 12 raundų` — rounds after `iš`, which governs the genitive as well. */
-function roundCountOf(roundCount: number): string {
-  return counted(roundCount, { one: 'raundo', few: 'raundų', other: 'raundų' });
+/**
+ * A counted noun in the genitive, which `reikia` and `iš` both govern: `bent 4 žaidėjų`,
+ * `2 komandų`, `iš 12 raundų`.
+ *
+ * Two forms rather than three, because the genitive is where Lithuanian's `few` and `other`
+ * collapse into one word — `4 žaidėjų` and `11 žaidėjų` — and only the singular parts company at
+ * 1, 21 and 121. Written once here rather than three times at three call sites, so that the rule
+ * is a fact about the language rather than something spelled identically in three places.
+ */
+function genitive(count: number, singular: string, plural: string): string {
+  return counted(count, { one: singular, few: plural, other: plural });
 }
 
 function eveningCount(evenings: number): string {

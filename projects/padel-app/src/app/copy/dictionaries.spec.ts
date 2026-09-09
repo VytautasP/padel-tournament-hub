@@ -84,7 +84,7 @@ describe('the dictionaries', () => {
  */
 describe('counting in Lithuanian', () => {
   it('inflects the roster on the Resume card', () => {
-    expect(summaries([1, 3, 11, 21, 111])).toEqual([
+    expect(summaries(SPOT_CHECKS)).toEqual([
       'Americano · 1 žaidėjas',
       'Americano · 3 žaidėjai',
       'Americano · 11 žaidėjų',
@@ -94,7 +94,7 @@ describe('counting in Lithuanian', () => {
   });
 
   it('inflects the same numbers in English, where there are only two answers', () => {
-    const english = [1, 3, 11, 21, 111].map((size) => copyEn.session.summary('americano', size));
+    const english = SPOT_CHECKS.map((size) => copyEn.session.summary('americano', size));
 
     expect(english).toEqual([
       'Americano · 1 player',
@@ -155,13 +155,11 @@ describe('counting in Lithuanian', () => {
    * of `other`.
    */
   it('inflects the evenings the adoption question costs', () => {
-    expect(SPOT_CHECKS.map(leavesBehind)).toEqual([
-      '1 vakarą',
-      '3 vakarus',
-      '11 vakarų',
-      '21 vakarą',
-      '111 vakarų',
-    ]);
+    expect(leavesBehind(1)).toContain('paliks 1 vakarą —');
+    expect(leavesBehind(3)).toContain('paliks 3 vakarus —');
+    expect(leavesBehind(11)).toContain('paliks 11 vakarų —');
+    expect(leavesBehind(21)).toContain('paliks 21 vakarą —');
+    expect(leavesBehind(111)).toContain('paliks 111 vakarų —');
   });
 });
 
@@ -195,9 +193,14 @@ describe('the Lithuanian dictionary', () => {
 
   /*
    * **Went home** is not a deletion (`CONTEXT.md`), and in Lithuanian that is a claim about one
-   * verb: `ištrinti` is what history does to an evening and must not be what the Players tab does
-   * to a person. Asserted because the softness is the whole of the term and it is invisible to
-   * anybody reading the file in English.
+   * verb: `ištrinti` is what history does to an evening, and it must not be what the Players tab
+   * does to a person. Asserted because the softness is the whole of the term and it is invisible
+   * to anybody reading the file in English.
+   *
+   * The *wording* is not asserted anywhere here, deliberately. #70 leaves **went home**,
+   * **bench**, **needs partner** and **v** to a native speaker, and a test that pinned the
+   * drafter's guess would turn their correction into a red build — which is exactly backwards.
+   * What is asserted is the constraint the reviewer is being asked to keep.
    */
   it('never says delete about a player who went home', () => {
     const departure = [
@@ -209,16 +212,32 @@ describe('the Lithuanian dictionary', () => {
     ];
 
     expect(departure.some((sentence) => /ištrin|pašalin|panaikin/i.test(sentence))).toBe(false);
-    expect(copyLt.players.gone).toBe('Išėjo namo');
+  });
+
+  /**
+   * The badge, the action that produces it and the confirmation say the same words, because they
+   * record the same fact — which is a claim about this file rather than about the language.
+   */
+  it('says went home in one wording wherever it says it', () => {
+    expect(copyLt.players.wentHome).toBe(copyLt.players.gone);
+    expect(copyLt.players.preview.confirmDeparture('Ana')).toContain(
+      copyLt.players.gone.toLowerCase(),
+    );
   });
 
   /*
-   * **Bench** and **bye** are two terms in the glossary and stay two words here, as do
-   * **standings** and the count of rounds a competitor sat out.
+   * **Bench**, **bye** and **went home** are three terms in the glossary, and a player off a court
+   * is not a player who has left. Three different words, asserted as different rather than as any
+   * particular three — the reviewer settles which they are.
    */
-  it('keeps the bench and the bye apart', () => {
-    expect(copyLt.round.bench(['Ana', 'Benas'])).toBe('Nežaidžia: Ana, Benas');
-    expect(copyLt.round.bye(['Ana ir Benas'])).toBe('Raundą praleidžia: Ana ir Benas');
+  it('keeps the bench, the bye and going home apart', () => {
+    const bench = copyLt.round.bench(['Ana']);
+    const bye = copyLt.round.bye(['Ana ir Benas']);
+
+    expect(new Set([copyLt.players.benched, copyLt.players.gone]).size).toBe(2);
+    expect(bench.startsWith(copyLt.players.benched)).toBe(true);
+    expect(bye.startsWith(copyLt.players.benched)).toBe(false);
+    expect(bench).not.toContain(copyLt.players.gone);
   });
 });
 
@@ -226,9 +245,7 @@ describe('the Lithuanian dictionary', () => {
 const SPOT_CHECKS = [1, 3, 11, 21, 111] as const;
 
 function leavesBehind(evenings: number): string {
-  const lead = copyLt.identity.adoptConfirm('ana@example.com', evenings).lead;
-
-  return lead.match(/paliks (.+?) —/)?.[1] ?? lead;
+  return copyLt.identity.adoptConfirm('ana@example.com', evenings).lead;
 }
 
 /** Every plain string the two dictionaries write identically, named by the path it sits at. */
