@@ -15,6 +15,73 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <!-- iOS ignores the manifest's icons and reads this. -->
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+    <!--
+      The organizer's theme, applied before the first frame (ADR-0031 §5).
+
+      This is the only JavaScript in the app outside Angular, and it exists because everything
+      Angular does happens *after* the first paint: an organizer who chose the opposite of their OS
+      would otherwise see a flash of the wrong theme on every cold start, and a toggle that flashes
+      is worse than no toggle. Nothing here is run by a test, read by a linter or proved by the
+      convention check, so it stays the size it is.
+
+      It owns three things — three of ADR-0031 §5's four. The fourth is `<html lang>`, and it is
+      not here yet because there is no language preference to read; the script grows one with the
+      dictionaries in #69. It has to own all three of these or an override is only half applied.
+      `data-theme` is what the app draws itself with, and it is stamped with a *resolved* theme —
+      `system` included — so there is one value to read for what is currently on screen.
+      `color-scheme` is what the browser draws its own scrollbars and form controls with.
+      `theme-color` is the bar behind the notch, and above it there are two of them selected by
+      `prefers-color-scheme`; the browser uses the first whose media matches, which under an
+      override is the OS's answer rather than the organizer's, so the wrong one is dropped and the
+      right one loses its media and simply applies. It is collapsed under `system` too, rather than
+      only under an override: it costs nothing, and it leaves `preferences.ts` one meta to keep up
+      to date instead of a selection to fight when the choice changes mid-session.
+      `preference/preferences.ts` keeps all three in step from here on, and collapses the bar
+      itself as well — for the browser that ran none of this.
+
+      No colour is written here. The bar's two values are read off the metas above, which is the
+      same reason nothing in the app names one: `styles.css` is where colour lives.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = null;
+          try {
+            stored = localStorage.getItem('pth.theme');
+          } catch (blocked) {
+            // Private mode, or site data blocked. The app opens in the system theme.
+          }
+
+          var chosen = stored === 'light' || stored === 'dark' ? stored : 'system';
+          var prefersDark =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var resolved = chosen === 'system' ? (prefersDark ? 'dark' : 'light') : chosen;
+
+          document.documentElement.dataset.theme = resolved;
+
+          var scheme = document.querySelector('meta[name="color-scheme"]');
+          if (scheme) {
+            scheme.content = chosen === 'system' ? 'light dark' : resolved;
+          }
+
+          var bars = document.querySelectorAll('meta[name="theme-color"]');
+          var wanted = document.querySelector(
+            'meta[name="theme-color"][media="(prefers-color-scheme: ' + resolved + ')"]',
+          );
+          if (wanted) {
+            for (var i = 0; i < bars.length; i++) {
+              if (bars[i] !== wanted) {
+                bars[i].remove();
+              }
+            }
+            wanted.removeAttribute('media');
+          }
+        } catch (unsupported) {
+          // Whatever this browser could not do, it opens in the system theme and works.
+        }
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>

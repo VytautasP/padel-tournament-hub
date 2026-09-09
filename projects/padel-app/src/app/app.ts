@@ -11,9 +11,13 @@
  * download the creation wizard, the score sheet or the Firebase auth flow, none of which they
  * could reach and all of which they would be paying for. The organizer pays nothing for the
  * spectator's view in return.
+ *
+ * It is also where the organizer's theme is applied from, because it is the one component both
+ * routes are inside — see the field below.
  */
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Preferences } from './preference/preferences';
 
 @Component({
   selector: 'app-root',
@@ -21,4 +25,16 @@ import { RouterOutlet } from '@angular/router';
   template: '<router-outlet />',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class App {}
+export class App {
+  /**
+   * The one thing the root does besides holding an outlet: it brings the preferences into
+   * existence.
+   *
+   * `Preferences` keeps `<html>` in step with the organizer's theme and with their phone
+   * (ADR-0031 §5), and an injectable nobody has asked for is an injectable that does not exist —
+   * on the front door the sheet has not been opened yet, and on `/s/:code` it never will be. It is
+   * injected here rather than initialised in `app.config.ts` because a spectator's app and a
+   * test's app are both this component and neither is that file.
+   */
+  private readonly preferences = inject(Preferences);
+}

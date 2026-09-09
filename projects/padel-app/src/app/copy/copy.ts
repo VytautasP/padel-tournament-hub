@@ -11,6 +11,7 @@
  * knows. `tools/verify-app-conventions.mjs` proves no template has quietly grown a literal.
  */
 import type { Gender, SessionMode } from 'padel-engine';
+import type { Theme } from '../preference/theme';
 
 export const modeNames: Readonly<Record<SessionMode, string>> = {
   americano: 'Americano',
@@ -54,6 +55,12 @@ const googleAccount = 'your Google account';
  * reason `appName` is: a sentence written twice is a sentence that can be changed once.
  */
 const shareHeading = 'Share this session';
+
+/**
+ * What the settings sheet is called, in the two places that name it: the gear, and the sheet's own
+ * heading. Out on its own for the reason `appName` is.
+ */
+const settingsHeading = 'Settings';
 
 export const copy = {
   appName,
@@ -283,6 +290,36 @@ export const copy = {
       heading: 'This session is gone',
       lead: 'There is no evening at this code. A session that has been deleted is deleted for everybody, and nothing here can be recovered.',
     },
+  },
+
+  /**
+   * The settings sheet, and the one preference it carries so far (ADR-0031).
+   *
+   * `Settings` names the gear and titles the sheet it opens, out of one constant for the reason
+   * `shareHeading` is: a control and the surface it leads to that disagreed about their own name
+   * would be two names for one act. Unlike sharing it needs no object — there is only one thing
+   * settings could be the settings of — so the sentence is the word.
+   *
+   * The three answers are the organizer's words for them, not the stored ones. *System* is what
+   * "follow the phone" is called on every platform the app runs on, and it is deliberately not
+   * called Automatic: automatic would suggest the app is deciding, and it is not — it is
+   * doing what it is told, by something else.
+   */
+  settings: {
+    open: settingsHeading,
+    heading: settingsHeading,
+    /** A glyph on screen and the sentence above to a screen reader, like the share control. */
+    openGlyph: '⚙',
+    theme: {
+      heading: 'Theme',
+      answers: {
+        system: 'System',
+        light: 'Light',
+        dark: 'Dark',
+      } satisfies Record<Theme, string>,
+    },
+    /** A dismiss rather than a commit: a theme applies as it is tapped, and there is no Save. */
+    done: 'Done',
   },
 
   /**

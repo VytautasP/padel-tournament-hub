@@ -34,6 +34,7 @@ import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
 import { KeepHistory } from '../identity/keep-history';
 import { SessionStore } from '../session/session-store';
+import { Settings } from '../settings/settings-sheet';
 
 @Component({
   selector: 'app-landing',
@@ -44,6 +45,7 @@ import { SessionStore } from '../session/session-store';
 export class Landing {
   private readonly store = inject(SessionStore);
   private readonly confirm = inject(Confirm);
+  private readonly settings = inject(Settings);
   private readonly overflow = signal(false);
 
   readonly started = output<void>();
@@ -55,6 +57,11 @@ export class Landing {
   protected readonly roundNumber = computed(() => this.store.activeRoundNumber() ?? 1);
   protected readonly history = this.store.history;
   protected readonly optionsOpen = this.overflow.asReadonly();
+
+  /** The gear on the masthead, and so far the only way into settings (ADR-0031 §1). */
+  protected async openSettings(): Promise<void> {
+    await this.settings.open();
+  }
 
   protected toggleOptions(): void {
     this.overflow.update((open) => !open);

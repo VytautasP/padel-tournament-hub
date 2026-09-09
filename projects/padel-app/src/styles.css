@@ -19,7 +19,10 @@
  * author. It is a starting position, not a monument: ADR-0021 §6 expects a real padel night to
  * revise it, and this is the one file that has to change when it does.
  *
- * `prefers-color-scheme` switches the two themes, and there is no in-app toggle.
+ * Which of the two themes is on screen is `<html data-theme>`, stamped with a resolved `light` or
+ * `dark` by the pre-paint script in `index.html` and kept there by `preference/preferences.ts`
+ * (ADR-0031). `prefers-color-scheme` is still here underneath it, guarded, for the browser that
+ * ran none of that.
  *
  * `tools/verify-app-conventions.mjs` proves no component names a colour or a type size of its own.
  */
@@ -104,33 +107,105 @@
   --palette-shadow-dialog: 0 18px 50px rgba(16, 23, 32, 0.28);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --palette-surface: #0d1117;
-    --palette-surface-raised: #151b23;
-    --palette-surface-sunken: #080b0f;
-    --palette-line: #28313d;
-    --palette-ink: #e6ebf2;
-    --palette-ink-muted: #93a1b5;
-    --palette-brand: #3fa8c4;
-    --palette-brand-strong: #63c1d8;
-    --palette-brand-ink: #04161c;
-    --palette-brand-wash: #3fa8c41a;
-    --palette-podium-gold: #e0a44a;
-    --palette-podium-silver: #b3bfcc;
-    --palette-podium-bronze: #d08a56;
-    --palette-warning: #f2a94e;
-    --palette-warning-surface: #2a1d0c;
-    --palette-danger: #e2736a;
+/*
+ * The dark half of the palette, and the two ways it can be reached (ADR-0031 §6).
+ *
+ * The values are written once, here, under names of their own. What follows are two selectors that
+ * point the tokens at them — an explicit **dark** choice, and a dark OS nobody has overridden —
+ * and a CSS `@media` block cannot join a selector list, which is the whole reason for the
+ * indirection. Re-skinning the dark theme is still editing one list; the two blocks under it are
+ * mechanical and hold no colour.
+ *
+ * `--palette-qr-ground` and `--palette-qr-ink` are deliberately absent: a QR is a target for an
+ * optical decoder rather than a surface, and it stays paper and ink in both themes (ADR-0026 §4).
+ */
+:root {
+  --dark-surface: #0d1117;
+  --dark-surface-raised: #151b23;
+  --dark-surface-sunken: #080b0f;
+  --dark-line: #28313d;
+  --dark-ink: #e6ebf2;
+  --dark-ink-muted: #93a1b5;
+  --dark-brand: #3fa8c4;
+  --dark-brand-strong: #63c1d8;
+  --dark-brand-ink: #04161c;
+  --dark-brand-wash: #3fa8c41a;
+  --dark-podium-gold: #e0a44a;
+  --dark-podium-silver: #b3bfcc;
+  --dark-podium-bronze: #d08a56;
+  --dark-warning: #f2a94e;
+  --dark-warning-surface: #2a1d0c;
+  --dark-danger: #e2736a;
 
-    /*
-     * Not the light shadows dimmed. Ink at 6% is invisible on a dark surface, so these go black
-     * and much stronger, and lean on `surface-raised` being lighter than `surface` to do half the
-     * separating.
-     */
-    --palette-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.45);
-    --palette-shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.6);
-    --palette-shadow-dialog: 0 18px 50px rgba(0, 0, 0, 0.65);
+  /*
+   * Not the light shadows dimmed. Ink at 6% is invisible on a dark surface, so these go black and
+   * much stronger, and lean on `surface-raised` being lighter than `surface` to do half the
+   * separating.
+   */
+  --dark-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.45);
+  --dark-shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.6);
+  --dark-shadow-dialog: 0 18px 50px rgba(0, 0, 0, 0.65);
+}
+
+/*
+ * An explicit dark choice, which beats a light OS.
+ *
+ * This is also the selector a `system` organizer on a dark phone matches, because the theme is
+ * stamped *resolved* rather than as the preference — so in any browser that ran the pre-paint
+ * script, this rule is the only one of the two that ever fires.
+ */
+:root[data-theme='dark'] {
+  --palette-surface: var(--dark-surface);
+  --palette-surface-raised: var(--dark-surface-raised);
+  --palette-surface-sunken: var(--dark-surface-sunken);
+  --palette-line: var(--dark-line);
+  --palette-ink: var(--dark-ink);
+  --palette-ink-muted: var(--dark-ink-muted);
+  --palette-brand: var(--dark-brand);
+  --palette-brand-strong: var(--dark-brand-strong);
+  --palette-brand-ink: var(--dark-brand-ink);
+  --palette-brand-wash: var(--dark-brand-wash);
+  --palette-podium-gold: var(--dark-podium-gold);
+  --palette-podium-silver: var(--dark-podium-silver);
+  --palette-podium-bronze: var(--dark-podium-bronze);
+  --palette-warning: var(--dark-warning);
+  --palette-warning-surface: var(--dark-warning-surface);
+  --palette-danger: var(--dark-danger);
+  --palette-shadow-raised: var(--dark-shadow-raised);
+  --palette-shadow-sheet: var(--dark-shadow-sheet);
+  --palette-shadow-dialog: var(--dark-shadow-dialog);
+}
+
+/*
+ * A dark OS, for the browser that has no stamp to read.
+ *
+ * The guard is what makes an explicit **light** choice beat a dark phone, and it is written
+ * against the resolved value rather than against the preference for the same reason the rule above
+ * is. Everything else here reaches this app through the attribute: a browser that refused the
+ * inline script — a strict content policy, most likely — still gets the theme its OS asked for,
+ * which is exactly what the app did before it could be asked anything else.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --palette-surface: var(--dark-surface);
+    --palette-surface-raised: var(--dark-surface-raised);
+    --palette-surface-sunken: var(--dark-surface-sunken);
+    --palette-line: var(--dark-line);
+    --palette-ink: var(--dark-ink);
+    --palette-ink-muted: var(--dark-ink-muted);
+    --palette-brand: var(--dark-brand);
+    --palette-brand-strong: var(--dark-brand-strong);
+    --palette-brand-ink: var(--dark-brand-ink);
+    --palette-brand-wash: var(--dark-brand-wash);
+    --palette-podium-gold: var(--dark-podium-gold);
+    --palette-podium-silver: var(--dark-podium-silver);
+    --palette-podium-bronze: var(--dark-podium-bronze);
+    --palette-warning: var(--dark-warning);
+    --palette-warning-surface: var(--dark-warning-surface);
+    --palette-danger: var(--dark-danger);
+    --palette-shadow-raised: var(--dark-shadow-raised);
+    --palette-shadow-sheet: var(--dark-shadow-sheet);
+    --palette-shadow-dialog: var(--dark-shadow-dialog);
   }
 }
 
