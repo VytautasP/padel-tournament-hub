@@ -22,13 +22,20 @@ export interface Destination {
   readonly label: string;
 }
 
-const ROUND: Destination = { id: 'round', label: copy.session.round };
-const STANDINGS: Destination = { id: 'standings', label: copy.session.standings };
-const PLAYERS: Destination = { id: 'players', label: copy.session.players };
-
-/** The destinations there are at this tier — two at the desk, three under a thumb. */
+/**
+ * The destinations there are at this tier — two at the desk, three under a thumb.
+ *
+ * Built when it is asked rather than held as three module constants, which is what it used to be.
+ * The dictionary is chosen at startup and this file is loaded before that happens (ADR-0032 §3,
+ * `copy/copy.ts`), so constants here would be three English labels in a Lithuanian session — and
+ * the only three in the app, which is exactly the kind of half-translation nobody would look for.
+ */
 export function destinationsAt(atDesk: boolean): readonly Destination[] {
-  return atDesk ? [ROUND, PLAYERS] : [ROUND, STANDINGS, PLAYERS];
+  const round: Destination = { id: 'round', label: copy.session.round };
+  const standings: Destination = { id: 'standings', label: copy.session.standings };
+  const players: Destination = { id: 'players', label: copy.session.players };
+
+  return atDesk ? [round, players] : [round, standings, players];
 }
 
 /**

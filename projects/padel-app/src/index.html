@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 
     <!--
-      The organizer's theme, applied before the first frame (ADR-0031 §5).
+      The organizer's theme and language, applied before the first frame (ADR-0031 §5, ADR-0032).
 
       This is the only JavaScript in the app outside Angular, and it exists because everything
       Angular does happens *after* the first paint: an organizer who chose the opposite of their OS
@@ -25,9 +25,8 @@
       is worse than no toggle. Nothing here is run by a test, read by a linter or proved by the
       convention check, so it stays the size it is.
 
-      It owns three things — three of ADR-0031 §5's four. The fourth is `<html lang>`, and it is
-      not here yet because there is no language preference to read; the script grows one with the
-      dictionaries in #69. It has to own all three of these or an override is only half applied.
+      It owns ADR-0031 §5's four things, and it has to own all of them or an override is only
+      half applied.
       `data-theme` is what the app draws itself with, and it is stamped with a *resolved* theme —
       `system` included — so there is one value to read for what is currently on screen.
       `color-scheme` is what the browser draws its own scrollbars and form controls with.
@@ -37,7 +36,15 @@
       right one loses its media and simply applies. It is collapsed under `system` too, rather than
       only under an override: it costs nothing, and it leaves `preferences.ts` one meta to keep up
       to date instead of a selection to fight when the choice changes mid-session.
-      `preference/preferences.ts` keeps all three in step from here on, and collapses the bar
+      `<html lang>` is the fourth, and it is the one thing here that is not about colour: it is
+      what a screen reader picks a voice from and what a browser offers to translate, and both of
+      those happen before Angular has read a preference. It is also the only one of the four that
+      cannot change under a running app — choosing the other language reloads the page rather than
+      re-rendering it (ADR-0032 §3), so this script and `preferences.ts` are the only two places
+      it is ever written. English is what a browser that has never been told otherwise gets, on
+      every device, whatever its owner's phone is set to (ADR-0032 §2): there is no
+      `navigator.language` here and there is not going to be one.
+      `preference/preferences.ts` keeps all four in step from here on, and collapses the bar
       itself as well — for the browser that ran none of this.
 
       No colour is written here. The bar's two values are read off the metas above, which is the
@@ -47,11 +54,15 @@
       (function () {
         try {
           var stored = null;
+          var storedLanguage = null;
           try {
             stored = localStorage.getItem('pth.theme');
+            storedLanguage = localStorage.getItem('pth.language');
           } catch (blocked) {
-            // Private mode, or site data blocked. The app opens in the system theme.
+            // Private mode, or site data blocked. The app opens in the system theme, in English.
           }
+
+          document.documentElement.lang = storedLanguage === 'lt' ? 'lt' : 'en';
 
           var chosen = stored === 'light' || stored === 'dark' ? stored : 'system';
           var prefersDark =

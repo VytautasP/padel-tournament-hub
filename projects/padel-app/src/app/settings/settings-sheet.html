@@ -1,5 +1,6 @@
 <!--
-  One heading and one control, which is the whole of settings today.
+  Two preferences, in the order they cost: a theme that applies as it is tapped, and a language
+  that takes the page away and brings it back (ADR-0031 §3, ADR-0032 §3).
 
   The three answers are a segmented row rather than a switch, because there are three of them and
   the middle one is the default (ADR-0031 §3). Each is a button that says which of them is held,
@@ -25,6 +26,38 @@
           (click)="chooseTheme(theme)"
         >
           {{ themeLabel(theme) }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!--
+    The same segmented row as the theme above it, because they are the same gesture: one of these
+    is held, and tapping another takes the hold. What is different is invisible here and total —
+    tapping the other one ends this page. There is no confirmation and no spinner: the sheet, the
+    screen behind it and this component are all replaced by the app coming back up in the other
+    language, which is faster to see than to describe.
+
+    Each language is named in its own language, which is the one string in this app that is not
+    translated on the way past (ADR-0032 §5). It is also why this control needs no glyph and no
+    flag: the word *Lietuvių* is legible to exactly the person looking for it.
+  -->
+  <div class="flex flex-col gap-2">
+    <h3 class="text-micro font-bold text-ink-muted uppercase">
+      {{ copy.settings.language.heading }}
+    </h3>
+    <div class="flex gap-2" role="group" [attr.aria-label]="copy.settings.language.heading">
+      @for (offered of languages; track offered) {
+        <button
+          type="button"
+          class="text-control h-12 flex-1 rounded-[15px] border font-bold"
+          [class]="
+            language === offered ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink'
+          "
+          [attr.aria-pressed]="language === offered"
+          (click)="chooseLanguage(offered)"
+        >
+          {{ languageLabel(offered) }}
         </button>
       }
     </div>
