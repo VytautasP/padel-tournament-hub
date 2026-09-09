@@ -519,6 +519,10 @@ function argumentsOf(left: DictionaryFunction, right: DictionaryFunction): numbe
 /**
  * What a dictionary entry says when handed these arguments, or `null` if it cannot be handed them.
  *
+ * A throw is `null` rather than a failure, because most of them are this walk's own fault — a rung
+ * of the ladder offering a number to something that wanted a list. An entry that throws on every
+ * rung loses every rung, which is the silence the coverage test above counts.
+ *
  * Serialised rather than compared directly because `identity.adoptConfirm` answers with an object
  * — a lead and a confirmation — and an argument that vanished from either half of it has vanished.
  */
@@ -572,6 +576,14 @@ function carriesArgument(
  * counterpart does. Declaring them is what TypeScript can be made to check; using them is not, and
  * a Lithuanian sentence that takes a team and never mentions it is a hole on a screen the compiler
  * has already called fine (#71).
+ *
+ * Two things it does not claim, both of them consequences of being a *parity* check rather than a
+ * rule about any one sentence. A hole both dictionaries share is invisible here, because there is
+ * nothing to disagree about — an argument the English never says either is a question for whoever
+ * wrote the English, and this walk would have to be told what every function means to answer it.
+ * And "carries" means the argument changes what comes out, which is not quite the same as being
+ * printed: one that only picks a plural form or chooses the dash in `standings.total` counts as
+ * carried, because from outside the function there is no way to tell those apart.
  */
 function interpolationDriftBetween(left: unknown, right: unknown, path: string): string[] {
   return functionsIn(left, right, path).flatMap(([ours, theirs, at]) =>
