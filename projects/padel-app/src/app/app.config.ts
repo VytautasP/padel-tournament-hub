@@ -9,8 +9,9 @@
  * how a tab that missed a deploy gets onto the current build instead of being told it is offline
  * (ADR-0030); the preference store, which is `localStorage` and is the one thing here a browser
  * can refuse outright; the reload, which is how the app starts itself again in a language the
- * organizer has just chosen (ADR-0032 §3); and the system theme, which is `prefers-color-scheme` and is the OS the
- * app is running on (ADR-0031). Nothing else in the app knows which implementation it got.
+ * organizer has just chosen (ADR-0032 §3); and the system theme, which is `prefers-color-scheme`
+ * and is the OS the app is running on (ADR-0031). Nothing else in the app knows which
+ * implementation it got.
  *
  * The repository is one object behind two tokens. `FirestoreSessionRepository` answers for both
  * `SESSION_REPOSITORY` and `IDENTITY` because it holds one Firebase app, one Firestore and one

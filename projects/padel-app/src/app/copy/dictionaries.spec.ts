@@ -9,12 +9,12 @@
  * dropping the team out of the middle of itself, on a screen the compiler has just declared fine.
  *
  * So the shapes are walked. It is done here rather than in `tools/verify-app-conventions.mjs`,
- * which is where ADR-0032 §1 and spec §7 said the parity check would go: that file reads source
- * text with regular expressions, and the two facts worth checking — how many arguments a function
- * declares, and whether the words that must not be translated are the same object — are facts
- * about the loaded modules rather than about their text. A checker that re-implemented a TypeScript
- * parser to find them would be a second, worse compiler. The convention check keeps its four rules,
- * unchanged, and this runs beside it in the same `npm run verify`.
+ * which is where ADR-0032 §1 said the parity check would go, and ADR-0033 records why it does not:
+ * that file reads source *text* with regular expressions, and the two facts worth checking — how
+ * many arguments a function declares, and whether the words that must not be translated are the
+ * same object — are facts about the loaded modules rather than about their text. A checker that
+ * re-implemented a TypeScript parser to find them would be a second, worse compiler. The convention
+ * check keeps its four rules, unchanged, and this runs beside it in the same `npm run verify`.
  */
 import { copyEn } from './copy.en';
 import { copyLt } from './copy.lt';

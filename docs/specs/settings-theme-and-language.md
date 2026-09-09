@@ -2,7 +2,8 @@
 
 **Status:** ready to slice
 **Decided by:** [ADR-0031](../adr/0031-the-app-has-a-settings-sheet-and-a-preference-belongs-to-the-browser.md),
-[ADR-0032](../adr/0032-two-typed-dictionaries-and-switching-language-reloads.md)
+[ADR-0032](../adr/0032-two-typed-dictionaries-and-switching-language-reloads.md),
+[ADR-0033](../adr/0033-the-parity-check-is-a-spec-because-arity-is-not-a-fact-about-text.md)
 **Vocabulary:** `CONTEXT.md` → **Preference**, **Theme**, **Language**
 
 The app gains its first settings surface and its first two preferences: a theme with three answers
@@ -104,8 +105,11 @@ to: a toggle that stored nothing would revert on the reload it triggers.
 - The active dictionary is selected once, at startup, from the preference. Consumers keep
   `protected readonly copy = copy` and templates keep `copy.session.done` — **all 136 template
   reads across 26 templates stay exactly as they are** (ADR-0032 §3).
-- `tools/verify-app-conventions.mjs` gains a parity check for what the type cannot see, and keeps
-  its existing "no template writes a word of its own" rule untouched.
+- The dictionaries are walked against each other for what the type cannot see — chiefly a
+  translated function that quietly dropped an argument, which TypeScript permits. That walk is
+  `copy/dictionaries.spec.ts` rather than a rule in `tools/verify-app-conventions.mjs`, which reads
+  source text and cannot see it (ADR-0033). The convention checker keeps its four rules, and its
+  "no template writes a word of its own" rule, entirely untouched.
 - **Not translated:** mode names (`Americano`, `Mixicano`, `Team Americano`) and `appName`
   (ADR-0032 §5). Player names, court names and session titles are the organizer's own text and are
   never touched.
@@ -146,5 +150,5 @@ Ship no Lithuanian that has not been read by someone who speaks it.
 - [ ] A spectator opening a share code sees English, can switch to Lithuanian, and has no theme
       control and no gear.
 - [ ] Deleting an entry from `copy.lt.ts` fails the build.
-- [ ] `verify-app-conventions.mjs` still passes, still catches a literal in a template, and now
-      catches a dictionary that has drifted.
+- [ ] `verify-app-conventions.mjs` still passes and still catches a literal in a template, and
+      `npm run verify` now also catches a dictionary that has drifted (ADR-0033).
