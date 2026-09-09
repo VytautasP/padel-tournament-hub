@@ -40,6 +40,11 @@ import { IDENTITY } from '../session/identity';
 import { InMemorySessionRepository } from '../session/in-memory-session-repository';
 import { SESSION_REPOSITORY } from '../session/session-repository';
 import { BUILD_RELOAD } from '../share/build-reload';
+import { FixedSystemTheme } from '../preference/fixed-system-theme';
+import { PREFERENCE_STORAGE } from '../preference/preference-storage';
+import { SYSTEM_THEME } from '../preference/system-theme';
+import type { ResolvedTheme } from '../preference/theme';
+import { RecordingPreferenceStorage } from './recording-preference-storage';
 import { CLIPBOARD } from '../share/clipboard';
 import { qrEncoder, QR_ENCODER } from '../share/qr-matrix';
 import type { QrEncoder } from '../share/qr-matrix';
@@ -88,6 +93,23 @@ export interface LaunchOptions {
    * (ADR-0030).
    */
   readonly buildReload?: RecordingBuildReload;
+  /**
+   * Where preferences are kept. A browser that remembers unless a spec says otherwise.
+   *
+   * Passed in for the same reason the repository is: it is the only way "the choice comes back
+   * after a reload" can be asked, because a reload is a fresh injector reading the same storage.
+   * The other thing a spec passes is one that *refuses* — a phone with site data blocked, which
+   * ADR-0031 §4 says must be an app that works rather than an app that throws.
+   */
+  readonly storage?: RecordingPreferenceStorage;
+  /**
+   * Which way the organizer's phone is set. Light unless a spec is about the other one.
+   *
+   * `prefers-color-scheme` is not implemented in the unit test environment, and the default is
+   * load-bearing in the same way the tier's is: every spec written before there was a theme goes
+   * on saying nothing about one.
+   */
+  readonly systemTheme?: ResolvedTheme;
 }
 
 export class AppHarness {
@@ -104,6 +126,8 @@ export class AppHarness {
     readonly repository: InMemorySessionRepository,
     /** What the share sheet copied to, and the only way to ask whether it copied at all. */
     readonly clipboard: RecordingClipboard,
+    /** The organizer's phone, and the only way to change its setting under a running app. */
+    private readonly system: FixedSystemTheme,
     private launchedWith: LaunchOptions,
   ) {}
 
@@ -113,9 +137,12 @@ export class AppHarness {
     identity,
     qrCode = qrEncoder,
     buildReload = new RecordingBuildReload(),
+    storage = RecordingPreferenceStorage.remembering(),
+    systemTheme = 'light',
     at,
   }: LaunchOptions = {}): Promise<AppHarness> {
     const clipboard = new RecordingClipboard();
+    const system = new FixedSystemTheme(systemTheme);
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -134,16 +161,20 @@ export class AppHarness {
         { provide: CLIPBOARD, useValue: clipboard },
         { provide: QR_ENCODER, useValue: qrCode },
         { provide: BUILD_RELOAD, useValue: buildReload },
+        { provide: PREFERENCE_STORAGE, useValue: storage },
+        { provide: SYSTEM_THEME, useValue: system },
       ],
     });
 
     const fixture = TestBed.createComponent(App);
-    const harness = new AppHarness(fixture, repository, clipboard, {
+    const harness = new AppHarness(fixture, repository, clipboard, system, {
       repository,
       tier,
       identity,
       qrCode,
       buildReload,
+      storage,
+      systemTheme,
       at,
     });
     // The outlet has to exist before there is anywhere for a route to be rendered, which is why
@@ -162,7 +193,9 @@ export class AppHarness {
   async reload(): Promise<AppHarness> {
     this.fixture.destroy();
 
-    return AppHarness.launch(this.launchedWith);
+    // The phone is reopened as it is *now*, not as it was launched: an organizer who changed their
+    // OS setting and then reopened the app has not changed it back by doing so.
+    return AppHarness.launch({ ...this.launchedWith, systemTheme: this.system.theme() });
   }
 
   /**
@@ -393,6 +426,41 @@ export class AppHarness {
     }
 
     return found[0];
+  }
+
+  /**
+   * Which of the two themes the app is drawing, read off `<html data-theme>`.
+   *
+   * The other thing about this app a spec cannot read as words — and unlike a sheet's anchor, not
+   * even a thing it could read as a colour: there is no stylesheet in a unit test. `data-theme` is
+   * exactly what `styles.css` keys the dark palette on, so an app that stamped it wrongly is an
+   * app drawn wrongly, which makes it the honest seam rather than a convenient one.
+   */
+  theme(): string {
+    return this.document().documentElement.dataset['theme'] ?? '';
+  }
+
+  /**
+   * What the browser has been told to draw its *own* furniture with — scrollbars, form controls,
+   * the flash behind a navigation.
+   *
+   * `light dark` says both are in play and the OS decides, which is what `system` means. Naming
+   * one is what stops the browser following the OS while the app does not (ADR-0031 §5).
+   */
+  colorScheme(): string {
+    return (
+      this.document().querySelector('meta[name="color-scheme"]')?.getAttribute('content') ?? ''
+    );
+  }
+
+  /** The organizer changing their phone's setting with the app open — a sunset, in one call. */
+  async flipSystemTheme(theme: ResolvedTheme): Promise<void> {
+    this.system.set(theme);
+    await this.settle();
+  }
+
+  private document(): Document {
+    return this.appRoot().ownerDocument;
   }
 
   private appRoot(): HTMLElement {

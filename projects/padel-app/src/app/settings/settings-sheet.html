@@ -1,0 +1,40 @@
+<!--
+  One heading and one control, which is the whole of settings today.
+
+  The three answers are a segmented row rather than a switch, because there are three of them and
+  the middle one is the default (ADR-0031 §3). Each is a button that says which of them is held,
+  in the pill treatment the roster's toggles already use — `aria-pressed` is what a screen reader
+  is told and the brand fill is what everyone else reads, and they say the same thing.
+-->
+<section class="flex flex-col gap-[18px] px-5 pt-[18px] pb-[34px]">
+  <header class="flex w-full flex-col gap-1.5">
+    <h2 class="text-header font-bold text-ink">{{ copy.settings.heading }}</h2>
+  </header>
+
+  <div class="flex flex-col gap-2">
+    <h3 class="text-micro font-bold text-ink-muted uppercase">{{ copy.settings.theme.heading }}</h3>
+    <div class="flex gap-2" role="group" [attr.aria-label]="copy.settings.theme.heading">
+      @for (theme of themes; track theme) {
+        <button
+          type="button"
+          class="text-control h-12 flex-1 rounded-[15px] border font-bold"
+          [class]="
+            chosen() === theme ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink'
+          "
+          [attr.aria-pressed]="chosen() === theme"
+          (click)="chooseTheme(theme)"
+        >
+          {{ themeLabel(theme) }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <button
+    type="button"
+    class="text-control h-[54px] w-full rounded-[15px] border border-line px-4 text-ink"
+    (click)="close()"
+  >
+    {{ copy.settings.done }}
+  </button>
+</section>
