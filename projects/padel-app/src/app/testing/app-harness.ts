@@ -35,6 +35,7 @@ import { LAYOUT } from '../layout/layout';
 import type { Tier } from '../layout/layout';
 import { FixedSystemTheme } from '../preference/fixed-system-theme';
 import { PREFERENCE_STORAGE } from '../preference/preference-storage';
+import { RELOAD } from '../preference/reload';
 import { SYSTEM_THEME } from '../preference/system-theme';
 import type { ResolvedTheme } from '../preference/theme';
 import type { Identity } from '../session/identity';
@@ -50,6 +51,7 @@ import type { QrEncoder } from '../share/qr-matrix';
 import { RecordingBuildReload } from './recording-build-reload';
 import { RecordingClipboard } from './recording-clipboard';
 import { RecordingPreferenceStorage } from './recording-preference-storage';
+import { RecordingReload } from './recording-reload';
 import { SHEET_PANEL } from '../sheet/sheets';
 import type { SheetPosition } from '../sheet/sheets';
 
@@ -110,6 +112,15 @@ export interface LaunchOptions {
    * on saying nothing about one.
    */
   readonly systemTheme?: ResolvedTheme;
+  /**
+   * The browser starting this app again, which no spec may actually let happen.
+   *
+   * Passed in for the reason the storage is: a language is chosen by one app and read by the next
+   * one (ADR-0032 §3), and the only way to ask whether the first one asked for the second is to
+   * hold the thing it asked. Reopening is still `reload()` below — this records the ask, and the
+   * spec performs it.
+   */
+  readonly reload?: RecordingReload;
 }
 
 export class AppHarness {
@@ -128,6 +139,8 @@ export class AppHarness {
     readonly clipboard: RecordingClipboard,
     /** The organizer's phone, and the only way to change its setting under a running app. */
     private readonly system: FixedSystemTheme,
+    /** Whether this app has asked the browser to start it again, and how many times. */
+    readonly reloads: RecordingReload,
     private launchedWith: LaunchOptions,
   ) {}
 
@@ -138,6 +151,7 @@ export class AppHarness {
     qrCode = qrEncoder,
     buildReload = new RecordingBuildReload(),
     storage = RecordingPreferenceStorage.remembering(),
+    reload = new RecordingReload(),
     systemTheme = 'light',
     at,
   }: LaunchOptions = {}): Promise<AppHarness> {
@@ -163,18 +177,20 @@ export class AppHarness {
         { provide: QR_ENCODER, useValue: qrCode },
         { provide: BUILD_RELOAD, useValue: buildReload },
         { provide: PREFERENCE_STORAGE, useValue: storage },
+        { provide: RELOAD, useValue: reload },
         { provide: SYSTEM_THEME, useValue: system },
       ],
     });
 
     const fixture = TestBed.createComponent(App);
-    const harness = new AppHarness(fixture, repository, clipboard, system, {
+    const harness = new AppHarness(fixture, repository, clipboard, system, reload, {
       repository,
       tier,
       identity,
       qrCode,
       buildReload,
       storage,
+      reload,
       systemTheme,
       at,
     });
@@ -467,6 +483,18 @@ export class AppHarness {
     return [...this.document().querySelectorAll('meta[name="theme-color"]')].map((bar) =>
       bar.getAttribute('media'),
     );
+  }
+
+  /**
+   * The language the document says it is in, read off `<html lang>`.
+   *
+   * The other half of what choosing a language does, and the half that is not words on a screen:
+   * it is what a screen reader picks a voice from and what a browser offers to translate. An app
+   * whose strings were Lithuanian and whose document still claimed English would be read aloud in
+   * an English accent, which is a failure nothing else in these specs could see.
+   */
+  documentLanguage(): string {
+    return this.document().documentElement.lang;
   }
 
   /** The organizer changing their phone's setting with the app open — a sunset, in one call. */

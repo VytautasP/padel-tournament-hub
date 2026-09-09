@@ -20,8 +20,13 @@
  * which would do the same, and which has to be collapsed out of the two media-selected metas
  * `index.html` ships before it can be coloured at all (see `collapseTheBar`).
  *
- * Three of ADR-0031 §5's four, and the missing one is `<html lang>`: there is no language
- * preference to read yet, so the script and this file both grow one with the dictionaries in #69.
+ * The fourth is `<html lang>`, which arrived with the dictionaries (ADR-0032). It is stamped once
+ * in the constructor rather than from an effect, because unlike the theme it cannot change under a
+ * running app: choosing the other language writes the preference and reloads, and the app that
+ * comes back stamps the new answer on its way up. Selecting the dictionary is the same act and
+ * happens in the same place — `useLanguage` is called from here, before the root component has
+ * any children, because a screen built earlier would be holding the wrong words for the rest of
+ * the visit (`copy/copy.ts`).
  *
  * `data-theme` is always stamped with a *resolved* theme, `system` included. The alternative —
  * stamping the preference and letting CSS resolve `system` with its own media query — would be two
@@ -30,7 +35,11 @@
  */
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { useLanguage } from '../copy/copy';
+import { languageFrom, LANGUAGE_KEY } from './language';
+import type { Language } from './language';
 import { PREFERENCE_STORAGE } from './preference-storage';
+import { RELOAD } from './reload';
 import { SYSTEM_THEME } from './system-theme';
 import { themeFrom, THEME_KEY } from './theme';
 import type { ResolvedTheme, Theme } from './theme';
@@ -47,7 +56,17 @@ export class Preferences {
   private readonly storage = inject(PREFERENCE_STORAGE);
   private readonly system = inject(SYSTEM_THEME);
   private readonly document = inject(DOCUMENT);
+  private readonly reload = inject(RELOAD);
   private readonly chosen = signal<Theme>(themeFrom(this.storage.read(THEME_KEY)));
+
+  /**
+   * The language this visit is being read in, which is `en` until an organizer says otherwise —
+   * on every browser, whatever its owner's phone is set to (ADR-0032 §2).
+   *
+   * A plain value rather than a signal, and that is the whole of ADR-0032 §3 in one field: nothing
+   * re-renders when it changes, because when it changes the app starts again.
+   */
+  readonly language: Language = languageFrom(this.storage.read(LANGUAGE_KEY));
 
   /** What the organizer chose, which is `system` until they choose otherwise. */
   readonly theme = this.chosen.asReadonly();
@@ -60,6 +79,8 @@ export class Preferences {
   });
 
   constructor() {
+    useLanguage(this.language);
+    this.document.documentElement.lang = this.language;
     effect(() => this.stamp(this.chosen(), this.resolvedTheme()));
   }
 
@@ -74,6 +95,29 @@ export class Preferences {
   chooseTheme(theme: Theme): void {
     this.chosen.set(theme);
     this.storage.write(THEME_KEY, theme);
+  }
+
+  /**
+   * Take a new language: keep it, then start the app again in it.
+   *
+   * The opposite order to `chooseTheme`, and for the opposite reason. A theme is applied by this
+   * process and stored as a favour, so it is applied first and the browser may decline the rest. A
+   * language is applied by the *next* process, which has nothing to read but the store — so a
+   * write that did not stick and a reload that happened anyway would be an app that blinked and
+   * came back in the language it was already in. The write is the whole of the change; the reload
+   * is only how it is seen.
+   *
+   * Choosing the language already on screen does nothing at all. There is nothing to write, and
+   * the reload would be a blank screen in exchange for no difference — which is the one thing a
+   * settings sheet must never spend.
+   */
+  chooseLanguage(language: Language): void {
+    if (language === this.language) {
+      return;
+    }
+
+    this.storage.write(LANGUAGE_KEY, language);
+    this.reload.now();
   }
 
   private stamp(chosen: Theme, resolved: ResolvedTheme): void {
