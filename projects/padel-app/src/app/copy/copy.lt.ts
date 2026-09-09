@@ -11,16 +11,52 @@
  * about the language, and they are written once, beside the English. Two copies of an essay is two
  * copies to keep true. Read `copy.en.ts` alongside this file when the wording is in question.
  *
- * **#69 translated the front door and the settings sheet. Everything else is still English here,
- * on purpose** — that ticket proved the machinery end to end and #70 replaces the rest in place,
- * with the compiler holding the shape still while it happens. An English string below is a string
- * nobody has got to yet, not a string that was decided against.
+ * **The glossary's distinctions survive into Lithuanian in these words** (`CONTEXT.md`). They are
+ * listed here rather than beside each entry because the point of each of them is the *other* word
+ * it is not, and a pair is only legible written down together:
  *
- * **Nothing here has been read by a native speaker yet** (spec §8). Four terms are club vernacular
- * that a dictionary translates and a player never says, and none of them is settled: **bench**,
- * **needs partner**, **went home** — which `CONTEXT.md` defines as explicitly not a deletion, and
- * whose Lithuanian has to keep that softness — and **v** for versus. They are in the untranslated
- * half today, which is the honest place for them until somebody who plays has looked.
+ * - **bench** is `nežaidžia` and **bye** is `raundą praleidžia` — the player who is off a court
+ *   this round, and the whole team that is. Two words, as in English, because a team that sits out
+ *   sits out together and two loose names would read as two people who happen to be free.
+ * - **went home** is `išėjo namo`, which is where a person goes rather than something done to a
+ *   row. `Ištrinti` — the Lithuanian for deleting — appears in this file only where an evening
+ *   actually is deleted: history, and discarding from the front door.
+ * - **device identity** is `ši naršyklė` and a **linked account** is `Google paskyra`. The front
+ *   door says which of the two is keeping the history, in those words, and never calls either one
+ *   the other.
+ * - a **stranded evening** is `vakaras, kuris lieka jį sukūrusiai naršyklei` and an **orphaned
+ *   team** is one that `reikia partnerio` — an evening nobody can list again, and a team short a
+ *   player. Neither is called the other's word, and neither is called deleted.
+ * - **joint position** is not a **tie**: `lygiosios` is one drawn match and lives only in the
+ *   record triple, while the podium simply repeats a shared place rather than naming it.
+ *
+ * Two English pairs do collapse, and are called out rather than hidden. `Lentelė` is the word for
+ * **standings** that a Lithuanian club actually says, and it is also the word `CONTEXT.md` tells
+ * English to avoid — there is no second noun here to keep the two apart. And `nežaidžia` is true
+ * of a player who **went home** as well as of one on the **bench**; what keeps them apart on
+ * screen is that the badges never both appear on a row, not the words themselves.
+ *
+ * **Plurals are asked of `Intl.PluralRules`, never written as a ternary** (ADR-0032 §4). Lithuanian
+ * has three forms where English has two and the rule is about the last two digits, so `11 žaidėjų`
+ * and `21 žaidėjas` disagree in a way no hand-written modulo gets right at `111`. Case matters too:
+ * a roster names itself in the nominative and is asked for in the genitive, which is two sets of
+ * forms for one noun rather than one — `playerCountIn` and `genitive` below. The one number that
+ * does *not* go through the rules is the round a header names: `3 raundas` is an ordinal, and an
+ * ordinal does not agree with anything.
+ *
+ * **What is still English here is English on purpose** (ADR-0032 §5): the three mode names and the
+ * product's, shared out of `names.ts` so that neither dictionary can translate them, and
+ * `Lietuvių` / `English` in the language sheet, each named in the language it is.
+ *
+ * **This file has not been read by a native speaker** and the ticket that wrote it does not merge
+ * until one has. Four terms are club vernacular that a dictionary translates and a player never
+ * says, and the drafter's answer to each is a proposal rather than a decision: `nežaidžia` for
+ * **bench**, `reikia partnerio` for **needs partner**, `išėjo namo` for **went home**, and `prieš`
+ * for **v** — one character in English and six here, in the middle of a scoreline.
+ *
+ * Four more are coinages rather than translations, and are named here so that the reviewer can
+ * find them without reading all 180: `Perg.–Lyg.–Pral.` for the record triple, `Pjedestalas` for
+ * the podium, `Lentelė` for the standings, and `Nežaidė raundų` for the count of rounds sat out.
  */
 import type { Gender, SessionMode } from 'padel-engine';
 import { LOCALES } from '../preference/language';
@@ -34,15 +70,18 @@ import { countIn } from './plural';
 const counted = countIn(LOCALES.lt);
 
 const genderNames: Readonly<Record<Gender, string>> = {
-  woman: 'Woman',
-  man: 'Man',
+  woman: 'Moteris',
+  man: 'Vyras',
 };
 
 const googleAccount = 'jūsų Google paskyra';
 
-const shareHeading = 'Share this session';
+const shareHeading = 'Dalintis šia sesija';
 
 const settingsHeading = 'Nustatymai';
+
+/** **Went home**, in the one wording the badge, the action and the confirmation all share. */
+const wentHome = 'Išėjo namo';
 
 export const copyLt = {
   appName,
@@ -87,69 +126,70 @@ export const copyLt = {
   },
 
   wizard: {
-    back: 'Back',
-    next: 'Next',
-    cancel: 'Cancel',
+    back: 'Atgal',
+    next: 'Toliau',
+    cancel: 'Atšaukti',
 
     mode: {
-      heading: 'Which format?',
-      lead: 'Fixed for the evening — pick the one the group agreed on.',
+      heading: 'Koks formatas?',
+      lead: 'Visam vakarui — pasirinkite tą, dėl kurio susitarėte.',
       name: (mode: SessionMode): string => modeNames[mode],
       blurb: (mode: SessionMode): string => modeBlurbs[mode],
     },
 
     players: {
-      heading: 'Who is playing?',
-      lead: 'First names. Type one, hit add, type the next.',
-      placeholder: 'Name',
-      add: 'Add',
-      save: 'Save',
-      edit: (name: string): string => `Edit ${name}`,
-      remove: (name: string): string => `Remove ${name}`,
-      count: (playerCount: number): string =>
-        counted(playerCount, { one: 'player', other: 'players' }),
-      tooFew: (minimum: number): string => `A session needs at least ${minimum} players.`,
-      genderMissing: 'Mixicano pairs across gender, so every player needs one.',
-      oddRoster: 'Team Americano plays in fixed pairs, so the roster needs an even number.',
+      heading: 'Kas žaidžia?',
+      lead: 'Vardai. Įrašykite vieną, spauskite pridėti, rašykite kitą.',
+      placeholder: 'Vardas',
+      add: 'Pridėti',
+      save: 'Išsaugoti',
+      edit: (name: string): string => `Taisyti ${name}`,
+      remove: (name: string): string => `Pašalinti ${name}`,
+      count: playerCountIn,
+      tooFew: (minimum: number): string =>
+        `Sesijai reikia bent ${genitive(minimum, 'žaidėjo', 'žaidėjų')}.`,
+      genderMissing: 'Mixicano poruoja skirtingas lytis, todėl jos reikia kiekvienam žaidėjui.',
+      oddRoster:
+        'Team Americano žaidžiama pastoviomis poromis, todėl žaidėjų turi būti lyginis skaičius.',
     },
 
     pairing: {
-      heading: 'Who plays with whom?',
-      lead: 'Tap two names to pair them. Every player is on a team.',
-      teams: 'Teams',
-      unpaired: 'Not yet paired',
-      choose: (name: string): string => `Pair ${name}`,
-      unpair: (team: string): string => `Break up ${team}`,
-      unpairedRemain: 'Every player needs a partner before the evening can be created.',
+      heading: 'Kas su kuo žaidžia?',
+      lead: 'Palieskite du vardus, kad juos suporuotumėte. Kiekvienas žaidėjas yra komandoje.',
+      teams: 'Komandos',
+      unpaired: 'Dar be poros',
+      choose: (name: string): string => `Poruoti ${name}`,
+      unpair: (team: string): string => `Išardyti ${team}`,
+      unpairedRemain: 'Prieš sukuriant vakarą kiekvienas žaidėjas turi turėti porą.',
     },
 
     review: {
-      heading: 'Review & create',
-      lead: 'Change anything you do not like. Rounds can be added during play.',
-      mode: 'Format',
-      players: 'Players',
-      targetScore: 'Target score',
-      courtCount: 'Courts',
-      roundCount: 'Rounds',
-      courtNames: 'Court names',
-      courtName: (courtNumber: number): string => `Court ${courtNumber} name`,
-      create: 'Create session',
+      heading: 'Peržiūra ir kūrimas',
+      lead: 'Pakeiskite, kas netinka. Raundų galima pridėti ir žaidžiant.',
+      mode: 'Formatas',
+      players: 'Žaidėjai',
+      targetScore: 'Tikslinis rezultatas',
+      courtCount: 'Aikštelės',
+      roundCount: 'Raundai',
+      courtNames: 'Aikštelių pavadinimai',
+      courtName: (courtNumber: number): string => `Aikštelės ${courtNumber} pavadinimas`,
+      create: 'Sukurti sesiją',
     },
   },
 
   session: {
-    round: 'Round',
-    standings: 'Standings',
-    players: 'Players',
+    round: 'Raundas',
+    standings: 'Lentelė',
+    players: 'Žaidėjai',
     summary: modeAndSize,
-    done: 'Done',
+    done: 'Atlikta',
   },
 
   spectator: {
     summary: modeAndSize,
     gone: {
-      heading: 'This session is gone',
-      lead: 'There is no evening at this code. A session that has been deleted is deleted for everybody, and nothing here can be recovered.',
+      heading: 'Šios sesijos nebėra',
+      lead: 'Su šiuo kodu jokio vakaro nėra. Ištrinta sesija yra ištrinta visiems, ir čia nieko atkurti nebeįmanoma.',
     },
   },
 
@@ -178,91 +218,92 @@ export const copyLt = {
   share: {
     open: shareHeading,
     heading: shareHeading,
-    lead: 'Anyone with the code can watch this evening. They cannot change it.',
-    qr: 'QR code for this session',
-    qrUnavailable: 'The QR needs a connection to draw. The code below works without one.',
-    code: 'Share code',
-    copyLink: 'Copy link',
-    copied: 'Link copied.',
-    copyFailed: 'The link did not copy. Read the code out instead.',
-    done: 'Done',
+    lead: 'Kiekvienas, turintis kodą, gali stebėti šį vakarą. Pakeisti jo negali.',
+    qr: 'Šios sesijos QR kodas',
+    qrUnavailable: 'QR kodui nupiešti reikia ryšio. Žemiau esantis kodas veikia ir be jo.',
+    code: 'Dalijimosi kodas',
+    copyLink: 'Kopijuoti nuorodą',
+    copied: 'Nuoroda nukopijuota.',
+    copyFailed: 'Nuorodos nukopijuoti nepavyko. Vietoj to perskaitykite kodą balsu.',
+    done: 'Atlikta',
   },
 
   round: {
     heading: (roundNumber: number, roundCount: number): string =>
-      `Round ${roundNumber} of ${roundCount}`,
-    courtName: (courtNumber: number): string => `Court ${courtNumber}`,
-    side: (names: readonly string[]): string => names.join(' & '),
-    versus: 'v',
-    noScore: 'No score yet',
-    bench: (names: readonly string[]): string => `Sitting out: ${names.join(', ')}`,
-    bye: (teams: readonly string[]): string => `Bye: ${teams.join(', ')}`,
-    previous: 'Previous round',
+      `${roundNumber} raundas iš ${genitive(roundCount, 'raundo', 'raundų')}`,
+    courtName: (courtNumber: number): string => `Aikštelė ${courtNumber}`,
+    side: (names: readonly string[]): string => names.join(' ir '),
+    versus: 'prieš',
+    noScore: 'Rezultato dar nėra',
+    bench: (names: readonly string[]): string => `Nežaidžia: ${names.join(', ')}`,
+    bye: (teams: readonly string[]): string => `Raundą praleidžia: ${teams.join(', ')}`,
+    previous: 'Ankstesnis raundas',
     previousGlyph: '←',
-    next: 'Next round',
+    next: 'Kitas raundas',
     nextGlyph: '→',
-    backToCurrent: 'Back to current round',
-    advance: (roundNumber: number): string => `Round ${roundNumber} →`,
+    backToCurrent: 'Grįžti į dabartinį raundą',
+    advance: (roundNumber: number): string => `${roundNumber} raundas →`,
     addRound: {
-      heading: 'The evening ends here',
-      lead: 'One more round is planned against everything already played. Nothing behind it moves.',
-      action: 'Add round',
+      heading: 'Vakaras baigiasi čia',
+      lead: 'Dar vienas raundas suplanuojamas pagal viską, kas jau sužaista. Niekas prieš jį nepasikeičia.',
+      action: 'Pridėti raundą',
     },
-    enterScore: (courtName: string): string => `Enter score for ${courtName}`,
+    enterScore: (courtName: string): string => `${courtName}: įvesti rezultatą`,
     sameGender: {
       mark: '*',
-      markLabel: 'Same-gender pair',
-      legend: '* Same-gender pair: the roster left nobody of the other gender to partner.',
+      markLabel: 'Tos pačios lyties pora',
+      legend: '* Tos pačios lyties pora: sąraše neliko kitos lyties žaidėjo porai.',
     },
   },
 
   players: {
-    placeholder: 'Name',
-    add: 'Add',
-    benched: 'Sitting out',
-    gone: 'Went home',
-    options: (name: string): string => `Options for ${name}`,
+    placeholder: 'Vardas',
+    add: 'Pridėti',
+    benched: 'Nežaidžia',
+    gone: wentHome,
+    options: (name: string): string => `${name} parinktys`,
     optionsGlyph: '⋯',
-    wentHome: 'Went home',
+    wentHome,
     nobodyCanLeave: (minimum: number): string =>
-      `A session needs at least ${minimum} players, so nobody can go home from this one.`,
+      `Sesijai reikia bent ${genitive(minimum, 'žaidėjo', 'žaidėjų')}, todėl iš šios niekas negali išeiti namo.`,
     noTeamCanLose: (teams: number): string =>
-      `A round needs ${teams} teams with both their players, so nobody can go home from this one.`,
+      `Raundui reikia ${genitive(teams, 'komandos', 'komandų')} su abiem žaidėjais, todėl iš šios sesijos niekas negali išeiti namo.`,
     arrivalsJoinATeam:
-      'Team Americano plays in fixed pairs, so a new player joins a team that needs a partner.',
-    genderMissing: 'Mixicano pairs across gender, so a new player needs one.',
-    needsPartner: 'Needs partner',
-    assignPartner: 'Assign partner',
-    assignPartnerTo: (team: string): string => `Assign partner to ${team}`,
+      'Team Americano žaidžiama pastoviomis poromis, todėl naujas žaidėjas prisijungia prie komandos, kuriai reikia partnerio.',
+    genderMissing: 'Mixicano poruoja skirtingas lytis, todėl jos reikia ir naujam žaidėjui.',
+    needsPartner: 'Reikia partnerio',
+    assignPartner: 'Priskirti partnerį',
+    assignPartnerTo: (team: string): string => `Priskirti partnerį komandai ${team}`,
     partner: {
-      heading: 'Assign a partner',
-      lead: 'Everyone here already has a partner, so a new name joins the team.',
-      dismiss: 'Not now',
+      heading: 'Priskirti partnerį',
+      lead: 'Visi čia jau turi porą, todėl į komandą įsijungia naujas vardas.',
+      dismiss: 'Ne dabar',
     },
     preview: {
-      heading: 'The rest of the evening',
-      lead: 'Every round from here is planned again. Rounds already played do not move.',
-      dismiss: "Don't change the roster",
-      confirmArrival: (name: string): string => `Add ${name}`,
-      confirmDeparture: (name: string): string => `${name} went home`,
-      confirmPartner: (name: string, team: string): string => `${name} joins ${team}`,
+      heading: 'Likusi vakaro dalis',
+      lead: 'Visi raundai nuo čia suplanuojami iš naujo. Jau sužaisti raundai nesikeičia.',
+      dismiss: 'Nekeisti sąrašo',
+      confirmArrival: (name: string): string => `Pridėti ${name}`,
+      confirmDeparture: (name: string): string => `${name} išėjo namo`,
+      confirmPartner: (name: string, team: string): string =>
+        `${name} prisijungia prie komandos ${team}`,
     },
   },
 
   score: {
-    outOf: (targetScore: number): string => `of ${targetScore}`,
-    tooHigh: (targetScore: number): string => `A score cannot be more than ${targetScore}.`,
-    save: 'Save',
-    cancel: 'Cancel',
+    outOf: (targetScore: number): string => `iš ${targetScore}`,
+    tooHigh: (targetScore: number): string => `Rezultatas negali būti didesnis nei ${targetScore}.`,
+    save: 'Išsaugoti',
+    cancel: 'Atšaukti',
   },
 
   standings: {
-    podium: 'Podium',
-    end: 'End session',
+    podium: 'Pjedestalas',
+    end: 'Baigti sesiją',
     endConfirm: {
-      heading: 'End the session?',
-      lead: 'The table is final from here: no more scores, no more rounds, no roster changes. This cannot be undone.',
-      action: 'End session',
+      heading: 'Baigti sesiją?',
+      lead: 'Nuo šiol lentelė galutinė: jokių naujų rezultatų, raundų ar sąrašo pakeitimų. To atšaukti nebus galima.',
+      action: 'Baigti sesiją',
     },
     total: (points: number, matchesPlayed: number, benched: number): string =>
       matchesPlayed === 0 && benched === 0
@@ -270,17 +311,17 @@ export const copyLt = {
         : Number.isInteger(points)
           ? String(points)
           : points.toFixed(1),
-    record: 'W–T–L',
+    record: 'Perg.–Lyg.–Pral.',
     recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
-    matchesPlayed: 'Matches played',
-    benched: 'Benched',
+    matchesPlayed: 'Sužaista rungtynių',
+    benched: 'Nežaidė raundų',
   },
 
   history: {
     heading: 'Sesijų istorija',
     row: (day: string, mode: SessionMode, playerCount: number): string =>
       `${day} · ${modeAndSize(mode, playerCount)}`,
-    winner: (names: readonly string[]): string => `Laimėjo ${names.join(' & ')}`,
+    winner: (names: readonly string[]): string => `Laimėjo ${names.join(' ir ')}`,
     delete: (title: string): string => `Ištrinti ${title}`,
     deleteGlyph: '×',
     deleteConfirm: {
@@ -293,11 +334,11 @@ export const copyLt = {
   gender: {
     name: (gender: Gender): string => genderNames[gender],
     choose: (name: string, gender: Gender): string =>
-      `${name} is a ${genderNames[gender].toLowerCase()}`,
+      `${name} yra ${genderNames[gender].toLowerCase()}`,
   },
 
   team: {
-    name: (names: readonly string[]): string => names.join(' & '),
+    name: (names: readonly string[]): string => names.join(' ir '),
   },
 
   confirm: {
@@ -306,7 +347,25 @@ export const copyLt = {
 } as const satisfies Copy;
 
 function modeAndSize(mode: SessionMode, playerCount: number): string {
-  return `${modeNames[mode]} · ${counted(playerCount, { one: 'žaidėjas', few: 'žaidėjai', other: 'žaidėjų' })}`;
+  return `${modeNames[mode]} · ${playerCountIn(playerCount)}`;
+}
+
+/** `3 žaidėjai` — a roster naming itself, which Lithuanian does in the nominative. */
+function playerCountIn(playerCount: number): string {
+  return counted(playerCount, { one: 'žaidėjas', few: 'žaidėjai', other: 'žaidėjų' });
+}
+
+/**
+ * A counted noun in the genitive, which `reikia` and `iš` both govern: `bent 4 žaidėjų`,
+ * `2 komandų`, `iš 12 raundų`.
+ *
+ * Two forms rather than three, because the genitive is where Lithuanian's `few` and `other`
+ * collapse into one word — `4 žaidėjų` and `11 žaidėjų` — and only the singular parts company at
+ * 1, 21 and 121. Written once here rather than three times at three call sites, so that the rule
+ * is a fact about the language rather than something spelled identically in three places.
+ */
+function genitive(count: number, singular: string, plural: string): string {
+  return counted(count, { one: singular, few: plural, other: plural });
 }
 
 function eveningCount(evenings: number): string {
@@ -314,7 +373,7 @@ function eveningCount(evenings: number): string {
 }
 
 const modeBlurbs: Readonly<Record<SessionMode, string>> = {
-  americano: 'Partners rotate every round. Everyone plays with everyone.',
-  mixicano: 'Partners rotate, paired across gender wherever the roster allows.',
-  'team-americano': 'Fixed pairs you choose. The team is what gets ranked.',
+  americano: 'Poros keičiasi kas raundą. Kiekvienas žaidžia su kiekvienu.',
+  mixicano: 'Poros keičiasi ir sudaromos iš skirtingų lyčių, kiek leidžia sąrašas.',
+  'team-americano': 'Jūsų pasirinktos pastovios poros. Vertinama komanda.',
 };
