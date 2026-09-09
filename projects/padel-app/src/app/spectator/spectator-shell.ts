@@ -9,10 +9,15 @@
  * would be worse than no spectator view at all: the argument at the side of the court would then
  * be about whose phone was right.
  *
- * What is gone is every control: no score sheet, no add round, no roster change, no end session,
- * no share. None of them is hidden or disabled — the boards are told they are not being organized
- * and never render one, and this route holds no store, so there is nothing here that could write
- * even if one appeared.
+ * What is gone is every control that could change the evening: no score sheet, no add round, no
+ * roster change, no end session, no share. None of them is hidden or disabled — the boards are
+ * told they are not being organized and never render one, and this route holds no store, so there
+ * is nothing here that could write even if one appeared.
+ *
+ * The one thing that can be tapped changes nothing about the evening and everything about reading
+ * it: a language toggle in the header bar, which is the whole of the settings a spectator has
+ * (ADR-0032 §6). No gear, no sheet, no theme — the theme is carried from the browser's preference
+ * if it holds one, like everywhere else.
  *
  * The header says which evening this is, because a spectator arrived by scanning a square and has
  * no other way to know. At the desk the rail already says it, so the line is not said twice.
@@ -26,6 +31,7 @@ import { copy } from '../copy/copy';
 import { destinationsAt, panelAt } from '../session/destinations';
 import type { Panel } from '../session/destinations';
 import { LAYOUT } from '../layout/layout';
+import { LanguageToggle } from './language-toggle';
 import { RosterList } from '../players/roster-list';
 import { RoundBoard } from '../round/round-board';
 import { rosterView } from '../players/roster-view';
@@ -39,7 +45,15 @@ import type { SessionRecord } from '../session/session-record';
 
 @Component({
   selector: 'app-spectator-shell',
-  imports: [NgTemplateOutlet, RosterList, RoundBoard, SessionRail, StandingsTable, TabBar],
+  imports: [
+    LanguageToggle,
+    NgTemplateOutlet,
+    RosterList,
+    RoundBoard,
+    SessionRail,
+    StandingsTable,
+    TabBar,
+  ],
   templateUrl: './spectator-shell.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

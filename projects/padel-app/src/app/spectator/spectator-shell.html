@@ -18,15 +18,27 @@
 
   <div class="page-column flex min-w-0 flex-1 flex-col">
     <!--
-      Which evening this is, said once, under a thumb only. A spectator arrived by scanning a
-      square and has no other way to know what they are looking at; at the desk the rail says it
-      already, and a screen that said it twice would be answering a question nobody asked twice.
+      Which evening this is, said once, under a thumb only, and the one thing on this page a
+      spectator may change. A spectator arrived by scanning a square and has no other way to know
+      what they are looking at; at the desk the rail says it already, and a screen that said it
+      twice would be answering a question nobody asked twice.
+
+      The toggle is here at both tiers, because the desk has no rail entry for it and a page whose
+      language could only be changed on a phone would be the wrong half of the audience. What the
+      desk does not get is the bar: there is no summary to carry there, so the line loses its rule
+      and its raised surface and is two words in the corner of the board rather than a strip of
+      chrome above it. It is still in the flow rather than over the table, for the reason
+      `language-toggle.html` gives.
     -->
-    @if (!atDesk()) {
-      <header class="border-b border-line bg-surface-raised px-4 py-2">
-        <p class="text-meta text-ink-muted">{{ summary() }}</p>
-      </header>
-    }
+    <header
+      class="flex items-center gap-3 px-4 py-2"
+      [class]="atDesk() ? 'justify-end' : 'border-b border-line bg-surface-raised'"
+    >
+      @if (!atDesk()) {
+        <p class="min-w-0 truncate text-meta text-ink-muted">{{ summary() }}</p>
+      }
+      <app-language-toggle class="ml-auto" />
+    </header>
 
     <div class="flex-1 overflow-y-auto" [hidden]="current() !== 'round'">
       <app-round-board [session]="session()" [courtNames]="courtNames()" />

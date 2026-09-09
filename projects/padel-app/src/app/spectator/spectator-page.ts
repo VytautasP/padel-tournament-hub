@@ -5,6 +5,11 @@
  * it is arrived at by scanning a square at the side of a court, and it can be reloaded into — all
  * of which are things ADR-0019 said were false of every screen the organizer uses, and still are.
  *
+ * The one thing on it that can be tapped is the language toggle, which is the whole of a
+ * spectator's settings (ADR-0032 §6): it changes nothing about the evening and everything about
+ * whether the person holding the phone can read it. It is on both branches below, because the
+ * screen most likely to be unreadable is the one whose entire content is a single sentence.
+ *
  * Three things it deliberately does not do:
  *
  *   - **It does not sign in.** A spectator has no identity here (ADR-0026 §3) and needs none: the
@@ -36,11 +41,12 @@ import {
 import { copy } from '../copy/copy';
 import { SESSION_REPOSITORY } from '../session/session-repository';
 import type { SessionRecord } from '../session/session-record';
+import { LanguageToggle } from './language-toggle';
 import { SpectatorShell } from './spectator-shell';
 
 @Component({
   selector: 'app-spectator-page',
-  imports: [SpectatorShell],
+  imports: [LanguageToggle, SpectatorShell],
   templateUrl: './spectator-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

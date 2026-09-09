@@ -14,14 +14,24 @@
     deleted the second time.
 
     Set exactly as `connection-needed` is, because it is the same kind of screen: the app talking
-    about itself rather than about an evening, centred and quiet, with no card and no brand colour
-    anywhere — nothing here is an action. It takes the app's column like every other screen, or it
-    would sit against the left edge of a laptop window with a metre of nothing beside it.
+    about itself rather than about an evening, centred and quiet, with no card — nothing here is an
+    action about the evening, and the one control under the sentence is not one either. It takes
+    the app's column like every other screen, or it would sit against the left edge of a laptop
+    window with a metre of nothing beside it.
   -->
   <main
     class="page-column flex min-h-screen flex-col justify-center gap-4 px-6 py-14 text-center xl:max-w-[560px]"
   >
     <h1 class="text-title font-bold text-ink">{{ copy.spectator.gone.heading }}</h1>
     <p class="text-lead text-pretty text-ink-muted">{{ copy.spectator.gone.lead }}</p>
+    <!--
+      The one thing on this screen that is not the sentence. Nothing here can be retried and
+      nothing here can be recovered, but a page whose entire content is one sentence is the page
+      most likely to be unreadable to the person holding it — and the toggle is not an action about
+      the evening, which is what has ended.
+    -->
+    <div class="flex justify-center">
+      <app-language-toggle />
+    </div>
   </main>
 }

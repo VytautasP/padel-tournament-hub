@@ -20,9 +20,12 @@
  */
 import { copy } from './copy/copy';
 import { LANGUAGE_KEY } from './preference/language';
+import { THEME_KEY } from './preference/theme';
+import { spectatorPath } from './share/share-link';
 import { AppHarness } from './testing/app-harness';
+import type { LaunchOptions } from './testing/app-harness';
 import { RecordingPreferenceStorage } from './testing/recording-preference-storage';
-import { createSession, endSession } from './testing/session-driver';
+import { createSession, endSession, storedSession } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
 
@@ -32,6 +35,9 @@ const LITHUANIAN = 'Lietuvių';
 
 /** The front door in English, written out rather than read: see the file comment. */
 const ENGLISH_TAGLINE = 'One padel evening, run from your phone.';
+
+/** The spectator's table in English, written out for the same reason the tagline is. */
+const ENGLISH_STANDINGS = 'Standings';
 
 describe('speaking Lithuanian', () => {
   describe('a browser that has never been asked', () => {
@@ -222,6 +228,145 @@ describe('speaking Lithuanian', () => {
       expect(app.shows(ENGLISH_TAGLINE)).toBe(true);
     });
   });
+
+  /*
+   * The largest audience this product has, and the one with nowhere to change anything
+   * (ADR-0032 §6).
+   *
+   * A spectator arrives once, by scanning a square at the side of a court, and has never opened
+   * the app — so §2 gives them English and ADR-0029 gives them no chrome to change it from. The
+   * toggle is the whole of what stands between them and a table they cannot read, which is why
+   * two words in a corner are worth the one exception to a page with nothing to tap.
+   *
+   * The evening is created by an organizer's app first, exactly as `watch-a-session-as-a-
+   * spectator.spec.ts` does it: what has to be true is that the code the organizer read off their
+   * phone opens this page, and a session written straight into the repository would be a
+   * rendering. That file asks what is *not* in this corner; this one asks what the corner does.
+   */
+  describe('the spectator', () => {
+    it('offers both languages, holding the one the table is in', async () => {
+      const { spectator } = await watchingSomebodysEvening();
+
+      expect(spectator.isOnScreen(ENGLISH)).toBe(true);
+      expect(spectator.isOnScreen(LITHUANIAN)).toBe(true);
+      expect(spectator.isPressed(ENGLISH)).toBe(true);
+      expect(spectator.isPressed(LITHUANIAN)).toBe(false);
+    });
+
+    /* The desk wears the rail and the aside rather than the header, and the corner is in both. */
+    it('offers the same two words at the desk', async () => {
+      const { spectator } = await watchingSomebodysEvening({ tier: 'desk' });
+
+      expect(spectator.isOnScreen(ENGLISH)).toBe(true);
+      expect(spectator.isPressed(LITHUANIAN)).toBe(false);
+    });
+
+    /*
+     * The end of a share code is a single sentence, which makes it the screen most likely to be
+     * unreadable to the person holding it. There is still no retry — the toggle is not an action
+     * about the evening, and the evening is what is gone.
+     */
+    it('offers them on the gone screen too, where the whole page is one sentence', async () => {
+      const organizer = await createSession(FOUR);
+
+      const spectator = await AppHarness.launch({
+        repository: organizer.repository,
+        at: spectatorPath('NOSUCHCODE'),
+      });
+
+      expect(spectator.shows(copy.spectator.gone.heading)).toBe(true);
+      expect(spectator.isOnScreen(LITHUANIAN)).toBe(true);
+    });
+
+    it('writes the same key the sheet does, and asks the browser to start the app again', async () => {
+      const storage = RecordingPreferenceStorage.remembering();
+      const { spectator } = await watchingSomebodysEvening({ storage });
+
+      await spectator.tap(LITHUANIAN);
+
+      expect(storage.read(LANGUAGE_KEY)).toBe('lt');
+      expect(spectator.reloads.asked).toBe(1);
+    });
+
+    it('does nothing at all when the language already held is chosen', async () => {
+      const storage = RecordingPreferenceStorage.remembering();
+      const { spectator } = await watchingSomebodysEvening({ storage });
+
+      await spectator.tap(ENGLISH);
+
+      expect(storage.read(LANGUAGE_KEY)).toBe(null);
+      expect(spectator.reloads.asked).toBe(0);
+    });
+
+    /*
+     * The app that comes back is at the same address, because nothing about the language went into
+     * it (ADR-0024): the harness reopens where this app is, and where it is is the share code.
+     */
+    it('comes back at the same code, watching the same evening in Lithuanian', async () => {
+      const { spectator } = await watchingSomebodysEvening();
+      await spectator.tap(LITHUANIAN);
+
+      const app = await spectator.reload();
+
+      expect(app.documentLanguage()).toBe('lt');
+      expect(app.shows(copy.session.standings)).toBe(true);
+      expect(app.shows(ENGLISH_STANDINGS)).toBe(false);
+      expect(app.isPressed(LITHUANIAN)).toBe(true);
+
+      await app.tap(copy.session.standings);
+      expect(app.shows(FOUR[0])).toBe(true);
+    });
+
+    /* The other half of writing the shared key: a browser that already chose, arriving cold. */
+    it('is already Lithuanian on a browser that chose it in the app', async () => {
+      const storage = RecordingPreferenceStorage.remembering();
+      storage.put(LANGUAGE_KEY, 'lt');
+
+      const { spectator } = await watchingSomebodysEvening({ storage });
+
+      expect(spectator.documentLanguage()).toBe('lt');
+      expect(spectator.shows(copy.session.standings)).toBe(true);
+      expect(spectator.isPressed(LITHUANIAN)).toBe(true);
+      expect(spectator.reloads.asked).toBe(0);
+    });
+
+    it('carries no gear, no settings sheet and no theme control', async () => {
+      const { spectator } = await watchingSomebodysEvening();
+
+      expect(spectator.isOnScreen(copy.settings.open)).toBe(false);
+      expect(spectator.shows(copy.settings.heading)).toBe(false);
+      expect(spectator.shows(copy.settings.theme.heading)).toBe(false);
+      for (const answer of Object.values(copy.settings.theme.answers)) {
+        expect(spectator.isOnScreen(answer)).toBe(false);
+      }
+    });
+
+    /*
+     * The theme arrives here without a control, which is the whole of what "carries it" means: the
+     * preference belongs to the browser (ADR-0031 §4), and a spectator's browser either holds one
+     * or does not.
+     */
+    it('wears the theme the browser holds, and the phone where it holds none', async () => {
+      const storage = RecordingPreferenceStorage.remembering();
+      storage.put(THEME_KEY, 'dark');
+
+      const held = await watchingSomebodysEvening({ storage, systemTheme: 'light' });
+      expect(held.spectator.theme()).toBe('dark');
+
+      const followed = await watchingSomebodysEvening({ systemTheme: 'dark' });
+      expect(followed.spectator.theme()).toBe('dark');
+    });
+
+    /* It adds no identity and no state on the session: what it writes is one key in one browser. */
+    it('changes nothing about the evening it is watching', async () => {
+      const { organizer, spectator } = await watchingSomebodysEvening();
+      const before = JSON.stringify(organizer.repository.activeRecord());
+
+      await spectator.tap(LITHUANIAN);
+
+      expect(JSON.stringify(organizer.repository.activeRecord())).toBe(before);
+    });
+  });
 });
 
 /** Choose Lithuanian and be the browser that acts on it: the whole switch, in one call. */
@@ -231,6 +376,26 @@ async function chooseLithuanian(): Promise<AppHarness> {
   await app.tap(LITHUANIAN);
 
   return await app.reload();
+}
+
+/**
+ * An evening somebody else is running, and the phone of somebody watching it by its code.
+ *
+ * Two apps rather than one, and only the second is alive: the harness resets the testing module on
+ * every launch, so what survives the organizer is the repository they are both looking at — which
+ * is the arrangement in the field, on two phones.
+ */
+async function watchingSomebodysEvening(
+  options: LaunchOptions = {},
+): Promise<{ organizer: AppHarness; spectator: AppHarness }> {
+  const organizer = await createSession(FOUR);
+  const spectator = await AppHarness.launch({
+    repository: organizer.repository,
+    at: spectatorPath(storedSession(organizer).id),
+    ...options,
+  });
+
+  return { organizer, spectator };
 }
 
 /** The gear, wherever it is being tapped from — the two headers open one component. */

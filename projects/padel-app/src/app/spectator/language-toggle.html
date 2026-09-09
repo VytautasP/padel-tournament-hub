@@ -1,0 +1,29 @@
+<!--
+  Two words, each in its own language, and one of them held (ADR-0032 §6).
+
+  The same gesture as the settings sheet's language control and deliberately not the same size:
+  this one lives beside a table somebody is reading, so it is a pair of small pills rather than a
+  pair of full-width segments. What it says is identical — `aria-pressed` for a screen reader, the
+  brand fill for everyone else — because it is the same control in a smaller corner.
+
+  It sits in the flow rather than over the table. A toggle floated into a corner would be a thing
+  the round card slides underneath on a phone held sideways, and the one screen this must never
+  obstruct is the one it exists to make readable.
+-->
+<div
+  class="flex items-center gap-1"
+  role="group"
+  [attr.aria-label]="copy.settings.language.heading"
+>
+  @for (offered of languages; track offered) {
+    <button
+      type="button"
+      class="text-meta rounded-full px-3.5 py-2 font-bold"
+      [class]="held === offered ? 'bg-brand text-brand-ink' : 'text-ink-muted'"
+      [attr.aria-pressed]="held === offered"
+      (click)="choose(offered)"
+    >
+      {{ label(offered) }}
+    </button>
+  }
+</div>
