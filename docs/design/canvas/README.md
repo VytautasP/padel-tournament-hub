@@ -32,6 +32,12 @@ the artboards.
 | Dark | `RoundDark`, `StandingsDark` |
 | Foundations | `Palette` — every colour token, light and dark; `TypeScale` |
 | Directions | `DirectionA`, `DirectionB`, `DirectionC` |
+| Modern | `ModernRound`, `ModernScore`, `ModernStandings`, `ModernPlayers`, `ModernRoundDark`, `ModernDesktop` |
+
+The **Modern** page is a later pass: the Phone set re-dressed in a more current idiom, adding no
+screen and no copy. The `modern-note` annotation lists the five moves and the two tokens they need
+that the set does not have — `--gradient-brand` and `--shadow-card`. It is a second proposal
+sitting beside the first, not a replacement for it; which one gets built is undecided.
 
 `Main.dc.html` is the Round tab, named for its position as the canvas's entry artboard rather than
 for anything in the app.
