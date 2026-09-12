@@ -2,9 +2,19 @@
   The podium is a block rather than three lighter rows at the top of the table. It is the one
   warm thing on the screen — the three metals are the only colour in the app that is not the
   teal or the neutral ramp — and it is the whole reason the evening was played.
+
+  It loses its brand outline and gains the card shadow like everything else (ADR-0035 §2, move 1),
+  and it **keeps its tinted ground** rather than taking the header gradient the Modern board draws
+  it on. That is a deliberate departure from the board, and the reason is the metals. They are the
+  one thing on this screen that must not lose contrast, and the light gold is a deep brown-gold
+  picked to read on a light surface. On a saturated teal ground it is mud, which is why the board
+  drew the *dark* metals there instead. Following the board would therefore mean three more themed
+  pairs, one per metal, keyed to a ground rather than to a theme — three more chances for a medal
+  to go quietly unreadable. `brand-wash` is already the podium's own ground in both themes, and
+  the metals are already proven on it.
 -->
 @if (podium().length > 0) {
-  <section class="flex flex-col gap-3 rounded-card border border-brand bg-brand-wash p-[18px]">
+  <section class="flex flex-col gap-3 rounded-card bg-brand-wash p-[18px] shadow-card">
     <h2 class="text-micro font-bold text-brand uppercase">{{ copy.standings.podium }}</h2>
     <ol class="flex flex-col gap-[10px]">
       @for (place of podium(); track place.standing.id) {
@@ -59,30 +69,27 @@
 }
 
 <!--
-  One row per competitor, divided rather than carded: the table is read down a column of totals,
-  and a gap between every line is a gap the eye has to cross seven times.
+  One card holding every competitor, rather than one card each: the table is read down a column of
+  totals, and a gap between every line is a gap the eye has to cross seven times.
 
-  An expanded row takes a brand outline instead of its divider, which is what makes the figures
+  The hairline dividers go with the borders. What separates the rows now is the two pixels between
+  them and the card's own padding around the lot, which is enough inside one surface and is what
+  the Modern board draws. An expanded row takes a brand outline, which is what makes the figures
   underneath read as belonging to the name above them rather than to the row below.
 
-  The first and last rows round with the list. The list clips its own corners, so a square
-  outline on the row at either end is cut through by the curve and reads as a broken box. The row
-  takes the card role rather than the card role less its own border: a role is a name, and the one
-  pixel that buys is not worth being the only measurement left in a template (ADR-0034 §2).
+  Nothing has to round with the list any more. The rows are inset by the card's padding, so the
+  corner curve never reaches one — which also retires the last radius in this file that was a
+  measurement rather than a role.
 -->
-<ul class="flex flex-col overflow-hidden rounded-card border border-line bg-surface-raised">
+<ul class="card flex flex-col gap-0.5 p-2">
   @for (standing of standings(); track standing.id) {
     <li
-      [class]="
-        isExpanded(standing.id)
-          ? 'border border-brand first:rounded-t-card last:rounded-b-card'
-          : 'border-b border-line last:border-b-0'
-      "
+      [class]="isExpanded(standing.id) ? 'rounded-control border border-brand' : 'rounded-control'"
     >
       <button
         type="button"
-        class="flex w-full items-baseline gap-[14px] px-[18px] pt-[15px] text-left"
-        [class]="isExpanded(standing.id) ? 'pb-2' : 'pb-[15px]'"
+        class="flex w-full items-baseline gap-[14px] px-3 pt-[13px] text-left"
+        [class]="isExpanded(standing.id) ? 'pb-2' : 'pb-[13px]'"
         [attr.aria-expanded]="isExpanded(standing.id)"
         (click)="toggle(standing.id)"
       >
@@ -108,7 +115,7 @@
           above includes a bench credit for each of them (ADR-0023 §2) — without the count, a
           record of three matches beside a total of four rounds' points looks like a bug.
         -->
-        <dl class="text-meta flex gap-[22px] pt-0 pr-[18px] pb-[14px] pl-9 text-ink-muted">
+        <dl class="text-meta flex gap-[22px] pt-0 pr-3 pb-[13px] pl-[50px] text-ink-muted">
           <div class="flex gap-2">
             <dt>{{ copy.standings.record }}</dt>
             <dd class="tabular-nums text-ink">

@@ -33,7 +33,7 @@
       <h1 class="text-display font-bold text-ink">{{ copy.appName }}</h1>
       <button
         type="button"
-        class="text-name flex size-11 shrink-0 items-center justify-center rounded-full border border-line text-ink-muted"
+        class="text-name flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-ink-muted"
         [attr.aria-label]="copy.settings.open"
         (click)="openSettings()"
       >
@@ -50,7 +50,7 @@
       at the end of the same line.
     -->
     <section
-      class="flex flex-col gap-[18px] rounded-card border border-line bg-surface-raised p-5 shadow-raised xl:flex-row xl:flex-wrap xl:items-center xl:gap-[26px] xl:px-7 xl:py-[26px]"
+      class="card flex flex-col gap-[18px] p-5 xl:flex-row xl:flex-wrap xl:items-center xl:gap-[26px] xl:px-7 xl:py-[26px]"
     >
       <div class="flex items-start justify-between gap-3 xl:min-w-0 xl:flex-1">
         <div class="flex min-w-0 flex-col gap-[6px]">
@@ -65,7 +65,7 @@
         </div>
         <button
           type="button"
-          class="text-name flex size-11 shrink-0 items-center justify-center rounded-full border border-line text-ink-muted"
+          class="text-name flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-ink-muted"
           [attr.aria-label]="copy.landing.options"
           [attr.aria-expanded]="optionsOpen()"
           (click)="toggleOptions()"
@@ -87,7 +87,7 @@
       @if (optionsOpen()) {
         <button
           type="button"
-          class="text-control h-12 rounded-control border border-line px-4 font-bold text-ink xl:order-last xl:basis-full"
+          class="text-control h-12 rounded-full bg-surface-sunken px-4 font-bold text-ink xl:order-last xl:basis-full"
           (click)="discard()"
         >
           {{ copy.landing.discard }}
@@ -96,7 +96,7 @@
 
       <button
         type="button"
-        class="text-control h-[54px] rounded-control bg-brand font-bold text-brand-ink xl:h-13 xl:shrink-0 xl:rounded-control xl:px-10"
+        class="text-control h-[54px] rounded-full bg-linear-135 from-brand-strong to-brand font-bold text-brand-ink shadow-brand xl:h-13 xl:shrink-0 xl:px-10"
         (click)="opened.emit(active.id)"
       >
         {{ copy.landing.resume }}
@@ -110,7 +110,7 @@
     -->
     <button
       type="button"
-      class="text-control h-[54px] rounded-control bg-brand font-bold text-brand-ink xl:h-13 xl:justify-self-start xl:rounded-control xl:px-10"
+      class="text-control h-[54px] rounded-full bg-linear-135 from-brand-strong to-brand px-4 font-bold text-brand-ink shadow-brand xl:h-13 xl:justify-self-start xl:px-10"
       (click)="started.emit()"
     >
       {{ copy.landing.newSession }}
@@ -124,24 +124,21 @@
       </h2>
 
       <!--
-        One divided card on a phone, separate cards two-up at the desk. The same list either way:
-        the divider and the border trade places, which is a set of utilities rather than a second
-        arrangement.
+        One card of rows on a phone, separate cards two-up at the desk. The same list either way:
+        the dividers are gone with the borders (ADR-0035 §2, move 1) and what separates the rows
+        inside the one card is its own padding, so the phone's list is a set of utilities rather
+        than a second arrangement.
       -->
-      <ul
-        class="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface-raised xl:grid xl:grid-cols-2 xl:gap-[14px] xl:divide-y-0 xl:overflow-visible xl:rounded-none xl:border-0 xl:bg-transparent"
-      >
+      <ul class="flex flex-col gap-0.5 max-xl:card max-xl:p-2 xl:grid xl:grid-cols-2 xl:gap-[14px]">
         @for (past of history(); track past.sessionId) {
-          <li
-            class="flex items-center xl:rounded-card xl:border xl:border-line xl:bg-surface-raised"
-          >
+          <li class="flex items-center max-xl:rounded-control xl:card">
             <!--
               A row names itself by day, mode and size, with who won it underneath (ADR-0013 §4).
               Both lines are inside the button, so the whole row is the tap that opens the evening.
             -->
             <button
               type="button"
-              class="flex min-w-0 flex-1 flex-col gap-[3px] py-[14px] pr-2 pl-[18px] text-left xl:py-[18px] xl:pl-5"
+              class="flex min-w-0 flex-1 flex-col gap-[3px] py-[14px] pr-2 pl-3 text-left xl:py-[18px] xl:pl-5"
               (click)="opened.emit(past.sessionId)"
             >
               <span class="text-lead truncate text-ink xl:text-row">{{ past.title }}</span>

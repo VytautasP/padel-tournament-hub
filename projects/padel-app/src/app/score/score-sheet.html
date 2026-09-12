@@ -5,29 +5,49 @@
   is one court and the two numbers it can hold.
 -->
 <section class="flex flex-col gap-[22px] px-5 pt-[22px] pb-[34px]">
-  <div class="flex flex-col gap-3 rounded-card border-[1.5px] border-brand px-[18px] py-4">
-    <h2 class="text-micro font-bold text-ink-muted uppercase">
+  <!--
+    The court sits in a sunken well rather than a bordered box (ADR-0035 §2, move 1, one level in).
+    The sheet is already the raised plane here, so a card resting on a shadow on top of it would be
+    a second lift for no reason; what this block has to do is set the court apart from the two
+    buttons under it, and the page's own ground does that.
+  -->
+  <div class="flex flex-col gap-2 rounded-card bg-surface p-3.5">
+    <h2 class="text-micro px-1 font-bold text-ink-muted uppercase">
       {{ data.court.name }}
     </h2>
 
     @for (entry of sides; track entry.side) {
       @if (!$first) {
-        <span class="text-micro font-bold text-ink-muted uppercase">{{ copy.round.versus }}</span>
+        <span class="text-micro px-3 font-bold text-ink-muted uppercase">
+          {{ copy.round.versus }}
+        </span>
       }
 
-      <div class="flex items-center gap-[14px]">
+      <!--
+        The side the number is typed into sits on the tinted fill, which is the same mark a scored
+        court carries on the board behind this sheet (move 5). Either side takes it, because a
+        score is one number typed into either side and the engine derives the other (ADR-0014).
+      -->
+      <div
+        class="flex items-center gap-[14px] rounded-control px-3 py-2"
+        [class]="holdsTheNumber(entry.side) ? 'bg-brand-wash' : ''"
+      >
         <label class="text-name min-w-0 flex-1 truncate text-ink" [attr.for]="fieldId(entry.side)">
           {{ copy.round.side(entry.names) }}
         </label>
         <div class="flex items-baseline gap-2">
+          <!--
+            A filled control rather than a bordered box. It is the primary act of this screen, and
+            what makes it look like one is that it is a solid surface the thumb aims at — the ring
+            is reserved for the side actually holding the number, so it says which of the two was
+            typed rather than merely outlining both.
+          -->
           <input
             type="text"
             inputmode="numeric"
             autocomplete="off"
-            class="text-score-field h-[60px] w-[92px] rounded-control bg-surface px-[14px] text-right font-bold text-ink"
-            [class]="
-              holdsTheNumber(entry.side) ? 'border-[1.5px] border-brand' : 'border border-line'
-            "
+            class="text-score-field h-[60px] w-[92px] rounded-control bg-surface-raised px-[14px] text-right font-bold text-ink"
+            [class]="holdsTheNumber(entry.side) ? 'border-[1.5px] border-brand' : ''"
             [id]="fieldId(entry.side)"
             [value]="valueFor(entry.side)"
             (input)="onInput(entry.side, $event)"
@@ -48,21 +68,22 @@
   }
 
   <!--
-    Save is the button this sheet exists for and it is weighted accordingly: filled, bold, and on
-    the side a right thumb reaches without moving the phone. Cancel is the same size — it has to
-    stay easy to hit by intention — and nothing else.
+    Save is the button this sheet exists for and it is weighted accordingly: a gradient pill
+    carrying the brand shadow, on the side a right thumb reaches without moving the phone. Cancel
+    is the same size — it has to stay easy to hit by intention — and takes the sunken fill, which
+    is a control without being an invitation.
   -->
   <div class="flex gap-3">
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-control border border-line text-ink"
+      class="text-control h-[54px] flex-1 rounded-full bg-surface-sunken text-ink"
       (click)="cancel()"
     >
       {{ copy.score.cancel }}
     </button>
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-control bg-brand font-bold text-brand-ink disabled:opacity-40"
+      class="text-control h-[54px] flex-1 rounded-full bg-linear-135 from-brand-strong to-brand font-bold text-brand-ink shadow-brand disabled:opacity-40 disabled:shadow-none"
       [disabled]="!canSave()"
       (click)="save()"
     >

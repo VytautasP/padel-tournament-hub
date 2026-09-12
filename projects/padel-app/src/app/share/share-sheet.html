@@ -31,7 +31,7 @@
   <div class="flex w-full flex-col gap-2">
     <button
       type="button"
-      class="text-control h-[54px] w-full rounded-control bg-brand px-4 font-bold text-brand-ink"
+      class="text-control h-[54px] w-full rounded-full bg-linear-135 from-brand-strong to-brand px-4 font-bold text-brand-ink shadow-brand"
       (click)="copyLink()"
     >
       {{ copy.share.copyLink }}
@@ -53,7 +53,7 @@
     </p>
     <button
       type="button"
-      class="text-control h-[54px] w-full rounded-control border border-line px-4 text-ink"
+      class="text-control h-[54px] w-full rounded-full bg-surface-sunken px-4 text-ink"
       (click)="close()"
     >
       {{ copy.share.done }}

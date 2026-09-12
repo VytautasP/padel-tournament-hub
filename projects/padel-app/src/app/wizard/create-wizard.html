@@ -84,7 +84,7 @@
     @if (current() !== 'mode') {
       <button
         type="button"
-        class="text-control h-[54px] w-full rounded-control bg-brand font-bold text-brand-ink disabled:opacity-40"
+        class="text-control h-[54px] w-full rounded-full bg-linear-135 from-brand-strong to-brand font-bold text-brand-ink shadow-brand disabled:opacity-40 disabled:shadow-none"
         [disabled]="!canAdvance()"
         (click)="onward()"
       >

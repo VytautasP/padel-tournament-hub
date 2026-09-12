@@ -25,14 +25,17 @@
 
       The toggle is here at both tiers, because the desk has no rail entry for it and a page whose
       language could only be changed on a phone would be the wrong half of the audience. What the
-      desk does not get is the bar: there is no summary to carry there, so the line loses its rule
-      and its raised surface and is two words in the corner of the board rather than a strip of
-      chrome above it. It is still in the flow rather than over the table, for the reason
-      `language-toggle.html` gives.
+      desk does not get is the bar: there is no summary to carry there, so the line is two words in
+      the corner of the board rather than a strip of chrome above it. It is still in the flow rather
+      than over the table, for the reason `language-toggle.html` gives.
+
+      Under a thumb the bar takes the page's own ground and no rule, exactly as the organizer's
+      does: the gradient round header starts immediately below it, and a hairline between the two
+      reads as a seam across the top of the screen (ADR-0035 §2, move 2).
     -->
     <header
-      class="flex items-center gap-3 px-4 py-2"
-      [class]="atDesk() ? 'justify-end' : 'border-b border-line bg-surface-raised'"
+      class="flex items-center gap-3 bg-surface px-4 py-2"
+      [class]="atDesk() ? 'justify-end' : ''"
     >
       @if (!atDesk()) {
         <p class="min-w-0 truncate text-meta text-ink-muted">{{ summary() }}</p>
@@ -63,7 +66,7 @@
   </div>
 
   @if (atDesk()) {
-    <aside class="w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface-raised">
+    <aside class="w-[340px] shrink-0 overflow-y-auto bg-surface-raised shadow-float">
       <ng-container [ngTemplateOutlet]="table" />
     </aside>
   }

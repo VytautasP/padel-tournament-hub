@@ -12,7 +12,7 @@
   <div class="flex gap-3">
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-control border border-line px-4 text-ink"
+      class="text-control h-[54px] flex-1 rounded-full bg-surface-sunken px-4 text-ink"
       (click)="cancel()"
     >
       {{ copy.confirm.cancel }}
@@ -26,10 +26,17 @@
       white over the light theme's red and near-black over the dark theme's, which is the contrast
       each of them needs. A `danger-ink` token would be a second name for a value that has never
       differed.
+
+      The confirming button is a flat fill in both of its colours, and deliberately not the gradient
+      pill move 4 gives a primary action. A gradient with the brand shadow under it is the app
+      saying *this is the good thing to tap*, which is exactly the wrong sentence over Discard and
+      over Delete — and a danger-coloured lift would be the loudest control in the app sitting on
+      the one screen that must not sell what it is offering. The shape is a pill like everything
+      else; the invitation is not.
     -->
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-control px-4 font-bold text-brand-ink"
+      class="text-control h-[54px] flex-1 rounded-full px-4 font-bold text-brand-ink"
       [class]="data.unrecoverable ? 'bg-danger' : 'bg-brand'"
       (click)="confirm()"
     >

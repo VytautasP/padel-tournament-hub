@@ -21,14 +21,14 @@
       #field
       type="text"
       autocomplete="off"
-      class="text-control h-[52px] min-w-0 flex-1 rounded-control border border-line bg-surface-raised px-4 text-ink focus:border-brand focus:outline-none"
+      class="text-control h-[52px] min-w-0 flex-1 rounded-control bg-surface-sunken px-4 text-ink focus:outline-2 focus:outline-brand"
       [placeholder]="copy.wizard.players.placeholder"
       [value]="typed()"
       (input)="onType($event)"
     />
     <button
       type="submit"
-      class="text-control h-[52px] w-[84px] shrink-0 rounded-control bg-brand font-bold text-brand-ink"
+      class="text-control h-[52px] w-[84px] shrink-0 rounded-full bg-linear-135 from-brand-strong to-brand font-bold text-brand-ink shadow-brand"
     >
       {{ isEditing() ? copy.wizard.players.save : copy.wizard.players.add }}
     </button>
@@ -61,11 +61,9 @@
 
   <!-- Absent until there is a roster: an empty card is a box with nothing in it saying nothing. -->
   @if (draft().players().length > 0) {
-    <ul class="flex flex-col overflow-hidden rounded-card border border-line bg-surface-raised">
+    <ul class="card flex flex-col gap-0.5 p-2">
       @for (player of draft().players(); track player.id) {
-        <li
-          class="flex items-center gap-1 border-b border-line py-[5px] pr-2 pl-[18px] last:border-b-0"
-        >
+        <li class="flex items-center gap-1 rounded-control py-[5px] pr-2 pl-3">
           <button
             type="button"
             class="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
