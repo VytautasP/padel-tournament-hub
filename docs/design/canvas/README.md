@@ -68,7 +68,7 @@ because the Modern idiom replaced direction A's while the palette underneath it 
 
 | Page | Standing |
 |---|---|
-| **Foundations** (`Palette`, `TypeScale`) | **Live.** The token record. It carries ADR-0021's eight tokens and ADR-0035's four, and if a value changes in `styles.css` it changes here too — a second copy of a palette out of step is worse than none. |
+| **Foundations** (`Palette`, `TypeScale`) | **Live.** The token record. It carries ADR-0021's eight tokens and the five ADR-0035 added, and if a value changes in `styles.css` it changes here too — a second copy of a palette out of step is worse than none. |
 | **Modern** | **Live.** The idiom the app is built in. |
 | **Phone**, **Desktop**, **Dark** | **Historical.** Direction A as it was built and shipped, before ADR-0035 re-dressed it. Kept as the record of what the app looked like, not as a description of what it looks like. |
 | **Directions** (`A`, `B`, `C`) | **The record of what was considered.** Always was. |
@@ -79,10 +79,13 @@ Two consequences worth knowing before reading a board:
   and an aside at 232 and 366 pixels. ADR-0022 §1 fixes them at **248 and 340**, and reasons about
   those numbers to place the 1280 breakpoint — the boards' widths are drawing slack.
   ADR-0035 §6 kept the ADR's.
-- **The `modern-note` undercounts its own tokens.** It names two the set lacks. Extracting every
-  value from the six Modern boards, it is four: one gradient and three shadows, one of which was
-  drawn at two slightly different values and none of which was drawn in dark. ADR-0035 §3 names
-  them, and §4 records the one value in the whole change with no drawing behind it.
+- **The `modern-note` undercounts its own tokens, and so did the ADR.** The note names two the set
+  lacks. Extracting every value from the six Modern boards, ADR-0035 §3 counted four: one gradient
+  and three shadows, one of which was drawn at two slightly different values and none of which was
+  drawn in dark; §4 records the one value in the whole change with no drawing behind it. Building
+  it found a fifth, which is the ink on the header's gradient — the boards draw it white in light
+  and the reading ink in dark, and nothing already in the palette is both. ADR-0035's consequences
+  record it.
 
 ## What the annotations still settle
 
