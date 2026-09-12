@@ -1,11 +1,12 @@
 /**
- * Proves the four conventions padel-app cannot enforce with a type (decision #20, ADR-0018,
- * ADR-0021 and ADR-0031).
+ * Proves the five conventions padel-app cannot enforce with a type (decision #20, ADR-0018,
+ * ADR-0021, ADR-0031 and ADR-0034).
  *
- * All four are the kind of rule that holds perfectly for a month and then quietly stops: someone
+ * All five are the kind of rule that holds perfectly for a month and then quietly stops: someone
  * adds a heading, someone reaches for `text-red-500` to make an error look like an error, someone
- * writes `text-sm` because the line looked big, someone adds a token to one dark selector and not
- * the other, and none of it shows up in a diff review because none of it is wrong in any local
+ * writes `text-sm` because the line looked big, someone rounds a new card to 19px because 19px
+ * looked right, someone adds a token to one dark selector and not the other, and none of it shows
+ * up in a diff review because none of it is wrong in any local
  * sense. So they are checked here, over the app's templates, its component styles, and the one
  * file that holds the tokens:
  *
@@ -28,6 +29,13 @@
  *      a selector list, so the map from palette token to dark value is written twice, and adding a
  *      token to one copy and not the other is exactly the silent half-theme this file exists to
  *      catch. This is the only rule here that reads `styles.css` rather than everything else.
+ *   5. **No component names a radius.** Radius is expressed only as the named roles defined in
+ *      `styles.css` — `rounded-card`, `rounded-control`, `rounded-sheet` — or as `rounded-full`,
+ *      which is a name rather than a measurement already. An arbitrary `rounded-[15px]` and a raw
+ *      `border-radius` in a component style are both rejected. This is rule 3's argument applied
+ *      to the third axis: the templates had reached six radii where the design has at most four
+ *      roles, and nobody had written a wrong number (ADR-0034 §4). `styles.css` is exempt, as it
+ *      is for rules 2 and 3, because it is where the roles live.
  *
  * Like `verify-engine-boundary.mjs`, this script also checks itself: it runs every rule over
  * deliberate violations and over deliberate near-misses, and fails if a rule lets a violation
@@ -84,6 +92,38 @@ const TYPE_UTILITY = new RegExp(
  * (`font-size:`) or as the Angular binding that produces one (`[style.font-size]`).
  */
 const TYPE_LITERAL = /font-size\s*(?::|\])/;
+
+/**
+ * An arbitrary radius: `rounded-[15px]`, or the same thing behind a variant.
+ *
+ * Only the bracketed form is matched, because `rounded-` is a namespace the roles share — a rule
+ * that tried to describe what a role looks like would have to reject `rounded-card` and
+ * `rounded-full` along with it, and `rounded-full` is the reason there are three tokens and not
+ * four (ADR-0034 §2).
+ */
+const RADIUS_UTILITY = new RegExp(
+  `(?:^|[\\s"'])(?:[a-z0-9@-]+(?:\\[[^\\]]*\\])?:)*` +
+    `rounded(?:-[a-z]+)?-\\[[^\\]]*\\](?:$|[\\s"'])`,
+);
+
+/**
+ * A raw `border-radius`: the same measurement wearing CSS's hat, written as a declaration, as an
+ * inline style, or as the Angular binding that produces one. The one-corner longhands are here
+ * too, because a card rounded a corner at a time is still a card naming a number.
+ */
+const RADIUS_LITERAL =
+  /border(?:-top|-bottom|-start|-end)?(?:-left|-right|-start|-end)?-radius\s*(?::|\])/;
+
+function radiiIn(source) {
+  const found = [];
+  for (const line of source.split('\n')) {
+    if (RADIUS_UTILITY.test(line) || RADIUS_LITERAL.test(line)) {
+      found.push(line.trim());
+    }
+  }
+
+  return found;
+}
 
 /**
  * The visible text a template writes for itself, after everything that is not visible text has
@@ -287,10 +327,13 @@ for (const file of sourceFiles(appSource, ['.html'])) {
   for (const size of typeSizesIn(template)) {
     failures.push(`${relative} names a type size: "${size}" — use a role from styles.css.`);
   }
+  for (const radius of radiiIn(template)) {
+    failures.push(`${relative} names a radius: "${radius}" — use a role from styles.css.`);
+  }
 }
 
 /*
- * Rules 2 and 3 again, over everything that is not a template: component stylesheets, and the
+ * Rules 2, 3 and 5 again, over everything that is not a template: component stylesheets, and the
  * TypeScript beside them.
  *
  * The `.ts` half is here because a class list does not have to be written in a template to reach
@@ -313,6 +356,9 @@ for (const file of sourceFiles(appSource, ['.css', '.ts'])) {
   }
   for (const size of typeSizesIn(source)) {
     failures.push(`${relative} names a type size: "${size}" — use a role from styles.css.`);
+  }
+  for (const radius of radiiIn(source)) {
+    failures.push(`${relative} names a radius: "${radius}" — use a role from styles.css.`);
   }
 }
 
@@ -346,6 +392,10 @@ const violations = [
   ['an inline font-size', 'template', '<p style="font-size: 17px">{{ x }}</p>'],
   ['a bound font-size', 'template', '<p [style.font-size]="x">{{ y }}</p>'],
   ['a stylesheet font-size', 'style', '.score { font-size: 30px; }'],
+  ['an arbitrary radius', 'template', '<div class="rounded-[19px] bg-surface-raised"></div>'],
+  ['an arbitrary radius behind a variant', 'template', '<div class="md:rounded-[19px]"></div>'],
+  ['a stylesheet border-radius', 'style', '.chip { border-radius: 19px; }'],
+  ['a one-corner border-radius', 'style', '.chip { border-top-left-radius: 19px; }'],
 ];
 
 // ...and allow these, or they are a wall rather than a rule.
@@ -373,6 +423,10 @@ const allowances = [
   ['alignment and wrapping', 'template', '<p class="text-center text-pretty">{{ x }}</p>'],
   ['a colour token in the same namespace', 'template', '<p class="text-ink-muted">{{ x }}</p>'],
   ['a token-valued style', 'style', '.card { background: var(--color-surface); }'],
+  ['a pill', 'template', '<button class="rounded-full bg-brand">{{ x }}</button>'],
+  ['the three radius roles', 'template', '<div class="rounded-card rounded-control">{{ x }}</div>'],
+  ['a radius role behind a variant', 'template', '<div class="md:rounded-card"></div>'],
+  ['the card utility', 'template', '<div class="card p-4">{{ x }}</div>'],
 ];
 
 const rejects = (kind, source) =>
@@ -380,8 +434,11 @@ const rejects = (kind, source) =>
     ? literalTextIn(source).length > 0 ||
       literalAttributesIn(source).length > 0 ||
       colourNamesIn(source).length > 0 ||
-      typeSizesIn(source).length > 0
-    : colourNamesIn(source).length > 0 || typeSizesIn(source).length > 0;
+      typeSizesIn(source).length > 0 ||
+      radiiIn(source).length > 0
+    : colourNamesIn(source).length > 0 ||
+      typeSizesIn(source).length > 0 ||
+      radiiIn(source).length > 0;
 
 for (const [label, kind, source] of violations) {
   if (rejects(kind, source)) {
@@ -444,7 +501,8 @@ if (failures.length > 0) {
 
 console.log(
   `\npadel-app conventions hold: ${checkedFiles.templates} template(s) write no visible string, ` +
-    `and they and ${checkedFiles.styled} other source file(s) name no colour or type size of ` +
-    `their own — and the four rules were shown to reject ${violations.length + 1} violations ` +
+    `and they and ${checkedFiles.styled} other source file(s) name no colour, type size or ` +
+    `radius of their own — and the five rules were shown to reject ${violations.length + 1} ` +
+    `violations ` +
     `without tripping on ${allowances.length + 1} legitimate ones.`,
 );

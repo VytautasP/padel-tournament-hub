@@ -31,7 +31,7 @@
         <ul class="flex flex-col gap-2">
           @for (court of round.courts; track court.courtNumber) {
             <li
-              class="flex items-center gap-3 rounded-[15px] border border-line bg-surface px-4 py-3"
+              class="flex items-center gap-3 rounded-control border border-line bg-surface px-4 py-3"
             >
               <span class="text-micro w-[62px] shrink-0 font-bold text-ink-muted uppercase">
                 {{ court.name }}
@@ -76,14 +76,14 @@
   <div class="flex flex-col gap-2.5">
     <button
       type="button"
-      class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
+      class="text-control h-[54px] rounded-control bg-brand px-4 font-bold text-brand-ink"
       (click)="commit()"
     >
       {{ data.action }}
     </button>
     <button
       type="button"
-      class="text-control h-[54px] rounded-[15px] border border-line px-4 text-ink"
+      class="text-control h-[54px] rounded-control border border-line px-4 text-ink"
       (click)="dismiss()"
     >
       {{ copy.players.preview.dismiss }}

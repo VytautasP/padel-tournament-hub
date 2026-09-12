@@ -4,7 +4,7 @@
   teal or the neutral ramp — and it is the whole reason the evening was played.
 -->
 @if (podium().length > 0) {
-  <section class="flex flex-col gap-3 rounded-[20px] border border-brand bg-brand-wash p-[18px]">
+  <section class="flex flex-col gap-3 rounded-card border border-brand bg-brand-wash p-[18px]">
     <h2 class="text-micro font-bold text-brand uppercase">{{ copy.standings.podium }}</h2>
     <ol class="flex flex-col gap-[10px]">
       @for (place of podium(); track place.standing.id) {
@@ -66,15 +66,16 @@
   underneath read as belonging to the name above them rather than to the row below.
 
   The first and last rows round with the list. The list clips its own corners, so a square
-  outline on the row at either end is cut through by the curve and reads as a broken box; the
-  radius is the list's 20px less its 1px border, which is where the row's own edge sits.
+  outline on the row at either end is cut through by the curve and reads as a broken box. The row
+  takes the card role rather than the card role less its own border: a role is a name, and the one
+  pixel that buys is not worth being the only measurement left in a template (ADR-0034 §2).
 -->
-<ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+<ul class="flex flex-col overflow-hidden rounded-card border border-line bg-surface-raised">
   @for (standing of standings(); track standing.id) {
     <li
       [class]="
         isExpanded(standing.id)
-          ? 'border border-brand first:rounded-t-[19px] last:rounded-b-[19px]'
+          ? 'border border-brand first:rounded-t-card last:rounded-b-card'
           : 'border-b border-line last:border-b-0'
       "
     >

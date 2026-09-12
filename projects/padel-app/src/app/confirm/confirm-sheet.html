@@ -12,7 +12,7 @@
   <div class="flex gap-3">
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-[15px] border border-line px-4 text-ink"
+      class="text-control h-[54px] flex-1 rounded-control border border-line px-4 text-ink"
       (click)="cancel()"
     >
       {{ copy.confirm.cancel }}
@@ -29,7 +29,7 @@
     -->
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-[15px] px-4 font-bold text-brand-ink"
+      class="text-control h-[54px] flex-1 rounded-control px-4 font-bold text-brand-ink"
       [class]="data.unrecoverable ? 'bg-danger' : 'bg-brand'"
       (click)="confirm()"
     >

@@ -18,7 +18,7 @@
       @for (theme of themes; track theme) {
         <button
           type="button"
-          class="text-control h-12 flex-1 rounded-[15px] border font-bold"
+          class="text-control h-12 flex-1 rounded-control border font-bold"
           [class]="
             chosen() === theme ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink'
           "
@@ -50,7 +50,7 @@
       @for (offered of languages; track offered) {
         <button
           type="button"
-          class="text-control h-12 flex-1 rounded-[15px] border font-bold"
+          class="text-control h-12 flex-1 rounded-control border font-bold"
           [class]="
             language === offered ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink'
           "
@@ -65,7 +65,7 @@
 
   <button
     type="button"
-    class="text-control h-[54px] w-full rounded-[15px] border border-line px-4 text-ink"
+    class="text-control h-[54px] w-full rounded-control border border-line px-4 text-ink"
     (click)="close()"
   >
     {{ copy.settings.done }}

@@ -50,7 +50,7 @@
       at the end of the same line.
     -->
     <section
-      class="flex flex-col gap-[18px] rounded-[22px] border border-line bg-surface-raised p-5 shadow-raised xl:flex-row xl:flex-wrap xl:items-center xl:gap-[26px] xl:px-7 xl:py-[26px]"
+      class="flex flex-col gap-[18px] rounded-card border border-line bg-surface-raised p-5 shadow-raised xl:flex-row xl:flex-wrap xl:items-center xl:gap-[26px] xl:px-7 xl:py-[26px]"
     >
       <div class="flex items-start justify-between gap-3 xl:min-w-0 xl:flex-1">
         <div class="flex min-w-0 flex-col gap-[6px]">
@@ -87,7 +87,7 @@
       @if (optionsOpen()) {
         <button
           type="button"
-          class="text-control h-12 rounded-[15px] border border-line px-4 font-bold text-ink xl:order-last xl:basis-full"
+          class="text-control h-12 rounded-control border border-line px-4 font-bold text-ink xl:order-last xl:basis-full"
           (click)="discard()"
         >
           {{ copy.landing.discard }}
@@ -96,7 +96,7 @@
 
       <button
         type="button"
-        class="text-control h-[54px] rounded-[15px] bg-brand font-bold text-brand-ink xl:h-13 xl:shrink-0 xl:rounded-[14px] xl:px-10"
+        class="text-control h-[54px] rounded-control bg-brand font-bold text-brand-ink xl:h-13 xl:shrink-0 xl:rounded-control xl:px-10"
         (click)="opened.emit(active.id)"
       >
         {{ copy.landing.resume }}
@@ -110,7 +110,7 @@
     -->
     <button
       type="button"
-      class="text-control h-[54px] rounded-[15px] bg-brand font-bold text-brand-ink xl:h-13 xl:justify-self-start xl:rounded-[14px] xl:px-10"
+      class="text-control h-[54px] rounded-control bg-brand font-bold text-brand-ink xl:h-13 xl:justify-self-start xl:rounded-control xl:px-10"
       (click)="started.emit()"
     >
       {{ copy.landing.newSession }}
@@ -129,11 +129,11 @@
         arrangement.
       -->
       <ul
-        class="divide-y divide-line overflow-hidden rounded-[20px] border border-line bg-surface-raised xl:grid xl:grid-cols-2 xl:gap-[14px] xl:divide-y-0 xl:overflow-visible xl:rounded-none xl:border-0 xl:bg-transparent"
+        class="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface-raised xl:grid xl:grid-cols-2 xl:gap-[14px] xl:divide-y-0 xl:overflow-visible xl:rounded-none xl:border-0 xl:bg-transparent"
       >
         @for (past of history(); track past.sessionId) {
           <li
-            class="flex items-center xl:rounded-[18px] xl:border xl:border-line xl:bg-surface-raised"
+            class="flex items-center xl:rounded-card xl:border xl:border-line xl:bg-surface-raised"
           >
             <!--
               A row names itself by day, mode and size, with who won it underneath (ADR-0013 §4).

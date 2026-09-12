@@ -258,6 +258,23 @@
   --shadow-dialog: var(--palette-shadow-dialog);
 
   /*
+   * Radius, as roles rather than as a scale (ADR-0034).
+   *
+   * The same argument colour and type already won. Nobody wrote a wrong number, but each corner
+   * looked right on its own and the templates reached six radii — `[15px]`, `[14px]`, `[13px]`,
+   * `[18px]`, `[20px]`, `[22px]` — where the design has at most four roles. A role says what the
+   * surface *is*, so a card and the chip inside it cannot drift apart by a pixel each.
+   *
+   * The fourth role is `rounded-full` and it needs no token, because it is already a name rather
+   * than a measurement — the same reason `flex` is allowed and `w-[390px]` would not be.
+   *
+   * `tools/verify-app-conventions.mjs` rule 5 proves no component names a radius of its own.
+   */
+  --radius-card: 24px;
+  --radius-control: 16px;
+  --radius-sheet: 26px;
+
+  /*
    * Two faces. Verdana carries every word that is read — it was drawn for small sizes on screen
    * and is installed everywhere, so the text the organizer needs at a court arrives with no
    * network in the path. Space Grotesk 700 carries titles, round headers and scorelines.
@@ -382,6 +399,23 @@
 }
 
 /*
+ * A card: the one treatment every resting surface in the app wears (ADR-0034, ADR-0035 §2).
+ *
+ * Fourteen places draw a card — a court card, a standings block, the podium, a wizard panel, a
+ * roster row — and until this utility existed each of them spelled the treatment out for itself,
+ * which is how the radius reached six values. A card is not three coincidental utilities that
+ * happen to appear together; it is one decision, and it is written here once.
+ *
+ * What a screen still decides for itself is the padding and what goes inside. This says only how
+ * the surface is held.
+ */
+@utility card {
+  background-color: var(--palette-surface-raised);
+  border-radius: var(--radius-card);
+  box-shadow: var(--palette-shadow-raised);
+}
+
+/*
  * The two shapes a focused surface wears, and the whole of what changes between them.
  *
  * A sheet's own template says nothing about where it is — `sheet/sheets.ts` picks one of these two
@@ -404,7 +438,7 @@
 
 .sheet-at-the-bottom {
   border-top: 1px solid var(--palette-line);
-  border-radius: 26px 26px 0 0;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   box-shadow: var(--palette-shadow-sheet);
 }
 
@@ -429,7 +463,7 @@
 
 .sheet-in-the-middle {
   border: 1px solid var(--palette-line);
-  border-radius: 26px;
+  border-radius: var(--radius-sheet);
   box-shadow: var(--palette-shadow-dialog);
 }
 

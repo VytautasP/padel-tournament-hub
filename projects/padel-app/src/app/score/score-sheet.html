@@ -5,7 +5,7 @@
   is one court and the two numbers it can hold.
 -->
 <section class="flex flex-col gap-[22px] px-5 pt-[22px] pb-[34px]">
-  <div class="flex flex-col gap-3 rounded-[18px] border-[1.5px] border-brand px-[18px] py-4">
+  <div class="flex flex-col gap-3 rounded-card border-[1.5px] border-brand px-[18px] py-4">
     <h2 class="text-micro font-bold text-ink-muted uppercase">
       {{ data.court.name }}
     </h2>
@@ -24,7 +24,7 @@
             type="text"
             inputmode="numeric"
             autocomplete="off"
-            class="text-score-field h-[60px] w-[92px] rounded-[15px] bg-surface px-[14px] text-right font-bold text-ink"
+            class="text-score-field h-[60px] w-[92px] rounded-control bg-surface px-[14px] text-right font-bold text-ink"
             [class]="
               holdsTheNumber(entry.side) ? 'border-[1.5px] border-brand' : 'border border-line'
             "
@@ -55,14 +55,14 @@
   <div class="flex gap-3">
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-[15px] border border-line text-ink"
+      class="text-control h-[54px] flex-1 rounded-control border border-line text-ink"
       (click)="cancel()"
     >
       {{ copy.score.cancel }}
     </button>
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-[15px] bg-brand font-bold text-brand-ink disabled:opacity-40"
+      class="text-control h-[54px] flex-1 rounded-control bg-brand font-bold text-brand-ink disabled:opacity-40"
       [disabled]="!canSave()"
       (click)="save()"
     >

@@ -5,7 +5,7 @@
   A row that has opened takes a brand outline instead of its divider, which is what makes the
   control underneath read as belonging to the name above it rather than to the row below.
 -->
-<ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+<ul class="flex flex-col overflow-hidden rounded-card border border-line bg-surface-raised">
   @for (row of rows(); track row.id) {
     <!--
       An open row pulls itself up a pixel so its outline lands *on* the divider it replaces
@@ -116,7 +116,7 @@
       @if (canAssignPartner(row) && row.team !== null) {
         <button
           type="button"
-          class="text-control flex h-12 items-center justify-center rounded-[14px] bg-brand font-bold text-brand-ink"
+          class="text-control flex h-12 items-center justify-center rounded-control bg-brand font-bold text-brand-ink"
           [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
           (click)="assignPartner(row)"
         >
@@ -138,7 +138,7 @@
       @if (isOpen(row.id)) {
         <button
           type="button"
-          class="text-control flex h-12 items-center justify-center rounded-[14px] bg-brand font-bold text-brand-ink"
+          class="text-control flex h-12 items-center justify-center rounded-control bg-brand font-bold text-brand-ink"
           (click)="goHome(row)"
         >
           {{ copy.players.wentHome }}

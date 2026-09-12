@@ -50,7 +50,7 @@
         <li>
           @if (!interactive()) {
             <div
-              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
+              class="w-full rounded-card bg-surface-raised px-[18px] py-4 text-left"
               [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
             >
               <ng-container
@@ -61,7 +61,7 @@
           } @else {
             <button
               type="button"
-              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
+              class="w-full rounded-card bg-surface-raised px-[18px] py-4 text-left"
               [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
               [attr.aria-label]="copy.round.enterScore(court.name)"
               (click)="score(court)"
@@ -109,18 +109,18 @@
     @if (advanceTo(); as nextRound) {
       <button
         type="button"
-        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
+        class="text-control h-[54px] rounded-control bg-brand px-4 font-bold text-brand-ink"
         (click)="show(nextRound)"
       >
         {{ copy.round.advance(nextRound) }}
       </button>
     }
   } @else if (pastTheLastRound()) {
-    <div class="space-y-3 rounded-[18px] border border-dashed border-line p-4 text-center">
+    <div class="space-y-3 rounded-card border border-dashed border-line p-4 text-center">
       <p class="text-meta text-ink-muted">{{ copy.round.addRound.lead }}</p>
       <button
         type="button"
-        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
+        class="text-control h-[54px] rounded-control bg-brand px-4 font-bold text-brand-ink"
         (click)="addRound()"
       >
         {{ copy.round.addRound.action }}
