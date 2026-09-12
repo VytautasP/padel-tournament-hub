@@ -23,9 +23,7 @@
       <button
         type="button"
         class="text-meta flex h-12 flex-1 items-center justify-center gap-2 rounded-full"
-        [class]="
-          current() === destination.id ? 'bg-brand font-bold text-brand-ink' : 'text-ink-muted'
-        "
+        [class]="current() === destination.id ? pill.current : pill.elsewhere"
         [attr.aria-current]="current() === destination.id ? 'page' : null"
         (click)="chose.emit(destination.id)"
       >

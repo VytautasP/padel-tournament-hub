@@ -8,6 +8,7 @@
  * throw in every spec that tapped one.
  */
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { DESTINATION_PILL } from './destinations';
 import { DestinationIcon } from './destination-icon';
 import type { Destination, Panel } from './destinations';
 
@@ -23,4 +24,6 @@ export class TabBar {
   readonly current = input.required<Panel>();
 
   readonly chose = output<Panel>();
+
+  protected readonly pill = DESTINATION_PILL;
 }

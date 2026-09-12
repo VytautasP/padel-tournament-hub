@@ -37,17 +37,22 @@
         </label>
         <div class="flex items-baseline gap-2">
           <!--
-            A filled control rather than a bordered box. It is the primary act of this screen, and
-            what makes it look like one is that it is a solid surface the thumb aims at — the ring
-            is reserved for the side actually holding the number, so it says which of the two was
-            typed rather than merely outlining both.
+            A filled control rather than a bordered box, and no ring on it at all. It is the
+            primary act of this screen, and what makes it look like one is that it is a solid
+            surface the thumb aims at.
+
+            The canvas outlines both fields and draws the brand one harder, and that outline is
+            exactly what move 5 replaces: which side was typed is said by the tinted fill under the
+            whole row, which carries across a court in a way a line weight on a box does not. A
+            brand ring here as well would be the same fact stated twice, the second time in the
+            idiom this change is leaving. Focus is the outline's remaining job, and it is the one
+            thing that still draws one.
           -->
           <input
             type="text"
             inputmode="numeric"
             autocomplete="off"
-            class="text-score-field h-[60px] w-[92px] rounded-control bg-surface-raised px-[14px] text-right font-bold text-ink"
-            [class]="holdsTheNumber(entry.side) ? 'border-[1.5px] border-brand' : ''"
+            class="text-score-field h-[60px] w-[92px] rounded-control bg-surface-raised px-[14px] text-right font-bold text-ink focus:outline-2 focus:outline-brand"
             [id]="fieldId(entry.side)"
             [value]="valueFor(entry.side)"
             (input)="onInput(entry.side, $event)"
@@ -83,7 +88,7 @@
     </button>
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-full bg-linear-135 from-brand-strong to-brand font-bold text-brand-ink shadow-brand disabled:opacity-40 disabled:shadow-none"
+      class="text-control h-[54px] flex-1 primary-pill disabled:opacity-40"
       [disabled]="!canSave()"
       (click)="save()"
     >

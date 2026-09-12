@@ -482,6 +482,45 @@
 }
 
 /*
+ * The primary action: the one thing on a screen the organizer came to tap (ADR-0035 §2, move 4).
+ *
+ * The same argument `card` makes, about the other treatment this idiom repeats. A gradient pill
+ * with a coloured lift under it is one decision — the gradient, the ink that reads on it, the
+ * weight, and the shadow that says it is raised — and written out as five utilities it appeared in
+ * twelve templates, which is twelve places for it to drift a value at a time.
+ *
+ * Its gradient is **not** `--gradient-header`. The header's is a brand gradient in light and two
+ * surfaces in dark, because a saturated block at the top of a phone at night is unaffordable; a
+ * button is a small shape the thumb aims at, and it stays brand in both themes — which is exactly
+ * why the header's token is named for its role rather than for its colour (ADR-0035 §3).
+ *
+ * There is one of these per screen, and that is the whole distinction between this and a filled
+ * `bg-brand` control. A row's `Went home` is a thing that can be done; this is the thing to do.
+ *
+ * The radius is the pill role, written as its value here the way `card` writes the card role's. A
+ * disabled one loses its lift with its opacity: a raised button that cannot be pressed is the app
+ * inviting a tap it will not accept.
+ *
+ * What a screen still decides for itself is the size — full width and 54px high on most of them,
+ * 84px wide beside a name field. This says only how the surface is held.
+ */
+@utility primary-pill {
+  border-radius: 9999px;
+  background-image: linear-gradient(
+    135deg,
+    var(--palette-brand-strong) 0%,
+    var(--palette-brand) 100%
+  );
+  color: var(--palette-brand-ink);
+  font-weight: 700;
+  box-shadow: var(--palette-shadow-brand);
+
+  &:disabled {
+    box-shadow: none;
+  }
+}
+
+/*
  * The round header's surface: a full-bleed gradient and the ink every mark on it is drawn from
  * (ADR-0035 §2, move 2).
  *

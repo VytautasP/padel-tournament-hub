@@ -31,8 +31,9 @@
  *      catch. This is the only rule here that reads `styles.css` rather than everything else.
  *   5. **No component names a radius.** Radius is expressed only as the named roles defined in
  *      `styles.css` — `rounded-card`, `rounded-control`, `rounded-sheet` — or as `rounded-full`,
- *      which is a name rather than a measurement already. An arbitrary `rounded-[15px]` and a raw
- *      `border-radius` in a component style are both rejected. This is rule 3's argument applied
+ *      which is a name rather than a measurement already. An arbitrary `rounded-[15px]`,
+ *      Tailwind's own `rounded-lg` scale, and a raw `border-radius` in a component style are all
+ *      rejected. This is rule 3's argument applied
  *      to the third axis: the templates had reached six radii where the design has at most four
  *      roles, and nobody had written a wrong number (ADR-0034 §4). `styles.css` is exempt, as it
  *      is for rules 2 and 3, because it is where the roles live.
@@ -94,16 +95,26 @@ const TYPE_UTILITY = new RegExp(
 const TYPE_LITERAL = /font-size\s*(?::|\])/;
 
 /**
- * An arbitrary radius: `rounded-[15px]`, or the same thing behind a variant.
+ * Tailwind's default radius scale, and `none`. Naming one of these is naming a measurement the
+ * same way `text-sm` is — `rounded-xl` is twelve pixels wearing a word, and it is a word that says
+ * nothing about what the surface *is*.
+ */
+const RADIUS_SCALE = 'none|xs|sm|md|lg|xl|[2-9]xl';
+
+/**
+ * An arbitrary radius, a scale radius, or either behind a variant — and either of them written a
+ * corner at a time (`rounded-t-[19px]`, `rounded-bl-lg`), because a card rounded one corner at a
+ * time is still a card naming a number. That form is not hypothetical: it is what the plain
+ * `rounded-[…]` grep missed when ADR-0034 counted the drift.
  *
- * Only the bracketed form is matched, because `rounded-` is a namespace the roles share — a rule
- * that tried to describe what a role looks like would have to reject `rounded-card` and
- * `rounded-full` along with it, and `rounded-full` is the reason there are three tokens and not
- * four (ADR-0034 §2).
+ * A denylist rather than a description of what a role looks like, for rule 3's reason: `rounded-`
+ * is a namespace the three roles and `rounded-full` share, and a rule that tried to recognise a
+ * role would reject `rounded-full` along with them — which is the one radius ADR-0034 §2 keeps
+ * precisely because it is already a name.
  */
 const RADIUS_UTILITY = new RegExp(
   `(?:^|[\\s"'])(?:[a-z0-9@-]+(?:\\[[^\\]]*\\])?:)*` +
-    `rounded(?:-[a-z]+)?-\\[[^\\]]*\\](?:$|[\\s"'])`,
+    `rounded(?:-[trblse]{1,2})?-(?:\\[[^\\]]*\\]|(?:${RADIUS_SCALE})(?:$|[\\s"']))`,
 );
 
 /**
@@ -394,6 +405,11 @@ const violations = [
   ['a stylesheet font-size', 'style', '.score { font-size: 30px; }'],
   ['an arbitrary radius', 'template', '<div class="rounded-[19px] bg-surface-raised"></div>'],
   ['an arbitrary radius behind a variant', 'template', '<div class="md:rounded-[19px]"></div>'],
+  ['a corner-specific arbitrary radius', 'template', '<li class="first:rounded-t-[19px]"></li>'],
+  ['a scale radius', 'template', '<div class="rounded-xl bg-surface-raised"></div>'],
+  ['a small scale radius', 'template', '<div class="rounded-sm"></div>'],
+  ['a squared-off scale radius', 'template', '<div class="rounded-none"></div>'],
+  ['a corner-specific scale radius', 'template', '<div class="rounded-bl-lg"></div>'],
   ['a stylesheet border-radius', 'style', '.chip { border-radius: 19px; }'],
   ['a one-corner border-radius', 'style', '.chip { border-top-left-radius: 19px; }'],
 ];
@@ -427,6 +443,8 @@ const allowances = [
   ['the three radius roles', 'template', '<div class="rounded-card rounded-control">{{ x }}</div>'],
   ['a radius role behind a variant', 'template', '<div class="md:rounded-card"></div>'],
   ['the card utility', 'template', '<div class="card p-4">{{ x }}</div>'],
+  ['a corner-specific role', 'template', '<header class="rounded-b-card">{{ x }}</header>'],
+  ['the primary-pill utility', 'template', '<button class="primary-pill px-4">{{ x }}</button>'],
 ];
 
 const rejects = (kind, source) =>

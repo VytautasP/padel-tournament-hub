@@ -72,11 +72,7 @@
     and the rounds it rewrites are printed above the button rather than warned about on it.
   -->
   <div class="flex flex-col gap-2.5">
-    <button
-      type="button"
-      class="text-control h-[54px] rounded-full bg-linear-135 from-brand-strong to-brand px-4 font-bold text-brand-ink shadow-brand"
-      (click)="commit()"
-    >
+    <button type="button" class="text-control h-[54px] primary-pill px-4" (click)="commit()">
       {{ data.action }}
     </button>
     <button

@@ -12,6 +12,7 @@
  */
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { copy } from '../copy/copy';
+import { DESTINATION_PILL } from './destinations';
 import { DestinationIcon } from './destination-icon';
 import type { Destination, Panel } from './destinations';
 
@@ -31,4 +32,5 @@ export class SessionRail {
   readonly chose = output<Panel>();
 
   protected readonly copy = copy;
+  protected readonly pill = DESTINATION_PILL;
 }

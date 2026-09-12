@@ -33,15 +33,20 @@
       </button>
 
       <!--
-        How far in the organizer is, as a bar per step. It is read rather than announced: the
+        How far in the organizer is, as a bar per step — one ink at two strengths, which is the
+        round header's segmented bar in a smaller corner rather than a second idea of the same
+        graphic (ADR-0035 §2, move 2). Two colours would have been that second idea: a step not
+        reached is not a different kind of thing, it is the same thing not done yet.
+
+        It is read rather than announced: the
         step's own heading is what says where this is, and a screen reader counting anonymous
         pills over the top of it would be saying the same thing twice, worse.
       -->
       <div class="flex gap-[6px]" aria-hidden="true">
         @for (step of progress(); track step.name) {
           <span
-            class="h-1 w-[26px] rounded-full"
-            [class]="step.reached ? 'bg-brand' : 'bg-line'"
+            class="h-1 w-[26px] rounded-full bg-brand"
+            [class]="step.reached ? 'opacity-100' : 'opacity-20'"
           ></span>
         }
       </div>
@@ -84,7 +89,7 @@
     @if (current() !== 'mode') {
       <button
         type="button"
-        class="text-control h-[54px] w-full rounded-full bg-linear-135 from-brand-strong to-brand font-bold text-brand-ink shadow-brand disabled:opacity-40 disabled:shadow-none"
+        class="text-control h-[54px] w-full primary-pill disabled:opacity-40"
         [disabled]="!canAdvance()"
         (click)="onward()"
       >

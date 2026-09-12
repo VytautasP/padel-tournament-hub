@@ -141,7 +141,7 @@
       @if (advanceTo(); as nextRound) {
         <button
           type="button"
-          class="text-control h-[54px] rounded-full bg-linear-135 from-brand-strong to-brand px-4 font-bold text-brand-ink shadow-brand"
+          class="text-control h-[54px] primary-pill px-4"
           (click)="show(nextRound)"
         >
           {{ copy.round.advance(nextRound) }}
@@ -154,11 +154,7 @@
       -->
       <div class="space-y-3 rounded-card border border-dashed border-line p-4 text-center">
         <p class="text-meta text-ink-muted">{{ copy.round.addRound.lead }}</p>
-        <button
-          type="button"
-          class="text-control h-[54px] rounded-full bg-linear-135 from-brand-strong to-brand px-4 font-bold text-brand-ink shadow-brand"
-          (click)="addRound()"
-        >
+        <button type="button" class="text-control h-[54px] primary-pill px-4" (click)="addRound()">
           {{ copy.round.addRound.action }}
         </button>
       </div>
