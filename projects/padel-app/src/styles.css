@@ -105,6 +105,36 @@
   --palette-shadow-raised: 0 2px 6px rgba(16, 23, 32, 0.06);
   --palette-shadow-sheet: 0 -8px 30px rgba(16, 23, 32, 0.25);
   --palette-shadow-dialog: 0 18px 50px rgba(16, 23, 32, 0.28);
+
+  /*
+   * The Modern idiom's own values (ADR-0035 §3), each named for the role it fills rather than for
+   * the colour it happens to be in one of the two themes.
+   *
+   * `--palette-gradient-header` carries the reason for that rule. In light it is a brand gradient,
+   * exactly as the canvas drew it; in dark it is drawn from two surfaces with no brand in it at
+   * all, because a saturated brand block at the top of a phone read in fading light is the one
+   * thing a court cannot afford. A token called `--gradient-brand` would be honest in one theme
+   * and a lie in the other.
+   *
+   * `--palette-header-ink` is the pair the ADR's extraction missed, and it is not optional: the
+   * header's ground is teal in light and near-black in dark, so nothing already in the palette
+   * reads on both. Every mark on the header is drawn from it — the words, the two paging discs at
+   * a low opacity, and the progress bar's three strengths — which is why one pair covers the whole
+   * surface rather than three.
+   *
+   * The three shadows are not the existing ones dimmed. `--palette-shadow-card` holds a card off
+   * the page now that it has no border to sit in; `--palette-shadow-float` lifts the navigation
+   * island and the desk rail; `--palette-shadow-brand` is the coloured lift under a gradient pill.
+   */
+  --palette-gradient-header: linear-gradient(
+    135deg,
+    var(--palette-brand-strong) 0%,
+    var(--palette-brand) 100%
+  );
+  --palette-header-ink: #ffffff;
+  --palette-shadow-card: 0 6px 20px rgba(16, 23, 32, 0.08);
+  --palette-shadow-float: 0 10px 30px rgba(16, 23, 32, 0.16);
+  --palette-shadow-brand: 0 8px 22px rgba(14, 111, 135, 0.32);
 }
 
 /*
@@ -145,6 +175,28 @@
   --dark-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.45);
   --dark-shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.6);
   --dark-shadow-dialog: 0 18px 50px rgba(0, 0, 0, 0.65);
+
+  /*
+   * The dark half of the Modern values, and the one of them with no drawing behind it.
+   *
+   * The header gradient goes to two surfaces and keeps the brand out of it entirely (ADR-0035 §3),
+   * and its ink follows the ground down to the ordinary reading ink.
+   *
+   * `--dark-shadow-brand` is the value nobody has drawn. The canvas drew the brand-coloured pill
+   * shadow only in light, hard-coded at the light brand; in dark the brand lightens to `#3fa8c4`,
+   * and a pale blue glow under a button on a dark screen reads as a focus ring rather than as a
+   * lift. So it goes black, following the same precedent the three shadows above already set
+   * (ADR-0035 §4).
+   */
+  --dark-gradient-header: linear-gradient(
+    135deg,
+    var(--dark-surface-sunken) 0%,
+    var(--dark-surface-raised) 100%
+  );
+  --dark-header-ink: var(--dark-ink);
+  --dark-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --dark-shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --dark-shadow-brand: 0 8px 22px rgba(0, 0, 0, 0.45);
 }
 
 /*
@@ -174,6 +226,11 @@
   --palette-shadow-raised: var(--dark-shadow-raised);
   --palette-shadow-sheet: var(--dark-shadow-sheet);
   --palette-shadow-dialog: var(--dark-shadow-dialog);
+  --palette-gradient-header: var(--dark-gradient-header);
+  --palette-header-ink: var(--dark-header-ink);
+  --palette-shadow-card: var(--dark-shadow-card);
+  --palette-shadow-float: var(--dark-shadow-float);
+  --palette-shadow-brand: var(--dark-shadow-brand);
 }
 
 /*
@@ -206,6 +263,11 @@
     --palette-shadow-raised: var(--dark-shadow-raised);
     --palette-shadow-sheet: var(--dark-shadow-sheet);
     --palette-shadow-dialog: var(--dark-shadow-dialog);
+    --palette-gradient-header: var(--dark-gradient-header);
+    --palette-header-ink: var(--dark-header-ink);
+    --palette-shadow-card: var(--dark-shadow-card);
+    --palette-shadow-float: var(--dark-shadow-float);
+    --palette-shadow-brand: var(--dark-shadow-brand);
   }
 }
 
@@ -252,10 +314,14 @@
   --color-danger: var(--palette-danger);
   --color-qr-ground: var(--palette-qr-ground);
   --color-qr-ink: var(--palette-qr-ink);
+  --color-header-ink: var(--palette-header-ink);
 
   --shadow-raised: var(--palette-shadow-raised);
   --shadow-sheet: var(--palette-shadow-sheet);
   --shadow-dialog: var(--palette-shadow-dialog);
+  --shadow-card: var(--palette-shadow-card);
+  --shadow-float: var(--palette-shadow-float);
+  --shadow-brand: var(--palette-shadow-brand);
 
   /*
    * Radius, as roles rather than as a scale (ADR-0034).
@@ -412,7 +478,21 @@
 @utility card {
   background-color: var(--palette-surface-raised);
   border-radius: var(--radius-card);
-  box-shadow: var(--palette-shadow-raised);
+  box-shadow: var(--palette-shadow-card);
+}
+
+/*
+ * The round header's surface: a full-bleed gradient and the ink every mark on it is drawn from
+ * (ADR-0035 §2, move 2).
+ *
+ * Background and foreground together, for the same reason `card` is one utility rather than three:
+ * they are one decision. The ground is teal in light and two dark surfaces in dark, and a header
+ * that took the gradient without the ink would be white words on teal in one theme and white words
+ * on near-black in the other — right by accident, and wrong the first time either value moves.
+ */
+@utility header-gradient {
+  background-image: var(--palette-gradient-header);
+  color: var(--palette-header-ink);
 }
 
 /*

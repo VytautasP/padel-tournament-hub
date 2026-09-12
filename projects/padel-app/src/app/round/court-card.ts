@@ -43,6 +43,16 @@ interface SideOnTheCard {
   readonly points?: number;
   /** The classes that set those points: the winner pointed at, the loser stated and left alone. */
   readonly emphasis: string;
+  /**
+   * The ground under this side's row: a tinted fill where they won, and nothing where they did
+   * not (ADR-0035 §2, move 5).
+   *
+   * A second reading of the same fact as `emphasis`, deliberately. The card lost the border that
+   * used to thicken when a score landed, so the result has to be legible without reading the
+   * numbers — and a fill behind a whole row carries across a court at arm's length in a way the
+   * weight of one figure does not.
+   */
+  readonly fill: string;
 }
 
 @Component({
@@ -72,12 +82,14 @@ export class CourtCard {
         view: sideA,
         points: score?.sideA,
         emphasis: emphasisOf(score?.sideA, score?.sideB),
+        fill: fillOf(score?.sideA, score?.sideB),
       },
       {
         letter: 'B',
         view: sideB,
         points: score?.sideB,
         emphasis: emphasisOf(score?.sideB, score?.sideA),
+        fill: fillOf(score?.sideB, score?.sideA),
       },
     ];
   });
@@ -103,6 +115,18 @@ export const SCORE_EMPHASIS = {
 
 export type ScoreEmphasis = keyof typeof SCORE_EMPHASIS;
 
+/**
+ * The two grounds a side's row can sit on: the brand at a whisper under the winner, and the card
+ * itself under everybody else.
+ *
+ * `brand-wash` rather than an opacity modifier on the brand, because the two themes do not agree
+ * on the strength — which is the reason that token exists at all.
+ */
+export const SIDE_FILL = {
+  won: 'bg-brand-wash',
+  otherwise: '',
+} as const;
+
 /** How one side's points are set, read off the pair: pointed at, muted, or neither. */
 function emphasisOf(points: number | undefined, against: number | undefined): string {
   if (points === undefined || against === undefined || points === against) {
@@ -114,4 +138,18 @@ function emphasisOf(points: number | undefined, against: number | undefined): st
   }
 
   return points > against ? SCORE_EMPHASIS.won : SCORE_EMPHASIS.lost;
+}
+
+/**
+ * The ground under one side's row: tinted where they won, and nothing otherwise.
+ *
+ * A draw takes no fill for the same reason it takes no emphasis — there is no winner to point at,
+ * and tinting both rows would say the court was won twice.
+ */
+function fillOf(points: number | undefined, against: number | undefined): string {
+  if (points === undefined || against === undefined || points <= against) {
+    return SIDE_FILL.otherwise;
+  }
+
+  return SIDE_FILL.won;
 }

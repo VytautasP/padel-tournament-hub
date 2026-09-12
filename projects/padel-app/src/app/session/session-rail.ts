@@ -12,10 +12,12 @@
  */
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { copy } from '../copy/copy';
+import { DestinationIcon } from './destination-icon';
 import type { Destination, Panel } from './destinations';
 
 @Component({
   selector: 'app-session-rail',
+  imports: [DestinationIcon],
   templateUrl: './session-rail.html',
   host: { class: 'contents' },
   changeDetection: ChangeDetectionStrategy.OnPush,

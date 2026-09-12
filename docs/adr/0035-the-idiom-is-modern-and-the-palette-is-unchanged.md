@@ -139,5 +139,20 @@ the canvas a primary source when every board agreed with the app. Now:
 - Issue #73, the both-themes walk, is deliberately left alone rather than re-scoped around this
   change. `--shadow-brand` in dark is judged instead when the first ticket lands, by the person who
   built it, on the screen it appears on.
+- **The extraction undercounted by one, and the fifth value is `--palette-header-ink`.** §3's table
+  names the header's *ground* and not its foreground, and nothing already in the palette reads on
+  both: the ground is teal in light and near-black in dark, so `brand-ink` is white in light and
+  near-black in dark, and `ink` is the other way round. The header therefore carries a pair of its
+  own, named for its role like the other four, and one pair covers the whole surface — the words,
+  the two paging discs at a low opacity, and the progress bar's three strengths. The canvas drew
+  all three of those from it in both themes (`#ffffff` and `#e6ebf2`) except the bar, which it drew
+  from the dark brand; that would have wanted a sixth pair to say nothing the ink does not already
+  say at full strength. This is recorded here rather than by editing §3, because §3's count is what
+  was decided and this is what building it found. It changes nothing else in this ADR: it is the
+  same argument §3 makes about `--gradient-header`, applied to the half of that surface §3 did not
+  write down.
+- The progress bar has a third state the canvas never drew. The boards show a round played out and
+  a round untouched; a round with some of its courts scored is neither, and it is the state the
+  bar is in for most of an evening. It is the same ink at a middle strength.
 - ADR-0021 §6 still holds, and now covers more: the values are a starting position, and so is the
   idiom.

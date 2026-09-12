@@ -1,13 +1,37 @@
-<nav class="page-column flex border-t border-line bg-surface-raised">
-  @for (destination of destinations(); track destination.id) {
-    <button
-      type="button"
-      class="text-meta flex-1 py-3"
-      [class]="current() === destination.id ? 'font-bold text-brand' : 'text-ink-muted'"
-      [attr.aria-current]="current() === destination.id ? 'page' : null"
-      (click)="chose.emit(destination.id)"
-    >
-      {{ destination.label }}
-    </button>
-  }
-</nav>
+<!--
+  The island: the bar under the thumb, lifted off the page rather than ruled off it (ADR-0035 §2,
+  move 3).
+
+  The padding around the island is not decoration. The inset is what makes it an island, and the
+  bottom half of it is `env(safe-area-inset-bottom)` held at a floor of 16px — which is ADR-0021's
+  promise that a destination is never under the home indicator, kept for the first time. `max()`
+  rather than an addition, because on a phone with no indicator the inset is zero and the island
+  would otherwise sit on the very edge of the glass.
+
+  It stays in flow rather than floating over the courts. The board above already ends in a spacer,
+  so nothing is hidden underneath it, and a bar that overlaps the scroll is a bar that covers the
+  last court on a round with more courts than fit.
+-->
+<div class="page-column px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+  <nav class="flex items-center gap-1 rounded-full bg-surface-raised p-1.5 shadow-float">
+    @for (destination of destinations(); track destination.id) {
+      <!--
+        48px of pill, which clears ADR-0021's 44px floor with the island's own padding on top of
+        it. The destination in view is a filled brand pill and the other two are ink-muted words,
+        so where the reader is is a shape rather than a weight to compare three of.
+      -->
+      <button
+        type="button"
+        class="text-meta flex h-12 flex-1 items-center justify-center gap-2 rounded-full"
+        [class]="
+          current() === destination.id ? 'bg-brand font-bold text-brand-ink' : 'text-ink-muted'
+        "
+        [attr.aria-current]="current() === destination.id ? 'page' : null"
+        (click)="chose.emit(destination.id)"
+      >
+        <app-destination-icon [panel]="destination.id" />
+        {{ destination.label }}
+      </button>
+    }
+  </nav>
+</div>
