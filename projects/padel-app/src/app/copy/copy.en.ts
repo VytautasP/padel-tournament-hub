@@ -612,19 +612,38 @@ export const copyEn = {
       action: 'End session',
     },
     /**
+     * The one further question, asked only of an evening that has something to answer it with
+     * (ADR-0037 §1).
+     *
+     * The toggle names the act rather than agreeing with a question, so that a pressed pill still
+     * reads as a sentence about the evening. The note under it is not decoration: answering yes
+     * pays points to competitors who are already on the table the organizer is looking at, so the
+     * order of it can change on the way to the podium, and a leaderboard that reorders itself
+     * between a tap and the next screen is indistinguishable from a bug.
+     *
+     * It says nothing about halves or the target score. What is being asked is whether the evening
+     * owes anybody anything; the arithmetic of what it then pays is the expanded row's to show.
+     */
+    compensate: {
+      question: 'Pay for the rounds nobody played',
+      note: 'Everyone who was available for them is paid, on court or on the bench. This can change the podium.',
+    },
+    /**
      * A competitor's total, or a dash for somebody the evening has not answered for yet.
      *
      * A zero would be a claim about how they are playing. A dash says nothing has happened to
      * them, which before the first score is the truth about everybody — and stops being the truth
      * the moment they are owed a bench credit, even though they have still not been on a court
-     * (ADR-0023 §2).
+     * (ADR-0023 §2). Compensation is the third way that can happen and it is asked about for the
+     * same reason: an evening ended before anybody's first court, paid for, owes every one of them
+     * points, and a dash beside those points would be the line contradicting itself.
      *
      * Halves are real. An odd target score makes every credit one, so a total carries it rather
      * than rounding the credit into something that is no longer exactly a drawn match. Whole
      * totals stay whole: `.0` on every line to accommodate the one evening in two is noise.
      */
-    total: (points: number, matchesPlayed: number, benched: number): string =>
-      matchesPlayed === 0 && benched === 0
+    total: (points: number, matchesPlayed: number, benched: number, compensated: number): string =>
+      matchesPlayed === 0 && benched === 0 && compensated === 0
         ? '–'
         : Number.isInteger(points)
           ? String(points)
@@ -647,6 +666,21 @@ export const copyEn = {
      * player who sat out twice reads their own line as a bug.
      */
     benched: 'Benched',
+    /**
+     * Abandoned rounds this competitor was paid for, beside the rounds they sat out rather than
+     * inside them (ADR-0037 §8).
+     *
+     * Folding it into `benched` would tell a player they sat out a round they were scheduled into,
+     * so the roster tab and this one would contradict each other — and adding the points silently
+     * would break the arithmetic this row exists to let a reader check by hand.
+     *
+     * It is shown on every row of an evening that paid and on no row of one that did not — which
+     * is a fact about the evening, and is decided in `standings-table.ts` rather than here. A `0`
+     * down every line of every ordinary evening would be a column about a question nobody was
+     * asked; a row missing the term on an evening that did pay would be the one row that has
+     * something to say about it going silent.
+     */
+    compensated: 'Compensated',
   },
 
   history: {

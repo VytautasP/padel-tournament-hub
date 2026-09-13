@@ -81,6 +81,18 @@ export function abandonedRounds(session: Session): readonly Round[] {
 }
 
 /**
+ * Whether this evening has anything to compensate: one abandoned round is enough (ADR-0037 §1).
+ *
+ * Exported because the question is the organizer's and the app has to know whether to ask it. The
+ * screen cannot work this out for itself without re-deriving what an abandoned round *is*, and a
+ * second definition of that is the drift ADR-0037 §7 has the referee watching for. So there is one
+ * definition, here, and both the confirmation and the referee ask it.
+ */
+export function hasAbandonedRounds(session: Session): boolean {
+  return abandonedRounds(session).length > 0;
+}
+
+/**
  * One compensation per competitor per abandoned round they were available for — if the organizer
  * said so, and nothing at all if they did not (ADR-0037 §1).
  *

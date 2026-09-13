@@ -12,7 +12,7 @@
  * so it arrives as an option here and is written into the same object the same instant it freezes
  * — which is what stops it ever disagreeing with the rounds it is an answer about.
  */
-import { abandonedRounds } from './bench-credit';
+import { hasAbandonedRounds } from './bench-credit';
 import { deepFreeze } from './freeze';
 import type { Session } from './model';
 import { copyRound, copySession } from './session-copy';
@@ -68,7 +68,7 @@ export function finishSession(session: Session, options: FinishOptions = {}): Se
  * on. The organizer never sees it: the question is only asked where there is something to answer.
  */
 function assertSomethingToCompensate(session: Session): void {
-  if (abandonedRounds(session).length === 0) {
+  if (!hasAbandonedRounds(session)) {
     throw new Error(
       `Session "${session.id}" has nothing to compensate — ` +
         'every generated round has been scored.',

@@ -9,6 +9,52 @@
     <p class="text-lead text-ink-muted">{{ data.lead }}</p>
   </header>
 
+  <!--
+    The one further question, where the act has one (ADR-0037 §1).
+
+    A toggle rather than a pair of pills, because the two answers are not two choices: the default
+    is the standings already on screen, and what the organizer is doing is departing from them. An
+    unpressed control says "this evening is as you see it", which is the sentence a yes/no pair
+    cannot make without pre-selecting one of its own halves.
+
+    The tick is drawn rather than written for the reason every glyph in this app is: it is a state,
+    not a word, and it is `aria-hidden` because `aria-pressed` has already said it out loud.
+
+    The note is outside the button on purpose. It is the consequence of a yes, not part of the
+    label a screen reader announces for the control, and running the two together would announce a
+    warning about the podium every time the toggle is touched.
+  -->
+  @if (data.question; as further) {
+    <div class="flex flex-col gap-2">
+      <button
+        type="button"
+        class="text-control flex items-center gap-3 rounded-control px-3 py-3 text-left text-ink"
+        [class]="answer() ? 'bg-brand-wash' : 'bg-surface-sunken'"
+        [attr.aria-pressed]="answer()"
+        (click)="toggle()"
+      >
+        <span
+          class="flex size-6 shrink-0 items-center justify-center rounded-control border"
+          [class]="answer() ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink-muted'"
+        >
+          @if (answer()) {
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 7.5 5.5 10.5 11.5 3.5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          }
+        </span>
+        <span class="min-w-0 flex-1">{{ further.question }}</span>
+      </button>
+      <p class="text-meta text-ink-muted">{{ further.note }}</p>
+    </div>
+  }
+
   <div class="flex gap-3">
     <button
       type="button"

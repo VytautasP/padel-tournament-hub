@@ -54,9 +54,12 @@
  * **bench**, `reikia partnerio` for **needs partner**, `išėjo namo` for **went home**, and `prieš`
  * for **v** — one character in English and six here, in the middle of a scoreline.
  *
- * Four more are coinages rather than translations, and are named here so that the reviewer can
+ * Five more are coinages rather than translations, and are named here so that the reviewer can
  * find them without reading all 180: `Perg.–Lyg.–Pral.` for the record triple, `Pjedestalas` for
- * the podium, `Lentelė` for the standings, and `Nežaidė raundų` for the count of rounds sat out.
+ * the podium, `Lentelė` for the standings, `Nežaidė raundų` for the count of rounds sat out, and
+ * the `Atlyginti` pair for **compensation** — `Atlyginti nesužaistus raundus` on the question and
+ * `Atlyginta raundų` on the row — which has to stay distinct from `įskaityti`, and must not be
+ * heard as a prize.
  */
 import type { Gender, SessionMode } from 'padel-engine';
 import { LOCALES } from '../preference/language';
@@ -305,8 +308,12 @@ export const copyLt = {
       lead: 'Nuo šiol lentelė galutinė: jokių naujų rezultatų, raundų ar sąrašo pakeitimų. To atšaukti nebus galima.',
       action: 'Baigti sesiją',
     },
-    total: (points: number, matchesPlayed: number, benched: number): string =>
-      matchesPlayed === 0 && benched === 0
+    compensate: {
+      question: 'Atlyginti nesužaistus raundus',
+      note: 'Atlyginama visiems, kurie buvo pasirengę juos žaisti — ir aikštelėje, ir ant suolo. Tai gali pakeisti pjedestalą.',
+    },
+    total: (points: number, matchesPlayed: number, benched: number, compensated: number): string =>
+      matchesPlayed === 0 && benched === 0 && compensated === 0
         ? '–'
         : Number.isInteger(points)
           ? String(points)
@@ -315,6 +322,7 @@ export const copyLt = {
     recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
     matchesPlayed: 'Sužaista rungtynių',
     benched: 'Nežaidė raundų',
+    compensated: 'Atlyginta raundų',
   },
 
   history: {

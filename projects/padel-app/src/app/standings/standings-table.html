@@ -58,7 +58,8 @@
               copy.standings.total(
                 place.standing.points,
                 place.standing.matchesPlayed,
-                place.standing.benched
+                place.standing.benched,
+                place.standing.compensated
               )
             }}
           </span>
@@ -97,10 +98,19 @@
         <span
           class="text-name font-bold tabular-nums"
           [class]="
-            standing.matchesPlayed === 0 && standing.benched === 0 ? 'text-ink-muted' : 'text-ink'
+            standing.matchesPlayed === 0 && standing.benched === 0 && standing.compensated === 0
+              ? 'text-ink-muted'
+              : 'text-ink'
           "
         >
-          {{ copy.standings.total(standing.points, standing.matchesPlayed, standing.benched) }}
+          {{
+            copy.standings.total(
+              standing.points,
+              standing.matchesPlayed,
+              standing.benched,
+              standing.compensated
+            )
+          }}
         </span>
       </button>
 
@@ -112,6 +122,12 @@
           courts that was, and how many rounds it was not. The last is there because the total
           above includes a bench credit for each of them (ADR-0023 §2) — without the count, a
           record of three matches beside a total of four rounds' points looks like a bug.
+
+          A fourth term joins them where the evening was ended owing somebody a round it never
+          played (ADR-0037 §8). It is beside `Benched` rather than folded into it, because a round
+          somebody was scheduled into is not a round they sat out. Whether it is there at all is a
+          fact about the evening rather than about the row — `showsCompensation` says why — so on an
+          evening that paid, every row carries it, zero included.
         -->
         <dl class="text-meta flex gap-[22px] pt-0 pr-3 pb-[13px] pl-[50px] text-ink-muted">
           <div class="flex gap-2">
@@ -128,6 +144,12 @@
             <dt>{{ copy.standings.benched }}</dt>
             <dd class="tabular-nums text-ink">{{ standing.benched }}</dd>
           </div>
+          @if (showsCompensation()) {
+            <div class="flex gap-2">
+              <dt>{{ copy.standings.compensated }}</dt>
+              <dd class="tabular-nums text-ink">{{ standing.compensated }}</dd>
+            </div>
+          }
         </dl>
       }
     </li>

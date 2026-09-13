@@ -21,6 +21,7 @@ describe('padel-engine public API', () => {
       'finishSession',
       'formatSchedule',
       'generateRemaining',
+      'hasAbandonedRounds',
       'recordScore',
       'removePlayer',
       'sameGenderSides',

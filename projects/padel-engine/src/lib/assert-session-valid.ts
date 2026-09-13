@@ -14,7 +14,7 @@
  * It throws on the first violation with a message naming the round and the players involved,
  * because a fairness bug is only useful if you can see what it did.
  */
-import { abandonedRounds } from './bench-credit';
+import { hasAbandonedRounds } from './bench-credit';
 import { FixtureLedger } from './fixture-ledger';
 import { mixedPairingIn } from './mixed-pairing';
 import type { MixedPairing } from './mixed-pairing';
@@ -108,7 +108,7 @@ export function assertSessionValid(session: Session): void {
  * for. A round slot nobody generated does not rescue it — a slot is not a fixture (§2).
  */
 function assertCompensationIsOwed(session: Session): void {
-  if (session.compensatedUnplayed && abandonedRounds(session).length === 0) {
+  if (session.compensatedUnplayed && !hasAbandonedRounds(session)) {
     throw new Error(
       `Session "${session.id}" compensates its abandoned rounds, but has nothing to compensate — ` +
         'every generated round has been scored.',
