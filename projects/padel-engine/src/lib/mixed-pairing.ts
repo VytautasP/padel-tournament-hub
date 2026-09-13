@@ -60,6 +60,26 @@ export interface MixedPairing {
    * that forms no mixed pairs, which is the only honest answer and one nothing asks for.
    */
   mixedCourts(playing: readonly PlayerId[]): number;
+  /**
+   * These units split into the queues that bench independently: one holding all of them, except
+   * under strict mixing, where it is one per gender (ADR-0036 §3).
+   *
+   * The bench question asked of the population that could answer it (ADR-0020's move again):
+   * three men among seven women are on court every round by arithmetic, so a single queue would
+   * read their empty bench as a scheduler with favourites rather than as the shape of the roster.
+   * Within a gender the question is exactly as sharp as it has always been, because a woman was
+   * never a candidate for the seat a man is taking.
+   *
+   * The scheduler benches by these queues and the referee checks the spread within them, and they
+   * must agree or the generator would produce a session its own referee rejects — which is why
+   * the split is answered here rather than worked out twice. Units rather than ids, because the
+   * referee holds roster entries and the planner holds ids, and neither should have to map to the
+   * other's shape to ask.
+   */
+  benchQueues<Unit>(
+    units: readonly Unit[],
+    idOf: (unit: Unit) => PlayerId,
+  ): readonly (readonly Unit[])[];
 }
 
 const NEVER_MIXES: MixedPairing = {
@@ -68,6 +88,7 @@ const NEVER_MIXES: MixedPairing = {
   sameGender: () => false,
   forcedSameGenderPairs: () => 0,
   mixedCourts: () => 0,
+  benchQueues: (units) => [units],
 };
 
 /** How a set of players divides across the one axis Mixicano pairs on. */
@@ -125,6 +146,17 @@ export function mixedPairingIn(session: Session): MixedPairing {
 
       return Math.floor(Math.min(women, men) / PAIRS_PER_COURT);
     },
+    // Hybrid fill benches the whole roster as one queue, exactly as Americano does: it puts four
+    // of whoever is here onto each court, so whoever is here is the population the bench is
+    // spread across. Only strictness makes the genders separate queues — and then every unit is
+    // in exactly one of the two, because Mixicano refuses a roster entry it has no gender for
+    // (`assertGenderSound`) before anything here is asked anything.
+    benchQueues: (units, idOf) =>
+      session.strictMixing === true
+        ? (['woman', 'man'] as const).map((gender) =>
+            units.filter((unit) => genders.get(idOf(unit)) === gender),
+          )
+        : [units],
   };
 }
 

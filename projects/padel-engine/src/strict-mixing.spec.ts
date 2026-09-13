@@ -7,7 +7,7 @@ import {
   recordScore,
   removePlayer,
 } from './public-api';
-import type { Session, SessionConfig } from './public-api';
+import type { Gender, PlayerId, Session, SessionConfig } from './public-api';
 import { damaged } from './test-support/damaged-session';
 import { mixedRoster, mixicanoConfig } from './test-support/mixicano-fixtures';
 import { americanoConfig } from './test-support/session-fixtures';
@@ -275,5 +275,224 @@ describe('the flag is fixed at creation', () => {
     for (const amended of carried) {
       assertSessionValid(amended);
     }
+  });
+});
+
+/** The gender of each player, read off the roster rather than asked of the engine. */
+function genderOf(session: Session): (id: PlayerId) => Gender | undefined {
+  const genders = new Map(session.roster.map((entry) => [entry.id, entry.gender]));
+
+  return (id) => genders.get(id);
+}
+
+/** Every pair the session schedules, round by round. */
+function pairsByRound(session: Session): (readonly [PlayerId, PlayerId])[][] {
+  return session.rounds.map((round) =>
+    round.matches.flatMap((match) => [match.sideA, match.sideB]),
+  );
+}
+
+/**
+ * The same-gender pairs of each round, worked out from the roster rather than asked of the
+ * engine: an oracle that shared the engine's own rule could not catch it getting that rule wrong.
+ */
+function sameGenderPairs(session: Session): (readonly [PlayerId, PlayerId])[][] {
+  const gender = genderOf(session);
+
+  return pairsByRound(session).map((round) => round.filter(([a, b]) => gender(a) === gender(b)));
+}
+
+/** How often each player had sat out, after each round prefix. */
+function benchCountsByPrefix(session: Session): Map<PlayerId, number>[] {
+  const counts = new Map<PlayerId, number>(session.roster.map((entry) => [entry.id, 0]));
+
+  return session.rounds.map((round) => {
+    const playing = new Set(round.matches.flatMap((match) => [...match.sideA, ...match.sideB]));
+    for (const entry of session.roster) {
+      if (!playing.has(entry.id)) {
+        counts.set(entry.id, (counts.get(entry.id) ?? 0) + 1);
+      }
+    }
+
+    return new Map(counts);
+  });
+}
+
+/** The populations a bench spread is asked of: everybody, or each gender on its own. */
+const everybody = (session: Session): PlayerId[][] => [session.roster.map((entry) => entry.id)];
+const byGender = (session: Session): PlayerId[][] => {
+  const gender = genderOf(session);
+
+  return (['woman', 'man'] as const).map((one) =>
+    session.roster.filter((entry) => gender(entry.id) === one).map((entry) => entry.id),
+  );
+};
+
+/**
+ * The widest gap, over every prefix, between two players of one queue in how often they have sat
+ * out — the bench question asked of the population that could have answered it (ADR-0036 §3).
+ */
+function widestBenchGapAcross(
+  session: Session,
+  queuesOf: (session: Session) => PlayerId[][],
+): number {
+  const queues = queuesOf(session).filter((queue) => queue.length > 0);
+
+  return Math.max(
+    ...benchCountsByPrefix(session).flatMap((counts) =>
+      queues.map((queue) => {
+        const sat = queue.map((id) => counts.get(id) ?? 0);
+
+        return Math.max(...sat) - Math.min(...sat);
+      }),
+    ),
+  );
+}
+
+/** How often each player took the court. */
+function roundsPlayed(session: Session): Map<PlayerId, number> {
+  const played = new Map<PlayerId, number>(session.roster.map((entry) => [entry.id, 0]));
+  for (const round of session.rounds) {
+    for (const id of round.matches.flatMap((match) => [...match.sideA, ...match.sideB])) {
+      played.set(id, (played.get(id) ?? 0) + 1);
+    }
+  }
+
+  return played;
+}
+
+/** Every gender split the shape check admits a strict session for, up to `most` of each. */
+function everyStrictSplit(most: number): readonly (readonly [number, number])[] {
+  const splits: (readonly [number, number])[] = [];
+  for (let women = 2; women <= most; women++) {
+    for (let men = 2; men <= most; men++) {
+      splits.push([women, men]);
+    }
+  }
+
+  return splits;
+}
+
+describe('the pairs a strict session forms', () => {
+  it('forms no same-gender pair, on any roster the shape check admits, at any prefix', () => {
+    const sessions = everyStrictSplit(8).map((split) => strictSplit(...split, 3, 4));
+    const offending = sessions
+      .map((session, index) => [everyStrictSplit(8)[index], sameGenderPairs(session).flat()])
+      .filter(([, pairs]) => (pairs as unknown[]).length > 0);
+
+    expect(offending).toEqual([]);
+
+    for (const session of sessions) {
+      assertSessionValid(session);
+    }
+  });
+
+  it('still pairs a roster it could pair with a same-gender pair in it', () => {
+    // Five women and three men: hybrid fill would put two women together and play two courts.
+    const session = strictSplit(5, 3, 2, 4);
+
+    expect(sameGenderPairs(session).flat()).toEqual([]);
+    expect(courtsFilled(session)).toEqual([1, 1, 1, 1]);
+
+    assertSessionValid(session);
+  });
+
+  it('keeps partner variety among the partners a strict session is allowed', () => {
+    // Four of each on two courts: every woman can partner every man, and over four rounds the
+    // search has room to do it without repeating one.
+    const session = strictSplit(4, 4, 2, 4);
+    const partnered = pairsByRound(session)
+      .flat()
+      .map(([a, b]) => [a, b].sort().join('+'));
+
+    expect(new Set(partnered).size).toBe(partnered.length);
+
+    assertSessionValid(session);
+  });
+
+  it('leaves hybrid fill pairing and benching exactly as it did', () => {
+    // The one branch that could leak: hybrid fill still makes the same-gender pair its arithmetic
+    // forces, and still benches the whole roster as one queue rather than one per gender.
+    const hybrid = generateRemaining(
+      createSession(
+        mixicanoConfig({
+          players: mixedRoster(7, 3),
+          courtCount: 2,
+          roundCount: 6,
+          strictMixing: false,
+        }),
+      ),
+    );
+
+    // Two courts from a roster strictness would have played one court of, a same-gender pair in
+    // every round of it, and — the queue itself — a bench spread of one across the whole ten,
+    // which is exactly what per-gender queueing would break.
+    expect(courtsFilled(hybrid)).toEqual([2, 2, 2, 2, 2, 2]);
+    expect(sameGenderPairs(hybrid).every((round) => round.length > 0)).toBe(true);
+    expect(widestBenchGapAcross(hybrid, everybody)).toBe(1);
+
+    assertSessionValid(hybrid);
+  });
+});
+
+describe('the bench a strict session rotates', () => {
+  it('keeps bench counts within one inside each gender, after every round', () => {
+    const sessions = everyStrictSplit(8).map((split) => strictSplit(...split, 3, 4));
+    const uneven = sessions
+      .map((session, index) => [
+        everyStrictSplit(8)[index],
+        widestBenchGapAcross(session, byGender),
+      ])
+      .filter(([, gap]) => (gap as number) > 1);
+
+    expect(uneven).toEqual([]);
+
+    for (const session of sessions) {
+      assertSessionValid(session);
+    }
+  });
+
+  it('rotates seven women and three men through the one court they staff', () => {
+    // Seven rounds of one court is fourteen slots per gender: exactly two each for the women,
+    // and four or five each for the three men, who are on court almost every round (ADR-0036 §4).
+    // Six sit every round — five women and the third man — which is the price §2 accepts.
+    const session = strictSplit(7, 3, 2, 7);
+    const played = roundsPlayed(session);
+    const women = session.roster.slice(0, 7).map((entry) => played.get(entry.id));
+    const men = session.roster.slice(7).map((entry) => played.get(entry.id));
+
+    expect(courtsFilled(session)).toEqual([1, 1, 1, 1, 1, 1, 1]);
+    expect(women).toEqual([2, 2, 2, 2, 2, 2, 2]);
+    expect([...men].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual([4, 5, 5]);
+    expect(widestBenchGapAcross(session, byGender)).toBe(1);
+
+    assertSessionValid(session);
+  });
+
+  it('fills every court the gender split can staff, on every roster it admits', () => {
+    // A bench queue that ran out of sets would leave a round short of the courts it is entitled
+    // to, so this is where "the generator always yields a set" is visible from outside.
+    const splits = everyStrictSplit(8);
+    const sessions = splits.map((split) => strictSplit(...split, 3, 4));
+    const entitled = splits.map(([women, men]) =>
+      Array.from({ length: 4 }, () => Math.min(3, Math.floor(Math.min(women, men) / 2))),
+    );
+
+    expect(sessions.map(courtsFilled)).toEqual(entitled);
+
+    for (const session of sessions) {
+      assertSessionValid(session);
+    }
+  });
+});
+
+describe('the schedule a strict session is a function of', () => {
+  it('schedules the same evening twice from the same roster and history', () => {
+    const once = strictSplit(6, 6, 2, 8);
+
+    expect(strictSplit(6, 6, 2, 8).rounds).toEqual(once.rounds);
+    expect(generateRemaining(once).rounds).toEqual(once.rounds);
+
+    assertSessionValid(once);
   });
 });

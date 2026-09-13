@@ -87,7 +87,12 @@ export function assertSessionValid(session: Session): void {
       assertOpponentVariety(round, availableTeams, meetings, play);
     } else {
       countBench(playersIn(round), available, benchCounts);
-      assertBenchSpread(round, available, benchCounts, nameOf);
+      // Everybody available is one bench queue, except under strict mixing, where each gender is
+      // its own and the spread is checked within it (ADR-0036 §3). Which populations those are is
+      // the scheduler's answer too, so neither can drift from the other.
+      for (const queue of mixed.benchQueues(available, (entry) => entry.id)) {
+        assertBenchSpread(round, queue, benchCounts, nameOf);
+      }
       // Partner variety is asked of every mode but Team Americano, where the partnership is the
       // format rather than something the scheduler chose — exempt for the same reason a Mixicano
       // same-gender pair is (ADR-0010). What replaces it is `assertOpponentVariety` above.
@@ -283,6 +288,12 @@ function assertBenchSpread<Id extends string>(
   nameOf: (id: Id) => string,
 ): void {
   const counts = available.map((unit) => benchCounts.get(unit.id) ?? 0);
+  // Nobody to compare is no spread. Only a strict session reaches this with an empty queue — a
+  // gender none of whose players is available this round, which is a round with no matches in it.
+  if (counts.length === 0) {
+    return;
+  }
+
   const spread = Math.max(...counts) - Math.min(...counts);
   if (spread <= 1) {
     return;
