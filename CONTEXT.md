@@ -55,7 +55,8 @@ _Avoid_: Current session, live session, open session
 **End session**:
 The organizer declaring the evening over. It freezes the session — no more scores, no more
 regeneration — and produces the podium. Nothing else ends a session: not a clock, not the last
-court finishing.
+court finishing. An evening ended while matches are still unplayed asks one further question, and
+the answer to it is **compensation**.
 _Avoid_: Finish, close, complete, stop (a *match* finishes; the session ends)
 
 **Session history**:
@@ -119,10 +120,11 @@ for one round and belongs to nobody; in Team Americano it is a team's line-up fo
 _Avoid_: Team (reserved for Team Americano), pair (means the fixed partnership)
 
 **Bench**:
-The players not on a court in a given round, because the roster does not divide evenly into courts.
-A player on the bench is **benched**; benching costs them nothing in the standings, because the
-round they sat out is paid for as a bench credit. Being absent is not being benched: a player who
-had not arrived, or who has gone home, is not on the bench and earns nothing.
+The players not on a court in a given round — because the roster does not divide evenly into
+courts, or because **strict mixing** has no partner of the other gender to give them. A player on
+the bench is **benched**; benching costs them nothing in the standings, because the round they sat
+out is paid for as a bench credit. Being absent is not being benched: a player who had not arrived,
+or who has gone home, is not on the bench and earns nothing.
 _Avoid_: Sitting out, resting, sub, waiting list
 
 **Bye**:
@@ -161,9 +163,23 @@ every round prefix.
 _Avoid_: Balance, evenness (unqualified)
 
 **Same-gender pair**:
-A Mixicano side whose two players share a gender, played only when the roster forces it. Marked in
-the schedule and rotated, so the same two people are not the ones compromised every round.
+A Mixicano side whose two players share a gender. Impossible under **strict mixing** and, under
+**hybrid fill**, played only when the roster forces it — marked in the schedule and rotated, so the
+same two people are not the ones compromised every round.
 _Avoid_: Unmixed pair, non-mixed pair, exception
+
+**Strict mixing**:
+The Mixicano that would rather bench a player than pair two of the same gender. What a Mixicano
+does unless the organizer says otherwise, chosen once at creation and never after. The surplus
+gender sits, so the evening plays the courts its smaller gender can fill rather than the courts it
+booked.
+_Avoid_: Strict mode, no-same-gender, pure Mixicano, mixed-only
+
+**Hybrid fill**:
+The other answer: fill the courts with mixed pairs and let the surplus play same-gender. Keeps
+everybody on court at the price of the pairs strict mixing refuses, and is the opt-in rather than
+the default.
+_Avoid_: Relaxed, loose, lenient, mixed mode, fallback
 
 ### The table
 
@@ -174,14 +190,30 @@ _Avoid_: Leaderboard, table, rankings, results
 
 **Total points**:
 Everything a competitor has to their name: what they scored on court, plus a bench credit for every
-round they sat out. The ranking figure, and the only figure the table shows beside a name.
+round they sat out, plus compensation for every abandoned round they were available for. The
+ranking figure, and the only figure the table shows beside a name.
 _Avoid_: Score (a score is one match's), total, tally, points per match (gone — see ADR-0023)
 
 **Bench credit**:
 What a benched competitor is paid for the round they were not seated in: half the target score,
 which is exactly a drawn match. Awarded rather than scored, and only once every match in that round
 has one — so the credit and the results it is measured against arrive together.
-_Avoid_: Bench points, sit-out points, bonus, compensation
+_Avoid_: Bench points, sit-out points, bonus (**compensation** is the neighbouring term, and a
+different one: a bench credit is paid for a round that *was* played)
+
+**Abandoned round**:
+A generated round the evening ended before it was played — names on courts that never took the
+court. A round slot the organizer asked for but nobody generated is not one of these: it never had
+a fixture in it to abandon.
+_Avoid_: Cancelled round, unplayed round, skipped round, missed round
+
+**Compensation**:
+What an abandoned round pays every competitor who was available for it — the players it put on
+court and the players it benched alike — if the organizer says so when they end the evening. Half
+the target score, the same as a bench credit, because it is the same thing being made good: a round
+somebody was entitled to and did not get. Never automatic, because whether the evening owes anybody
+anything is the organizer's judgement and nothing in the document can recover it.
+_Avoid_: Bonus, reward, payout, make-good, credit (a **bench credit** is its own term)
 
 **Record**:
 A competitor's wins, ties and losses across the matches they have actually played, written as one

@@ -9,16 +9,17 @@ Outcome of the design interview. Each entry is a decision, not a suggestion.
 | 1 | **Organizer-driven.** One person runs the session and enters every score. Others open a read-only share link. | No player accounts in v1. Backend is write-by-one, read-by-many. |
 | 2 | **Modes: Americano, Mixicano, Team Americano.** No Mexicano / King of the Court in v1. | All three schedules are precomputable. Dynamic-seeding modes deferred. |
 | 3 | **Fixed point total per match** (default 24, configurable). Organizer enters one score, other is derived. | Invalid scores impossible by construction. One slider, not two fields. |
-| 4 | **Any roster >= 4.** Bench rotates evenly. ~~Standings rank by **points per match played**.~~ Standings rank by **total points**, and a benched competitor is credited **half the target score** for the round they sat out ([ADR-0023](adr/0023-the-standings-rank-on-total-points-and-the-bench-is-paid-a-credit.md)). | Sitting out never costs or gains position — the bench is paid rather than divided out. |
+| 4 | **Any roster >= 4.** Bench rotates evenly — within each gender in a strictly mixed Mixicano ([ADR-0036](adr/0036-strict-mixing-is-the-default-and-the-surplus-sits.md)), across the whole roster everywhere else. ~~Standings rank by **points per match played**.~~ Standings rank by **total points**, and a benched competitor is credited **half the target score** for the round they sat out ([ADR-0023](adr/0023-the-standings-rank-on-total-points-and-the-bench-is-paid-a-credit.md)). | Sitting out never costs or gains position — the bench is paid rather than divided out. |
 | 5 | **Roster mutable mid-session.** Played rounds frozen; unplayed rounds regenerated from history. | Generator is `generateRemaining(roster, courts, history)`, not a one-shot pure function. |
 | 6 | **Round count set by organizer**, default = complete rotation capped ~12, `+ add round` during play. | Schedule must be **fair at every prefix**, not only at completion. |
-| 7 | **Mixicano unequal pools: hybrid fill.** Fill courts with mixed pairs; surplus play same-gender pairs, marked and rotated. | Same-gender pairing is a *soft cost* in the search, not a hard constraint. |
+| 7 | ~~**Mixicano unequal pools: hybrid fill.**~~ Mixicano is **strictly mixed** by default: no same-gender pair is ever formed, and the surplus gender sits ([ADR-0036](adr/0036-strict-mixing-is-the-default-and-the-surplus-sits.md)). **Hybrid fill** — fill courts with mixed pairs, surplus play same-gender, marked and rotated — survives as an opt-in chosen at creation. | Same-gender pairing is a *hard constraint* by default and a *soft cost* ([ADR-0010](adr/0010-mixicano-is-one-cost-term-and-a-derived-mark.md)) when the organizer opts in. Strict mixing fills `min(courts, floor(min(women, men) / 2))` courts, so it seats fewer people than the room. |
 | 8 | **Ties:** ~~pts/match ->~~ total points -> head-to-head -> **declared joint position**. No invented separator. The pts/match tier went with the ranking figure ([ADR-0023](adr/0023-the-standings-rank-on-total-points-and-the-bench-is-paid-a-credit.md)); head-to-head keeps its own points-per-meeting rate. | Explicit `Finish session` freezes doc to `status: 'finished'` + podium screen. |
 | 9 | **Players are names in the session document.** No cross-session profiles or lifetime stats. | Roster entries still carry a **stable id** (never index refs). `playerId` reserved for later. |
 | 10 | **Privacy:** unlisted via unguessable code, first names only, hard delete available. | No emails, phones or photos anywhere in the model. `noindex` on spectator route. |
 | 2a | **Team Americano: pairs formed manually.** Organizer assigns players to fixed pairs on a pairing screen at session creation. No random or seeded draw. | Requires an even roster. Adds a pairing UI surface, and an orphaned-partner state when one half of a pair is removed mid-session. |
 | 2b | **Orphaned partner keeps a slot.** Removing one half of a pair leaves the other flagged `needs partner`; their team is skipped in regenerated rounds until repaired or removed. Repaired teams **keep their accumulated points**. | Points retention is automatic: standings are computed from matches that reference a team id. Voiding would need extra code and would corrupt other teams' pts/match. |
 | 2c | **Odd team count byes at team level.** With 5 teams on 2 courts, a whole team sits out each round, rotating evenly. | Decision 4 (even bench, pts/match ranking) applies unchanged, one level up. |
+| 8a | **An evening ended early may compensate its abandoned rounds.** The organizer is asked at `End session`, default no; every competitor available for a generated-but-unplayed round is paid half the target — the same as a bench credit ([ADR-0037](adr/0037-an-abandoned-round-is-compensated-if-the-organizer-says-so.md)). | The only stored fact in the standings, because no reading of the document recovers a judgement a person made. The podium can move when the answer is yes. |
 
 ## Architecture
 
@@ -49,11 +50,13 @@ Outcome of the design interview. Each entry is a decision, not a suggestion.
 
 - No player appears on two courts in the same round; benched players appear in no match
 - Every match has exactly 4 distinct players
-- Bench counts across players never differ by more than 1
+- Bench counts across players never differ by more than 1 (within each gender, in a strictly mixed Mixicano)
 - No partnership repeats while any player still has an unplayed partner
 - Every recorded score pair sums to the session target
 - After regeneration, all completed rounds are byte-identical to before
-- Mixicano: same-gender pairs are minimised, and rotated across players
+- Mixicano, strict: **no** same-gender pairs at all, and bench counts within 1 **within each gender**
+- Mixicano, hybrid fill: same-gender pairs are minimised, and rotated across players
+- `compensatedUnplayed` is not set on a session that has no unplayed generated match to compensate
 - Team Americano: every active player belongs to exactly one team; `needs partner` players appear in no match; team bench spread <= 1
 
 ## Build order
