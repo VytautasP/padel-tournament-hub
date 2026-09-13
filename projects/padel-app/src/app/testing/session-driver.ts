@@ -76,14 +76,30 @@ export async function createSessionOn(
 }
 
 /**
- * Create a Mixicano through the wizard: the same walk, plus the one thing this mode asks.
+ * Which rule a Mixicano settles an unequal pool by (ADR-0036), as a spec names one.
+ *
+ * Two words rather than a boolean, because `createMixicanoSession(SKEWED_FOUR, false)` says
+ * nothing about what is false — and the two rules are a pair of names in the glossary rather than
+ * a thing switched off.
+ */
+export type Mixing = 'strict' | 'hybrid';
+
+/**
+ * Create a Mixicano through the wizard: the same walk, plus the two things this mode asks.
  *
  * A separate driver rather than an option on the one above, because the roster it takes is a
  * different shape — a Mixicano roster is names *and* genders, and there is no default the
  * wizard would fill in for a caller that left them out.
+ *
+ * The mixing rule comes second, ahead of the numbers every driver takes, because it is this
+ * format's own question and it decides which rosters are creatable at all: a roster with fewer
+ * than two of a gender is one hybrid fill will schedule and strict mixing refuses. It defaults to
+ * strict, which is what the wizard defaults to — a spec that says nothing gets the evening an
+ * organizer who says nothing gets.
  */
 export async function createMixicanoSession(
   players: readonly MixicanoPlayer[],
+  mixing: Mixing = 'strict',
   courtCount = 1,
   targetScore = 24,
   tier?: Tier,
@@ -96,6 +112,10 @@ export async function createMixicanoSession(
     await app.type('Name', player.name);
     await app.tap('Add');
     await app.tap(`${player.name} is a ${player.gender}`);
+  }
+
+  if (mixing === 'hybrid') {
+    await app.tap('Hybrid fill');
   }
 
   return await review(app, courtCount, targetScore);

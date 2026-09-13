@@ -11,6 +11,7 @@
  * Two of these would be two half-described evenings, and there is only ever one.
  */
 import { computed, signal } from '@angular/core';
+import { courtsFilledBy } from 'padel-engine';
 import type { Gender, SessionMode } from 'padel-engine';
 import { copy } from '../copy/copy';
 import {
@@ -44,7 +45,7 @@ export interface DraftPlayer {
  * answers: `too-few` is about how many names there are, `gender-missing` about a question the
  * organizer has not answered on one of them.
  */
-export type PlayersProblem = 'too-few' | 'gender-missing' | 'odd-roster';
+export type PlayersProblem = 'too-few' | 'gender-missing' | 'odd-roster' | 'strict-too-few';
 
 /** A pair the organizer has made on the pairing step, by draft player id. */
 export type DraftPair = readonly [string, string];
@@ -61,6 +62,20 @@ export class WizardDraft {
   readonly mode = signal<SessionMode>('americano');
   readonly targetScore = signal(DEFAULT_TARGET_SCORE);
   readonly courtCount = signal(DEFAULT_COURT_COUNT);
+
+  /**
+   * Whether this Mixicano mixes strictly (ADR-0036 §1). On unless the organizer turns it off.
+   *
+   * The default is the decision rather than a convenience: the format's one rule is that you play
+   * with the other gender, and an evening that quietly pairs two women because the arithmetic said
+   * so has broken the rule it was chosen for. Turning it off is opting into hybrid fill, knowing
+   * what that costs, which is why the price stands beside the two answers.
+   *
+   * Held whatever the mode is, and read only where the mode asks. Back is non-destructive, so a
+   * draft can walk into Mixicano, be answered, walk out into Americano and walk back in — and an
+   * answer reset on the way through would be the wizard forgetting something that was said.
+   */
+  readonly strictMixing = signal(true);
 
   private readonly entries = signal<readonly DraftPlayer[]>([]);
   private readonly pairs = signal<readonly DraftPair[]>([]);
@@ -127,7 +142,7 @@ export class WizardDraft {
    * non-destructive: a draft can be carried into Mixicano, answered, carried back out again, and
    * every one of those places has to agree about which mode it is now in.
    */
-  private readonly asksGender = computed(() => this.mode() === 'mixicano');
+  readonly asksGender = computed(() => this.mode() === 'mixicano');
 
   /**
    * Whether this evening is played by fixed pairs — the whole of whether the pairing step exists.
@@ -161,11 +176,58 @@ export class WizardDraft {
     () => !this.asksPairing() || this.entries().length % PLAYERS_PER_TEAM === 0,
   );
 
+  /**
+   * How many of the booked courts this roster fills, under the rule now chosen (ADR-0036 §2).
+   *
+   * The number the mixing choice is made against, and the reason the choice is made here rather
+   * than on the mode step: seven women and three men fill one of two courts strictly and both of
+   * them under hybrid fill, while four of each fill both either way. Which of those evenings this
+   * is, is a fact about the roster, so it cannot be known until the roster is.
+   *
+   * It is `courtsFilledBy` — the engine's own arithmetic rather than a second copy of it — so the
+   * number shown while the names are typed is the number the scheduler will produce from them.
+   *
+   * Read only where the mixing choice is on screen. Team Americano counts its courts in teams
+   * rather than in players, and this is not the question that screen asks.
+   */
+  readonly courtsFilled = computed(() =>
+    courtsFilledBy(
+      this.entries().map((player) => player.gender),
+      this.courtCount(),
+      this.asksGender() && this.strictMixing(),
+    ),
+  );
+
+  /**
+   * Whether strict mixing has two of each gender to put on a court (ADR-0036 §5).
+   *
+   * True of every roster the question is not put to: every mode but Mixicano, and every Mixicano
+   * the organizer has taken off strict. Below two of either gender a strict round holds no match
+   * at all, which is not a session — and the alternative to holding the step here is an engine
+   * that refuses the roster at Create, three screens away from the names that caused it.
+   *
+   * Answered `true` while any gender is still unanswered. An untouched toggle is a question
+   * outstanding rather than a roster that cannot play, and `gender-missing` is already the
+   * sentence on screen.
+   *
+   * Asked as "does this roster fill a court?" rather than by counting the genders again, and the
+   * two are the same question: the court count can never be zero (`MINIMUM_SESSION_NUMBER`), so
+   * `courtsFilled` is zero exactly when the smaller gender cannot staff one court.
+   */
+  private readonly strictRosterCanPlay = computed(
+    () =>
+      !this.asksGender() ||
+      !this.strictMixing() ||
+      !this.everyGenderAnswered() ||
+      this.courtsFilled() >= 1,
+  );
+
   /** Whether the roster is one the engine could schedule (decision #4, ADR-0010). */
   readonly canLeavePlayers = computed(
     () =>
       this.entries().length >= MINIMUM_PLAYERS &&
       this.everyGenderAnswered() &&
+      this.strictRosterCanPlay() &&
       this.rosterDividesIntoPairs(),
   );
 
@@ -228,6 +290,9 @@ export class WizardDraft {
     // typed is told one thing at a time. The untouched toggles are visible on the rows either way.
     if (!this.everyGenderAnswered()) {
       return 'gender-missing';
+    }
+    if (!this.strictRosterCanPlay()) {
+      return 'strict-too-few';
     }
 
     return this.rosterDividesIntoPairs() ? null : 'odd-roster';
@@ -365,6 +430,10 @@ export class WizardDraft {
       players: this.entries().map((player) =>
         newPlayer(player.name, this.asksGender() ? player.gender : undefined),
       ),
+      // Written explicitly on every Mixicano and carried by no other mode, which is what keeps an
+      // absent flag meaning "older than ADR-0036" rather than "this organizer said nothing"
+      // (ADR-0036 §7). Dropped where the mode stopped asking, like the genders above it.
+      ...(this.asksGender() ? { strictMixing: this.strictMixing() } : {}),
       // Dropped where the mode stopped asking, like the genders above: a draft paired as a Team
       // Americano and then carried back out is an Americano, and teams on it would be a pairing
       // this evening never made. The engine refuses them there anyway (`session-shape.ts`).

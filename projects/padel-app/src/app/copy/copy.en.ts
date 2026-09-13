@@ -202,6 +202,33 @@ export const copyEn = {
        * the honest place to say so is the screen where the odd name is standing.
        */
       oddRoster: 'Team Americano plays in fixed pairs, so the roster needs an even number.',
+      /**
+       * Why a strict roster with fewer than two of a gender is held here (ADR-0036 §5).
+       *
+       * Said as the names are typed rather than at Create, because it is answerable while the
+       * organizer is still standing with the group: one more man, or the other rule. Below two of
+       * either gender a strict round has no match in it at all, which is not a session — and the
+       * engine refuses it in the same arithmetic.
+       */
+      strictTooFew: (minimum: number): string =>
+        `Strict mixing needs at least ${minimum} women and ${minimum} men.`,
+      /**
+       * The choice ADR-0036 put on this screen, and the number that makes it a choice.
+       *
+       * It is here rather than on the mode step because the thing it changes — how many of the
+       * booked courts this evening actually fills — is a function of the roster, and a choice made
+       * before the roster exists is a choice made blind. So the count sits beside the two answers
+       * and moves as the names and the genders are typed: strict mixing costs courts on a skewed
+       * roster and costs nothing on an even one, and which evening this is, is visible.
+       *
+       * The two rules are named in `copy.mixing` rather than here, because Review names them too.
+       */
+      mixing: {
+        heading: 'Mixing',
+        /** The price, in the unit it is paid in: courts this roster fills, of the courts booked. */
+        courts: (inPlay: number, booked: number): string =>
+          `Fills ${inPlay} of ${counted(booked, { one: 'court', other: 'courts' })}.`,
+      },
     },
 
     /**
@@ -240,6 +267,17 @@ export const copyEn = {
        * gets its name — "Court 2 name" still means something once the field says "Far end".
        */
       courtName: (courtNumber: number): string => `Court ${courtNumber} name`,
+      /**
+       * The mixing choice and its price, restated on the screen that commits the evening
+       * (ADR-0036 §2).
+       *
+       * Read back rather than offered again, like the mode and the roster above it: changing it
+       * is stepping back to the screen that asked. The court count is here because it is the one
+       * number on this screen the organizer did not type — the courts they booked are in the
+       * field below, and how many of them this roster fills is the difference the choice makes.
+       */
+      mixing: 'Mixing',
+      courtsInPlay: 'Courts in play',
       create: 'Create session',
     },
   },
@@ -468,6 +506,18 @@ export const copyEn = {
       markLabel: 'Same-gender pair',
       legend: '* Same-gender pair: the roster left nobody of the other gender to partner.',
     },
+    /**
+     * Why a booked court is standing empty, on the one kind of evening where the answer is a rule
+     * (ADR-0036 §8).
+     *
+     * It replaces the star rather than joining it: a strict session has no same-gender pair to
+     * mark, and the question its bench asks is not "why am I paired with her?" but "why am I
+     * sitting out again while a court is free?". Said once per round, under the courts, beside the
+     * bench it explains.
+     */
+    strictMixing: {
+      unused: (courts: readonly string[]): string => `${courts.join(', ')} unused — strict mixing.`,
+    },
   },
 
   players: {
@@ -583,6 +633,16 @@ export const copyEn = {
       confirmDeparture: (name: string): string => `${name} went home`,
       /** Repairing a team is a roster change, so it rides the same preview (ADR-0015). */
       confirmPartner: (name: string, team: string): string => `${name} joins ${team}`,
+      /**
+       * The preview of a strict evening this change would leave nothing to schedule (ADR-0036 §5).
+       *
+       * There is no rotation to print, so the sheet says the arithmetic instead of showing an
+       * empty schedule. The app does not fall back to hybrid fill on the organizer's behalf —
+       * that would undo the choice at exactly the moment it mattered — so what is offered is the
+       * two moves a person can actually make.
+       */
+      nobodyCanPlay:
+        '0 courts — nobody can play. Keep this player, or end the evening and start another.',
     },
   },
 
@@ -714,6 +774,22 @@ export const copyEn = {
    * sentence each says when the question has not been answered, because one blocks a step and the
    * other blocks an addition.
    */
+  /**
+   * The two rules a Mixicano can settle an unequal pool by (ADR-0036), and what each one does.
+   *
+   * Out here beside `gender` rather than inside one screen's section, because two screens name
+   * them: the roster step, where the choice is made, and Review, which reads it back. A name the
+   * organizer chose by and a name they are shown afterwards must be the same word, and one entry
+   * is how that stays true.
+   */
+  mixing: {
+    strict: 'Strict mixing',
+    hybrid: 'Hybrid fill',
+    strictLead: 'No pair shares a gender. Whoever is left over sits out.',
+    hybridLead:
+      'Every court filled. The same-gender pairs the roster forces are marked on the schedule.',
+  },
+
   gender: {
     name: (gender: Gender): string => genderNames[gender],
     /**

@@ -44,5 +44,6 @@ export { recordScore } from './lib/record-score';
 export { assertSessionValid } from './lib/assert-session-valid';
 export { formatSchedule } from './lib/format-schedule';
 export { sameGenderSides } from './lib/mixed-pairing';
+export { courtsFilledBy, courtsInPlay, courtsUnusedByStrictMixing } from './lib/session-shape';
 export { computeStandings } from './lib/standings';
 export { computeTeamStandings } from './lib/team-standings';

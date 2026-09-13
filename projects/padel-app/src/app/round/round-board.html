@@ -109,15 +109,31 @@
       </ul>
 
       <!--
-        The three notes are one group rather than three siblings, because that is what they are on
+        The notes are one group rather than a row of siblings, because that is what they are on
         the artboard: footnotes to the courts, set close together, and one step further from the
         courts than they are from each other. The outer `@if` is what keeps that true when none of
         them applies — an empty group would still take the section's gap on both sides.
       -->
-      @if (view.hasSameGenderPair || view.bench.length > 0 || view.bye.length > 0) {
+      @if (
+        view.hasSameGenderPair ||
+        view.unusedCourts.length > 0 ||
+        view.bench.length > 0 ||
+        view.bye.length > 0
+      ) {
         <div class="flex flex-col gap-2 px-1">
           @if (view.hasSameGenderPair) {
             <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+          }
+
+          <!--
+            A strict evening has no marked pair to explain and one thing of its own to say: which
+            booked court is standing empty, and why (ADR-0036 §8). It sits with the other
+            footnotes, above the bench it is the reason for.
+          -->
+          @if (view.unusedCourts.length > 0) {
+            <p class="text-meta text-ink-muted">
+              {{ copy.round.strictMixing.unused(view.unusedCourts) }}
+            </p>
           }
 
           @if (view.bench.length > 0) {

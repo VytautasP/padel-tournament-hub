@@ -154,6 +154,14 @@ export const copyLt = {
       genderMissing: 'Mixicano poruoja skirtingas lytis, todėl jos reikia kiekvienam žaidėjui.',
       oddRoster:
         'Team Americano žaidžiama pastoviomis poromis, todėl žaidėjų turi būti lyginis skaičius.',
+      strictTooFew: (minimum: number): string =>
+        `Griežtam maišymui reikia bent ${genitive(minimum, 'moters', 'moterų')} ir ` +
+        `${genitive(minimum, 'vyro', 'vyrų')}.`,
+      mixing: {
+        heading: 'Poravimas',
+        courts: (inPlay: number, booked: number): string =>
+          `Užpildo ${inPlay} iš ${genitive(booked, 'aikštelės', 'aikštelių')}.`,
+      },
     },
 
     pairing: {
@@ -176,6 +184,8 @@ export const copyLt = {
       roundCount: 'Raundai',
       courtNames: 'Aikštelių pavadinimai',
       courtName: (courtNumber: number): string => `Aikštelės ${courtNumber} pavadinimas`,
+      mixing: 'Poravimas',
+      courtsInPlay: 'Žaidžiamos aikštelės',
       create: 'Sukurti sesiją',
     },
   },
@@ -257,6 +267,10 @@ export const copyLt = {
       markLabel: 'Tos pačios lyties pora',
       legend: '* Tos pačios lyties pora: sąraše neliko kitos lyties žaidėjo porai.',
     },
+    strictMixing: {
+      unused: (courts: readonly string[]): string =>
+        `Nenaudojama: ${courts.join(', ')} — griežtas maišymas.`,
+    },
   },
 
   players: {
@@ -290,6 +304,8 @@ export const copyLt = {
       confirmDeparture: (name: string): string => `${name} išėjo namo`,
       confirmPartner: (name: string, team: string): string =>
         `${name} prisijungia prie komandos ${team}`,
+      nobodyCanPlay:
+        '0 aikštelių — žaisti negalės niekas. Palikite šį žaidėją arba užbaikite vakarą ir pradėkite naują.',
     },
   },
 
@@ -337,6 +353,14 @@ export const copyLt = {
       lead: 'Vakaras dings visam laikui — jo raundai, rezultatai ir galutinė lentelė. Nieko iš to atkurti nebus galima.',
       action: 'Ištrinti sesiją',
     },
+  },
+
+  mixing: {
+    strict: 'Griežtas maišymas',
+    hybrid: 'Mišrus užpildymas',
+    strictLead: 'Nė viena pora nebus tos pačios lyties. Kas lieka — nežaidžia.',
+    hybridLead:
+      'Užpildomos visos aikštelės. Tos pačios lyties poros, kurias primeta sąrašas, pažymimos tvarkaraštyje.',
   },
 
   gender: {

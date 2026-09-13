@@ -20,7 +20,7 @@
 import { mixedPairingIn } from './mixed-pairing';
 import type { Match, PlayerId, RosterEntry, Round, Session } from './model';
 import { hasLeft, isAvailableIn, joinedAtRound, leftAfterRound } from './roster-availability';
-import { courtsInPlay } from './session-shape';
+import { courtsInPlay, courtsUnusedByStrictMixing } from './session-shape';
 import { teamLineupIn, teamPlayIn, teamsAvailableIn, teamsNeedingPartner } from './teams';
 
 /** A session as readable text: a block per round, then a block per player. */
@@ -134,6 +134,16 @@ function renderer(session: Session): {
     const benched = benchedIn(round, session);
     if (benched.length > 0) {
       lines.push(`  ${label('Bench')}${benched.map(nameOf).join(', ')}`);
+    }
+
+    // Why a booked court is standing empty, on the one kind of evening where the answer is a rule
+    // rather than the size of the roster (ADR-0036 §8). It sits under the bench it explains: a
+    // reader counting six names against one court is exactly the reader asking this question.
+    const unused = courtsUnusedByStrictMixing(session, round.number);
+    if (unused.length > 0) {
+      lines.push(
+        `  ${label('Unused')}${unused.map((court) => `Court ${court}`).join(', ')} — strict mixing`,
+      );
     }
 
     return [`Round ${round.number}`, ...lines].join('\n');

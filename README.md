@@ -31,13 +31,17 @@ joint position rather than ordered arbitrarily. See
 [ADR-0008](docs/adr/0008-standings-are-derived-and-ties-stop-at-the-evidence.md).
 
 **Mixicano** is the same scheduling machinery with one more term in its cost function: pairs
-should be mixed-gender. Real rosters do not split evenly, so seven women and three men fill the
-courts with mixed pairs and let the surplus play same-gender — never more such pairs than the
-players on court force, and rotated so the same two people are not the ones compromised every
-round. Same-gender pairs are marked in the schedule, derived from the roster rather than stored,
-so the organizer can explain a pairing rather than appear to have invented it. Bench spread,
-partner variety and prefix fairness hold unchanged throughout; see
-[ADR-0010](docs/adr/0010-mixicano-is-one-cost-term-and-a-derived-mark.md).
+should be mixed-gender. Real rosters do not split evenly, and the organizer says at creation what
+happens then. **Strict mixing** is the default and the format's own rule: no same-gender pair is
+ever formed, so seven women and three men fill one of the two courts booked and six people sit —
+the courts shrink, the bench is queued per gender, and the Round tab says which court strict mixing
+emptied. **Hybrid fill** is the opt-in: the courts take mixed pairs first and the surplus plays
+same-gender — never more such pairs than the players on court force, and rotated so the same two
+people are not the ones compromised every round. Those pairs are marked in the schedule, derived
+from the roster rather than stored, so the organizer can explain a pairing rather than appear to
+have invented it. Bench spread, partner variety and prefix fairness hold unchanged throughout; see
+[ADR-0010](docs/adr/0010-mixicano-is-one-cost-term-and-a-derived-mark.md) and
+[ADR-0036](docs/adr/0036-strict-mixing-is-the-default-and-the-surplus-sits.md).
 
 **Team Americano** is the same engine one level up. The organizer pairs the roster themselves at
 creation — no draw, no seeding — and from there the team is the unit: teams face teams, a whole
@@ -65,6 +69,11 @@ reopens on the current round, which is worked out from the unscored matches ever
 nowhere. Prev and next reach every generated round with one control back to the current one, and
 one page past the last round is where a round gets added — which is where "have we time for
 another?" is actually asked (ADR-0016 §4).
+
+In Mixicano the roster step also carries the mixing choice, under the names it is a fact about:
+strict mixing or hybrid fill, with the courts this roster actually fills counted live beside them
+and restated on Review, and a roster strict mixing cannot seat — fewer than two of either gender —
+held at the step rather than refused at Create (ADR-0036 §2).
 
 **The Players tab is where the roster moves during the evening** (decision #5, ADR-0015). It lists
 the roster with a badge on whoever this round leaves off a court — the same derivation the bench

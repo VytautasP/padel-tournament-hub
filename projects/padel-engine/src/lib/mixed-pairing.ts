@@ -21,7 +21,7 @@
  *
  * That was the whole of the module until ADR-0036 made hybrid fill the opt-in. Under **strict
  * mixing** a same-gender pair is not expensive, it is not available: the courts shrink to what
- * the smaller gender can staff (`mixedCourts`) and the surplus sits. Which rule a session plays
+ * the smaller gender can staff (`mixedCourtsFor`) and the surplus sits. Which rule a session plays
  * by is read off the document here too, so the one branch every caller asks about is `strict`.
  *
  * A same-gender pair is **derived, never stored** (ADR-0010): it is a fact about the roster's
@@ -52,15 +52,6 @@ export interface MixedPairing {
   /** The fewest same-gender pairs these players, split onto courts, can be paired into. */
   forcedSameGenderPairs(playing: readonly PlayerId[]): number;
   /**
-   * How many courts these players fill with mixed pairs and nothing else: a court is two women
-   * and two men, so `floor(min(women, men) / 2)`.
-   *
-   * The question a strict session asks instead of "how many fours are there?", and the price
-   * ADR-0036 §2 accepts: seven women and three men fill one court and bench six. Zero for a mode
-   * that forms no mixed pairs, which is the only honest answer and one nothing asks for.
-   */
-  mixedCourts(playing: readonly PlayerId[]): number;
-  /**
    * These units split into the queues that bench independently: one holding all of them, except
    * under strict mixing, where it is one per gender (ADR-0036 §3).
    *
@@ -87,7 +78,6 @@ const NEVER_MIXES: MixedPairing = {
   strict: false,
   sameGender: () => false,
   forcedSameGenderPairs: () => 0,
-  mixedCourts: () => 0,
   benchQueues: (units) => [units],
 };
 
@@ -102,7 +92,7 @@ export interface GenderSplit {
  *
  * Lives here because every question this module answers is this arithmetic read one way or
  * another, and the shape check asks it too: two of each gender is the smallest roster strict
- * mixing can play (ADR-0036 §5), which is the same count `mixedCourts` divides.
+ * mixing can play (ADR-0036 §5), which is the same count `mixedCourtsFor` divides.
  *
  * Anything the roster has no gender for counts as neither. Only a session that never passed the
  * shape check can hold one, and a player the engine cannot classify is not evidence that a court
@@ -141,11 +131,6 @@ export function mixedPairingIn(session: Session): MixedPairing {
       // being a surplus it is even, because the players on court come four to a court.
       return Math.floor(Math.abs(women - men) / 2);
     },
-    mixedCourts: (playing) => {
-      const { women, men } = genderCounts(playing);
-
-      return Math.floor(Math.min(women, men) / PAIRS_PER_COURT);
-    },
     // Hybrid fill benches the whole roster as one queue, exactly as Americano does: it puts four
     // of whoever is here onto each court, so whoever is here is the population the bench is
     // spread across. Only strictness makes the genders separate queues — and then every unit is
@@ -158,6 +143,22 @@ export function mixedPairingIn(session: Session): MixedPairing {
           )
         : [units],
   };
+}
+
+/**
+ * How many courts a set of players staffs with mixed pairs and nothing else: a court is two women
+ * and two men, so `floor(min(women, men) / 2)`.
+ *
+ * The question a strict session asks instead of "how many fours are there?", and the price
+ * ADR-0036 §2 accepts: seven women and three men fill one court and bench six. It is the strict
+ * half of `courtsFilledBy` (`session-shape.ts`) and nothing outside this module calls it on its
+ * own — a caller holding a roster wants the courts that roster fills, not the courts one of the
+ * two rules would have filled.
+ */
+export function mixedCourtsFor(genders: readonly (Gender | undefined)[]): number {
+  const { women, men } = genderSplit(genders);
+
+  return Math.floor(Math.min(women, men) / PAIRS_PER_COURT);
 }
 
 /**

@@ -1,6 +1,7 @@
 import {
   addRound,
   assertSessionValid,
+  courtsUnusedByStrictMixing,
   createSession,
   finishSession,
   generateRemaining,
@@ -211,6 +212,75 @@ describe('the courts a strict session fills', () => {
     expect(courtsFilled(afterRoundOne)).toEqual([2, 1, 1, 1, 1]);
 
     assertSessionValid(afterRoundOne);
+  });
+});
+
+describe('the courts strict mixing left empty', () => {
+  it('names the booked court the smaller gender could not staff', () => {
+    // Seven women and three men on two courts: hybrid fill would have played both, so court 2 is
+    // empty because of the rule and the round can say which rule (ADR-0036 §8).
+    const session = strictSplit(7, 3, 2);
+
+    expect(courtsUnusedByStrictMixing(session, 1)).toEqual([2]);
+  });
+
+  it('names nothing when the roster fills every court it booked', () => {
+    expect(courtsUnusedByStrictMixing(strictSplit(4, 4, 2), 1)).toEqual([]);
+  });
+
+  it('does not blame strictness for a court nobody could have filled', () => {
+    // Six women and six men on four courts play three: the fourth court is empty because there
+    // are twelve players, which is true under every rule there is.
+    const session = strictSplit(6, 6, 4);
+
+    expect(courtsFilled(session)).toEqual([3, 3, 3, 3, 3]);
+    expect(courtsUnusedByStrictMixing(session, 1)).toEqual([]);
+  });
+
+  it('names nothing at all on a session that does not mix strictly', () => {
+    const hybrid = generateRemaining(
+      createSession(
+        mixicanoConfig({ players: mixedRoster(7, 3), courtCount: 2, strictMixing: false }),
+      ),
+    );
+
+    expect(courtsUnusedByStrictMixing(hybrid, 1)).toEqual([]);
+  });
+
+  it('answers per round, so a departure changes which courts are empty', () => {
+    // Six women and four men fill both courts. p10 is one of the four men, so from round two
+    // three men staff one court — and the nine still here could have filled two.
+    const afterRoundOne = removePlayer(scoredRound(strictSplit(6, 4, 2, 5), 1), 'p10');
+
+    expect(courtsUnusedByStrictMixing(afterRoundOne, 1)).toEqual([]);
+    expect(courtsUnusedByStrictMixing(afterRoundOne, 2)).toEqual([2]);
+
+    assertSessionValid(afterRoundOne);
+  });
+});
+
+describe('a departure that takes a gender below two', () => {
+  /*
+   * The evening ADR-0036 §5 says the engine does not rescue. Two women and six men play one
+   * court; one woman going home leaves a roster nothing can staff strictly — and the engine
+   * schedules no matches rather than falling back to hybrid fill behind the organizer.
+   */
+  const stranded = (): Session => removePlayer(scoredRound(strictSplit(2, 6, 2, 4), 1), 'p1');
+
+  it('plans no courts at all from the round it happens in', () => {
+    expect(courtsFilled(stranded())).toEqual([1, 0, 0, 0]);
+  });
+
+  it('leaves the round they played exactly as it was played', () => {
+    const played = scoredRound(strictSplit(2, 6, 2, 4), 1);
+
+    expect(stranded().rounds[0]).toEqual(played.rounds[0]);
+  });
+
+  it('is a session the referee still accepts, because nothing in it is wrong', () => {
+    // The rounds it cannot staff read as ungenerated, which is what they are: slots waiting for
+    // a roster that could fill them. The organizer keeps the player or ends the evening.
+    expect(() => assertSessionValid(stranded())).not.toThrow();
   });
 });
 

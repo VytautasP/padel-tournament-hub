@@ -22,6 +22,18 @@
     at the left, the two sides beside it, and no score anywhere (ADR-0015).
   -->
   <div class="-mx-5 flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto px-5">
+    <!--
+      The evening this change would leave with nothing to schedule (ADR-0036 §5), said instead of
+      the rounds — because there are none: a strict Mixicano that loses its second man plans no
+      matches at all rather than quietly falling back to hybrid fill. The organizer keeps the
+      player, or ends the evening and starts another, and both of those are theirs to do.
+    -->
+    @if (nobodyCanPlay()) {
+      <p class="text-lead text-pretty font-bold text-ink">
+        {{ copy.players.preview.nobodyCanPlay }}
+      </p>
+    }
+
     @for (round of rounds(); track round.number) {
       <section class="flex flex-col gap-2">
         <h3 class="text-micro font-bold text-brand uppercase">
@@ -52,6 +64,12 @@
 
         @if (round.hasSameGenderPair) {
           <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+        }
+
+        @if (round.unusedCourts.length > 0) {
+          <p class="text-meta text-ink-muted">
+            {{ copy.round.strictMixing.unused(round.unusedCourts) }}
+          </p>
         }
 
         @if (round.bench.length > 0) {

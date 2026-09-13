@@ -118,6 +118,15 @@ export interface SessionDraft {
   readonly courtNames: readonly string[];
   readonly targetScore: number;
   readonly roundCount: number;
+  /**
+   * Which rule this Mixicano settles an unequal pool by (ADR-0036), and absent in every other
+   * mode — the engine refuses the flag where it has no meaning.
+   *
+   * Optional here because the wizard is not the only shape a draft could take, and required of
+   * every Mixicano the wizard builds: a flag written explicitly on creation is what keeps an
+   * absent one meaning "written before the choice existed".
+   */
+  readonly strictMixing?: boolean;
 }
 
 /**
@@ -463,6 +472,10 @@ export class SessionStore implements OnDestroy {
         courtCount: draft.courtCount,
         targetScore: draft.targetScore,
         roundCount: draft.roundCount,
+        // Absent rather than false where the mode does not mix, for the reason `teams` is absent
+        // above: the engine reads the key at all as a claim about the session, and refuses it from
+        // a mode that has no use for it.
+        ...(draft.strictMixing === undefined ? {} : { strictMixing: draft.strictMixing }),
       }),
     );
 

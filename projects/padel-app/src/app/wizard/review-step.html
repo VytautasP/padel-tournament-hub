@@ -16,6 +16,21 @@
     <dd class="text-meta text-right font-bold text-ink">{{ modeNames[draft().mode()] }}</dd>
     <dt class="text-meta text-ink-muted">{{ copy.wizard.review.players }}</dt>
     <dd class="text-meta text-right font-bold text-ink">{{ draft().players().length }}</dd>
+
+    <!--
+      The mixing choice and what it costs, restated where the evening is committed (ADR-0036 §2).
+      Read back rather than offered again, like the two rows above it — and the court count is
+      here rather than beside the Courts field below because it is the one number on this screen
+      the organizer did not type.
+    -->
+    @if (draft().asksGender()) {
+      <dt class="text-meta text-ink-muted">{{ copy.wizard.review.mixing }}</dt>
+      <dd class="text-meta text-right font-bold text-ink">
+        {{ draft().strictMixing() ? copy.mixing.strict : copy.mixing.hybrid }}
+      </dd>
+      <dt class="text-meta text-ink-muted">{{ copy.wizard.review.courtsInPlay }}</dt>
+      <dd class="text-meta text-right font-bold text-ink">{{ draft().courtsFilled() }}</dd>
+    }
   </dl>
 
   <div class="flex flex-col gap-3">
