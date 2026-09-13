@@ -7,6 +7,7 @@
  * refuses to build is described in exactly the same words as a session that has drifted into
  * the same state.
  */
+import { genderSplit, mixedPairingIn } from './mixed-pairing';
 import type { RosterEntry, Session, SessionMode, Team } from './model';
 import { availableIn, hasLeft, joinedAtRound, leftAfterRound } from './roster-availability';
 import { membersOf, PLAYERS_PER_TEAM, teamLineupIn, teamPlayIn, teamsAvailableIn } from './teams';
@@ -39,9 +40,17 @@ export function courtsInPlay(session: Session, roundNumber: number): number {
     return Math.min(session.courtCount, Math.floor(teams / TEAMS_PER_COURT));
   }
 
-  const available = availableIn(session, roundNumber).length;
+  const available = availableIn(session, roundNumber);
 
-  return Math.min(session.courtCount, Math.floor(available / PLAYERS_PER_COURT));
+  // A strict Mixicano fills a court with two women and two men or does not fill it at all
+  // (ADR-0036 §2), so the question it asks of the round is how many *mixed* courts the players
+  // here can staff. Seven women and three men make one, where the four-a-court count makes two.
+  const mixed = mixedPairingIn(session);
+  if (mixed.strict) {
+    return Math.min(session.courtCount, mixed.mixedCourts(available.map((entry) => entry.id)));
+  }
+
+  return Math.min(session.courtCount, Math.floor(available.length / PLAYERS_PER_COURT));
 }
 
 export function assertSessionShape(session: Session): void {
@@ -90,6 +99,7 @@ export function assertSessionShape(session: Session): void {
   }
 
   assertTeamsSound(session);
+  assertStrictMixingSound(session);
 
   session.rounds.forEach((round, index) => {
     if (round.number !== index + 1) {
@@ -106,6 +116,39 @@ export function assertSessionShape(session: Session): void {
   }
 
   assertEveryRoundStaffable(session);
+}
+
+/**
+ * The strict-mixing flag: held by the one mode that has a use for it, and only by a roster that
+ * can play under it.
+ *
+ * Both halves are properties of the document rather than of a prefix, so like every other rule in
+ * this file they are checked over the whole roster at once — which is also what keeps a departure
+ * from making a valid session invalid. Whether the players still *here* can fill a court is
+ * `courtsInPlay`'s question, asked per round and answered in courts rather than in errors.
+ *
+ * Two of each gender is the floor because below it `floor(min(women, men) / 2)` is zero: a round
+ * with no matches in it at all, which is not a session (ADR-0036 §5). The organizer who wants
+ * that evening anyway has hybrid fill.
+ */
+function assertStrictMixingSound(session: Session): void {
+  if (session.strictMixing === undefined) {
+    return;
+  }
+  if (session.mode !== 'mixicano') {
+    throw new Error(`Only Mixicano mixes strictly — this session is ${session.mode}.`);
+  }
+  if (!session.strictMixing) {
+    return;
+  }
+
+  const { women, men } = genderSplit(session.roster.map((entry) => entry.gender));
+  if (women < PER_GENDER_PER_COURT || men < PER_GENDER_PER_COURT) {
+    throw new Error(
+      `Strict mixing needs at least ${PER_GENDER_PER_COURT} women and ` +
+        `${PER_GENDER_PER_COURT} men — this roster has ${women} and ${men}.`,
+    );
+  }
 }
 
 /**
@@ -287,6 +330,9 @@ function assertLineupIsAPair(session: Session, team: Team): void {
     }
   }
 }
+
+/** A court takes two of each gender, which is what makes two of each the smallest strict roster. */
+const PER_GENDER_PER_COURT = PLAYERS_PER_COURT / 2;
 
 const MODES: readonly SessionMode[] = ['americano', 'mixicano', 'team-americano'];
 

@@ -19,11 +19,16 @@
  *   - Which players carry it is free, and freedom is what makes it rotatable. Nothing here
  *     chooses; `plan-round.ts` spends the choice on whoever has been compromised least.
  *
+ * That was the whole of the module until ADR-0036 made hybrid fill the opt-in. Under **strict
+ * mixing** a same-gender pair is not expensive, it is not available: the courts shrink to what
+ * the smaller gender can staff (`mixedCourts`) and the surplus sits. Which rule a session plays
+ * by is read off the document here too, so the one branch every caller asks about is `strict`.
+ *
  * A same-gender pair is **derived, never stored** (ADR-0010): it is a fact about the roster's
  * genders and the pair, so a corrected gender re-marks the schedule rather than leaving a stale
  * flag behind. `sameGenderSides` is the public form of that derivation.
  */
-import type { Match, PlayerId, Session, Side } from './model';
+import type { Gender, Match, PlayerId, Session, Side } from './model';
 
 /**
  * Whether two players are the same gender, and how many such pairs a set of players forces.
@@ -35,17 +40,59 @@ import type { Match, PlayerId, Session, Side } from './model';
 export interface MixedPairing {
   /** Does this mode want mixed pairs at all? */
   readonly mixes: boolean;
+  /**
+   * Does it want them so much it would rather bench a player than forgo one (ADR-0036 §1)?
+   *
+   * False for hybrid fill, for a Mixicano written before the choice existed, and for every mode
+   * that does not mix at all.
+   */
+  readonly strict: boolean;
   /** Are these two the same gender — the pair Mixicano forms only when it must? */
   sameGender(a: PlayerId, b: PlayerId): boolean;
   /** The fewest same-gender pairs these players, split onto courts, can be paired into. */
   forcedSameGenderPairs(playing: readonly PlayerId[]): number;
+  /**
+   * How many courts these players fill with mixed pairs and nothing else: a court is two women
+   * and two men, so `floor(min(women, men) / 2)`.
+   *
+   * The question a strict session asks instead of "how many fours are there?", and the price
+   * ADR-0036 §2 accepts: seven women and three men fill one court and bench six. Zero for a mode
+   * that forms no mixed pairs, which is the only honest answer and one nothing asks for.
+   */
+  mixedCourts(playing: readonly PlayerId[]): number;
 }
 
 const NEVER_MIXES: MixedPairing = {
   mixes: false,
+  strict: false,
   sameGender: () => false,
   forcedSameGenderPairs: () => 0,
+  mixedCourts: () => 0,
 };
+
+/** How a set of players divides across the one axis Mixicano pairs on. */
+export interface GenderSplit {
+  readonly women: number;
+  readonly men: number;
+}
+
+/**
+ * The split, counted off whatever genders are handed over — a roster's, or a round's.
+ *
+ * Lives here because every question this module answers is this arithmetic read one way or
+ * another, and the shape check asks it too: two of each gender is the smallest roster strict
+ * mixing can play (ADR-0036 §5), which is the same count `mixedCourts` divides.
+ *
+ * Anything the roster has no gender for counts as neither. Only a session that never passed the
+ * shape check can hold one, and a player the engine cannot classify is not evidence that a court
+ * can be staffed.
+ */
+export function genderSplit(genders: readonly (Gender | undefined)[]): GenderSplit {
+  return {
+    women: genders.filter((gender) => gender === 'woman').length,
+    men: genders.filter((gender) => gender === 'man').length,
+  };
+}
 
 /** The rule this session pairs by, read off its mode and its roster. */
 export function mixedPairingIn(session: Session): MixedPairing {
@@ -55,20 +102,28 @@ export function mixedPairingIn(session: Session): MixedPairing {
 
   const genders = new Map(session.roster.map((entry) => [entry.id, entry.gender]));
 
+  const genderCounts = (playing: readonly PlayerId[]): GenderSplit =>
+    genderSplit(playing.map((id) => genders.get(id)));
+
   return {
     mixes: true,
+    strict: session.strictMixing === true,
     // Two players the roster has no gender for compare equal, and so read as a same-gender pair.
     // Only a session that never passed the shape check can hold one, and the cautious answer is
     // the right one there: a pair the engine cannot vouch for is shown as a compromise rather
     // than passed off as a mix.
     sameGender: (a, b) => genders.get(a) === genders.get(b),
     forcedSameGenderPairs: (playing) => {
-      const women = playing.filter((id) => genders.get(id) === 'woman').length;
-      const men = playing.filter((id) => genders.get(id) === 'man').length;
+      const { women, men } = genderCounts(playing);
 
       // Every man can partner a woman, so the surplus is what is left over on one side — and
       // being a surplus it is even, because the players on court come four to a court.
       return Math.floor(Math.abs(women - men) / 2);
+    },
+    mixedCourts: (playing) => {
+      const { women, men } = genderCounts(playing);
+
+      return Math.floor(Math.min(women, men) / PAIRS_PER_COURT);
     },
   };
 }
@@ -89,3 +144,6 @@ export function sameGenderSides(session: Session, match: Match): readonly Side[]
     return mixed.sameGender(pair[0], pair[1]);
   });
 }
+
+/** Two pairs to a court, one on each side of the net. */
+const PAIRS_PER_COURT = 2;

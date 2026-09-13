@@ -28,11 +28,13 @@ export interface MutableMatch {
 
 export interface MutableSession extends Omit<
   Session,
-  'id' | 'status' | 'roster' | 'teams' | 'rounds' | 'compensatedUnplayed'
+  'id' | 'status' | 'roster' | 'teams' | 'rounds' | 'compensatedUnplayed' | 'strictMixing'
 > {
   id: string;
   /** The organizer's answer about the abandoned rounds, writable so a test can promise a lie. */
   compensatedUnplayed?: true;
+  /** The Mixicano rule, writable so a test can hang it on a mode that has no use for it. */
+  strictMixing?: boolean;
   /** Widened to `string`, so a test can damage a session with a status the engine never sets. */
   status: string;
   roster: {
