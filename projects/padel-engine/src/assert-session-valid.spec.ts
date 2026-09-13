@@ -1,9 +1,15 @@
-import { assertSessionValid, createSession, finishSession, generateRemaining } from './public-api';
+import {
+  addRound,
+  assertSessionValid,
+  createSession,
+  finishSession,
+  generateRemaining,
+} from './public-api';
 import type { PlayerId, Session } from './public-api';
 import { damaged } from './test-support/damaged-session';
 import type { MutableMatch, MutableSession } from './test-support/damaged-session';
 import { mixedRoster, mixicanoConfig } from './test-support/mixicano-fixtures';
-import { americanoConfig, roster } from './test-support/session-fixtures';
+import { americanoConfig, roster, scoredThrough } from './test-support/session-fixtures';
 
 function valid(): Session {
   return generateRemaining(createSession(americanoConfig({ courtCount: 2, roundCount: 6 })));
@@ -13,6 +19,13 @@ function valid(): Session {
 function benched(): Session {
   return generateRemaining(
     createSession(americanoConfig({ players: roster(9), courtCount: 2, roundCount: 6 })),
+  );
+}
+
+/** A session with one round generated and the rest still empty slots. */
+function ungenerated(): Session {
+  return addRound(
+    generateRemaining(createSession(americanoConfig({ courtCount: 2, roundCount: 1 }))),
   );
 }
 
@@ -201,6 +214,41 @@ describe('assertSessionValid', () => {
     expect(() => assertSessionValid(session)).toThrow(/duplicate match id/i);
 
     assertSessionValid(valid());
+  });
+
+  it('accepts a compensation flag on a session that has an abandoned round to pay for', () => {
+    const session = broken((copy) => {
+      copy.status = 'finished';
+      copy.compensatedUnplayed = true;
+    });
+
+    expect(() => assertSessionValid(session)).not.toThrow();
+
+    assertSessionValid(valid());
+  });
+
+  it('rejects a compensation flag on a session with nothing to compensate', () => {
+    // A promise the document cannot keep (ADR-0037 §7): every generated round is scored, so
+    // the flag pays nobody and says the evening owes somebody something.
+    const session = damaged(scoredThrough(valid()), (copy) => {
+      copy.status = 'finished';
+      copy.compensatedUnplayed = true;
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/nothing to compensate/);
+
+    assertSessionValid(scoredThrough(valid()));
+  });
+
+  it('rejects a compensation flag on a session whose only unplayed rounds are ungenerated', () => {
+    // A round slot is a number in a form field, not a fixture, so it is not abandoned and does
+    // not rescue the flag (ADR-0037 §2).
+    const session = damaged(scoredThrough(ungenerated()), (copy) => {
+      copy.status = 'finished';
+      copy.compensatedUnplayed = true;
+    });
+
+    expect(() => assertSessionValid(session)).toThrow(/nothing to compensate/);
   });
 });
 

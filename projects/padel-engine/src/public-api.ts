@@ -27,6 +27,7 @@ export type {
   TeamId,
 } from './lib/model';
 
+export type { FinishOptions } from './lib/finish-session';
 export type { OrphanedTeam } from './lib/teams';
 export type { Standing } from './lib/standings';
 export type { TeamStanding } from './lib/team-standings';

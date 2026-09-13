@@ -14,6 +14,7 @@
  * It throws on the first violation with a message naming the round and the players involved,
  * because a fairness bug is only useful if you can see what it did.
  */
+import { abandonedRounds } from './bench-credit';
 import { FixtureLedger } from './fixture-ledger';
 import { mixedPairingIn } from './mixed-pairing';
 import type { MixedPairing } from './mixed-pairing';
@@ -35,6 +36,7 @@ export function assertSessionValid(session: Session): void {
   assertMatchIdsUnique(session);
   assertGeneratedRoundsComeFirst(session);
   assertScoresSumToTarget(session);
+  assertCompensationIsOwed(session);
 
   const mixed = mixedPairingIn(session);
   const play = teamPlayIn(session);
@@ -93,6 +95,24 @@ export function assertSessionValid(session: Session): void {
     }
 
     assertMixedPairing(round, available, mixed, sameGenderCounts, nameOf);
+  }
+}
+
+/**
+ * A session that says its abandoned rounds were paid for has an abandoned round in it (ADR-0037 §7).
+ *
+ * The flag is the one stored fact in the standings, so it is the one thing here that no
+ * recomputation can catch: every other figure the table shows is derived from the rounds and
+ * cannot drift from them. A flag on a fully-scored evening pays nobody and claims the organizer
+ * answered a question they were never asked, which is exactly the kind of drift the referee is
+ * for. A round slot nobody generated does not rescue it — a slot is not a fixture (§2).
+ */
+function assertCompensationIsOwed(session: Session): void {
+  if (session.compensatedUnplayed && abandonedRounds(session).length === 0) {
+    throw new Error(
+      `Session "${session.id}" compensates its abandoned rounds, but has nothing to compensate — ` +
+        'every generated round has been scored.',
+    );
   }
 }
 

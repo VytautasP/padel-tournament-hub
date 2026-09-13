@@ -7,7 +7,7 @@ import {
   recordScore,
 } from './public-api';
 import type { Session, TeamId, TeamStanding } from './public-api';
-import { americanoConfig } from './test-support/session-fixtures';
+import { americanoConfig, compensating } from './test-support/session-fixtures';
 import { scoredTeamSession, teamAmericanoConfig } from './test-support/team-fixtures';
 
 function standingOf(standings: readonly TeamStanding[], teamId: TeamId): TeamStanding {
@@ -56,6 +56,7 @@ describe('computeTeamStandings', () => {
       tied: 0,
       lost: 0,
       benched: 1,
+      compensated: 0,
     });
 
     assertSessionValid(session);
@@ -145,6 +146,92 @@ describe('computeTeamStandings', () => {
     );
 
     expect(standingOf(standings, 't1').matchesPlayed).toBe(1);
+  });
+
+  describe('compensation', () => {
+    it('pays a team an abandoned round the same as the bye in it', () => {
+      // Decision #2c one more time: teams scheduled onto a court and teams resting are paid
+      // identically, because the rotation must not decide the table at the final whistle either.
+      const standings = computeTeamStandings(
+        compensating(scoredTeamSession([[{ sideA: 't1', sideB: 't2' }]], { teamCount: 3 })),
+      );
+
+      expect(standingOf(standings, 't1')).toMatchObject({
+        points: 12,
+        compensated: 1,
+        benched: 0,
+        matchesPlayed: 0,
+      });
+      expect(standingOf(standings, 't3')).toMatchObject({ points: 12, compensated: 1, benched: 0 });
+    });
+
+    it('pays nothing unless the organizer said so', () => {
+      const standings = computeTeamStandings(
+        scoredTeamSession([[{ sideA: 't1', sideB: 't2' }]], { teamCount: 3 }),
+      );
+
+      expect(standingOf(standings, 't1')).toMatchObject({ points: 0, compensated: 0 });
+      expect(standingOf(standings, 't3')).toMatchObject({ points: 0, compensated: 0 });
+    });
+
+    it('pays only the unscored courts of a half-scored round', () => {
+      const standings = computeTeamStandings(
+        compensating(
+          scoredTeamSession(
+            [
+              [
+                { sideA: 't1', sideB: 't2', score: [16, 8] },
+                { sideA: 't3', sideB: 't4' },
+              ],
+            ],
+            { teamCount: 5 },
+          ),
+        ),
+      );
+
+      expect(standingOf(standings, 't1')).toMatchObject({ points: 16, compensated: 0 });
+      expect(standingOf(standings, 't3')).toMatchObject({ points: 12, compensated: 1 });
+      expect(standingOf(standings, 't5')).toMatchObject({ points: 12, compensated: 1 });
+    });
+
+    it('pays a team that needs a partner nothing, because it was not available', () => {
+      // t3 lost half its pair before the round, so it is orphaned rather than resting
+      // (decision #2b) and the round could not have scheduled it (ADR-0037 §9).
+      const session = scoredTeamSession([[{ sideA: 't1', sideB: 't2' }]], { teamCount: 3 });
+      const orphaned = {
+        ...session,
+        roster: session.roster.map((entry) =>
+          entry.id === 'p5' ? { ...entry, leftAfterRound: 0 } : entry,
+        ),
+      };
+
+      const standings = computeTeamStandings(compensating(orphaned));
+
+      expect(standingOf(standings, 't3')).toMatchObject({ points: 0, compensated: 0 });
+      expect(standingOf(standings, 't1')).toMatchObject({ points: 12, compensated: 1 });
+    });
+
+    it("reads the same on a player's line as on their team's", () => {
+      // A player's evening is their team's evening read off their own name (ADR-0011), and
+      // compensation is no exception: both halves of t3 are paid what t3 is paid.
+      const session = compensating(
+        scoredTeamSession([[{ sideA: 't1', sideB: 't2' }]], { teamCount: 3 }),
+      );
+
+      const teams = computeTeamStandings(session);
+      const players = computeStandings(session);
+
+      expect(standingOf(teams, 't3')).toMatchObject({ points: 12, compensated: 1 });
+      expect(players.find((standing) => standing.playerId === 'p5')).toMatchObject({
+        points: 12,
+        compensated: 1,
+        benched: 0,
+      });
+      expect(players.find((standing) => standing.playerId === 'p6')).toMatchObject({
+        points: 12,
+        compensated: 1,
+      });
+    });
   });
 
   it('refuses to rank teams in a mode that has none', () => {

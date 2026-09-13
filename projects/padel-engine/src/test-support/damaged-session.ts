@@ -28,9 +28,11 @@ export interface MutableMatch {
 
 export interface MutableSession extends Omit<
   Session,
-  'id' | 'status' | 'roster' | 'teams' | 'rounds'
+  'id' | 'status' | 'roster' | 'teams' | 'rounds' | 'compensatedUnplayed'
 > {
   id: string;
+  /** The organizer's answer about the abandoned rounds, writable so a test can promise a lie. */
+  compensatedUnplayed?: true;
   /** Widened to `string`, so a test can damage a session with a status the engine never sets. */
   status: string;
   roster: {

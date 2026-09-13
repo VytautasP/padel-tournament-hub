@@ -16,6 +16,12 @@
  *   - **A credit is one round, not one sum.** How many were earned is a figure the table shows: it
  *     is the term that explains why a record of matches does not add up to a total of points.
  *
+ * The same two conditions, read the other way round, say which rounds an evening *abandoned*, so
+ * compensation (ADR-0037) lives here too: it is the same arithmetic asked about the rounds the
+ * bench credit has nothing to say about. A round is one or the other and never both — paid because
+ * every match in it is scored, or abandoned because one is not — which is what keeps a competitor
+ * from being paid twice for the same round.
+ *
  * Who was benched is the caller's half, because that is where the levels genuinely differ: a
  * player is benched by the rotation, a team is on a bye (decision #2c), and neither is the same
  * thing as being absent — a late arrival, a player who went home, an orphaned team and the
@@ -23,7 +29,7 @@
  * nothing (ADR-0023 §3).
  */
 import type { Credit } from './ranking';
-import type { Round, Session } from './model';
+import type { Match, Round, Session } from './model';
 
 /** What one benched round is worth: exactly a drawn match, halves and all. */
 export function creditPerRound(session: Session): number {
@@ -58,4 +64,50 @@ export function creditsFor(
   const points = creditPerRound(session);
 
   return paidRounds(session).flatMap((round) => benchedIn(round).map((id) => ({ id, points })));
+}
+
+/**
+ * The rounds an ending abandoned: generated, and still holding a match nobody scored (ADR-0037 §2).
+ *
+ * The exact complement of `paidRounds` among the generated rounds, which is the property that
+ * matters — a round pays a bench credit or it pays compensation, never both. An ungenerated round
+ * is in neither list: a slot is a number in a form field rather than a fixture, and paying for
+ * those would let an evening be inflated by asking for thirty rounds.
+ */
+export function abandonedRounds(session: Session): readonly Round[] {
+  return session.rounds.filter(
+    (round) => round.matches.length > 0 && round.matches.some((match) => match.score === undefined),
+  );
+}
+
+/**
+ * One compensation per competitor per abandoned round they were available for — if the organizer
+ * said so, and nothing at all if they did not (ADR-0037 §1).
+ *
+ * `availableIn` is the round's whole field, scheduled and benched alike, because ending early must
+ * not become a penalty for wherever the rotation happened to put you (ADR-0037 §3). `scoredIn` is
+ * how a half-played round is settled: the courts that finished, finished, so whoever they put on
+ * court was paid by the match and is not paid again here. Both are the caller's half for the same
+ * reason `creditsFor`'s is — a competitor is a player at one level and a team at the other.
+ */
+export function compensationsFor(
+  session: Session,
+  availableIn: (round: Round) => readonly string[],
+  scoredIn: (match: Match) => readonly string[],
+): readonly Credit[] {
+  if (!session.compensatedUnplayed) {
+    return [];
+  }
+
+  const points = creditPerRound(session);
+
+  return abandonedRounds(session).flatMap((round) => {
+    const alreadyPaid = new Set(
+      round.matches.filter((match) => match.score !== undefined).flatMap(scoredIn),
+    );
+
+    return availableIn(round)
+      .filter((id) => !alreadyPaid.has(id))
+      .map((id) => ({ id, points }));
+  });
 }

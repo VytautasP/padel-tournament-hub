@@ -172,6 +172,17 @@ export interface Session {
   /** Fixed point total per match (decision #3). */
   readonly targetScore: number;
   readonly rounds: readonly Round[];
+  /**
+   * The organizer said the evening's abandoned rounds should be paid for (ADR-0037).
+   *
+   * The one stored fact in the standings, and the only kind there will be: everything else the
+   * table shows is computed on every read (decision #17), but whether a night that stopped early
+   * owes anybody anything is a judgement about the room that no reading of the rounds recovers.
+   *
+   * Written by `finishSession` at the instant the document freezes, so it can never disagree with
+   * anything later. Absent means no — which is every session ever written before this one.
+   */
+  readonly compensatedUnplayed?: true;
 }
 
 /** Everything `createSession` needs to build a schedulable session. */
