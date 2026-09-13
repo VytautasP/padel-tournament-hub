@@ -1,17 +1,20 @@
 @if (scored()) {
   <!--
     A scored court: each number on its own team's row, right of the name and on its baseline, so
-    the result is read rather than decoded.
+    the result is read rather than decoded — and the winning row sitting on a tinted fill, which is
+    where the emphasis moved to when the card lost its border (ADR-0035 §2, move 5).
   -->
-  <div class="flex flex-col gap-1">
-    <span class="text-micro font-bold text-ink-muted uppercase">
+  <div class="flex flex-col gap-1.5">
+    <span class="text-micro px-1 font-bold text-ink-muted uppercase">
       {{ court().name }}
     </span>
     @for (side of sides(); track side.letter) {
       @if (!$first) {
-        <span class="text-micro font-bold text-ink-muted uppercase">{{ copy.round.versus }}</span>
+        <span class="text-micro px-3 font-bold text-ink-muted uppercase">
+          {{ copy.round.versus }}
+        </span>
       }
-      <div class="flex items-baseline gap-3">
+      <div class="flex items-center gap-3 rounded-control px-3 py-2" [class]="side.fill">
         <span class="text-name min-w-0 flex-1 text-ink">
           <app-side [side]="side.view" />
         </span>
@@ -22,22 +25,36 @@
 } @else {
   <!--
     A court still playing: the names in a column, and the one thing there is to say about the
-    result beside them.
+    result beside them — now a chip rather than grey text, because an unscored court is a thing
+    still to do and a chip says so at a glance where a muted sentence does not (ADR-0035 §2,
+    move 5).
+
+    The chip sits after the names rather than up on the court's own line, which is where the canvas
+    drew it. The card is read aloud in the order it is written — `Court 1, Ana & Ben, v, Cara &
+    Dan, No score yet` — and moving the chip would reorder that sentence for a screen reader and
+    for the DOM test seam alike, to buy a row of the drawing back. The chip is the move; where it
+    sits is the board's taste, and this one is not free.
   -->
-  <div class="flex items-center gap-4">
-    <span class="flex min-w-0 flex-1 flex-col gap-1">
-      <span class="text-micro font-bold text-ink-muted uppercase">
+  <div class="flex items-center gap-3">
+    <span class="flex min-w-0 flex-1 flex-col gap-1.5">
+      <span class="text-micro px-1 font-bold text-ink-muted uppercase">
         {{ court().name }}
       </span>
       @for (side of sides(); track side.letter) {
         @if (!$first) {
-          <span class="text-micro font-bold text-ink-muted uppercase">{{ copy.round.versus }}</span>
+          <span class="text-micro px-3 font-bold text-ink-muted uppercase">
+            {{ copy.round.versus }}
+          </span>
         }
-        <span class="text-name text-ink">
+        <span class="text-name px-3 text-ink">
           <app-side [side]="side.view" />
         </span>
       }
     </span>
-    <span class="text-meta whitespace-nowrap text-ink-muted">{{ copy.round.noScore }}</span>
+    <span
+      class="text-meta rounded-full bg-surface-sunken px-2.5 py-1 whitespace-nowrap text-ink-muted"
+    >
+      {{ copy.round.noScore }}
+    </span>
   </div>
 }

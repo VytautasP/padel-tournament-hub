@@ -22,7 +22,7 @@
  * in every mode, Team Americano included, where a player's line is their team's evening read off
  * their own name.
  */
-import { creditsFor } from './bench-credit';
+import { compensationsFor, creditsFor } from './bench-credit';
 import { deepFreeze } from './freeze';
 import type { PlayerId, Round, Session } from './model';
 import { playedMatches } from './played-matches';
@@ -30,7 +30,7 @@ import type { PlayedMatch } from './played-matches';
 import { placings } from './ranking';
 import { availableIn } from './roster-availability';
 import { assertSessionShape } from './session-shape';
-import { teamLineupIn, teamPlayIn, teamsOnByeIn } from './teams';
+import { teamLineupIn, teamPlayIn, teamsAvailableIn, teamsOnByeIn } from './teams';
 
 /**
  * One player's line in the table.
@@ -49,7 +49,10 @@ export interface Standing {
   readonly joint: boolean;
   /** Matches with a recorded score. A court still playing counts for nothing. */
   readonly matchesPlayed: number;
-  /** Points scored across those matches, plus a bench credit for every round sat out. */
+  /**
+   * Points scored across those matches, plus a bench credit for every round sat out and
+   * compensation for every abandoned round this player was available for.
+   */
   readonly points: number;
   /** Matches whose other side scored fewer points. */
   readonly won: number;
@@ -59,6 +62,12 @@ export interface Standing {
   readonly lost: number;
   /** Rounds sat out and paid for — the term that explains the gap between the record and the points. */
   readonly benched: number;
+  /**
+   * Abandoned rounds this player was paid for, because the organizer said the evening owed them
+   * (ADR-0037). Its own column rather than folded into `benched`, so a reader can still add the
+   * total up by hand and so the table never claims a player sat out a round it scheduled them into.
+   */
+  readonly compensated: number;
 }
 
 /** The standings, ranked, one line per roster entry. Frozen, like every other engine result. */
@@ -75,9 +84,14 @@ export function computeStandings(session: Session): readonly Standing[] {
     })),
   );
   const credits = creditsFor(session, (round) => benchedIn(session, round));
+  const compensations = compensationsFor(
+    session,
+    (round) => playersAvailableIn(session, round),
+    (match) => [...match.sideA, ...match.sideB],
+  );
 
   return deepFreeze(
-    placings(entrants, results, credits).map((placing) => ({
+    placings(entrants, results, { credits, compensations }).map((placing) => ({
       playerId: placing.id,
       name: placing.name,
       position: placing.position,
@@ -88,6 +102,7 @@ export function computeStandings(session: Session): readonly Standing[] {
       tied: placing.tied,
       lost: placing.lost,
       benched: placing.benched,
+      compensated: placing.compensated,
     })),
   );
 }
@@ -115,6 +130,27 @@ function benchedIn(session: Session, round: Round): readonly PlayerId[] {
   return availableIn(session, round.number)
     .map((entry) => entry.id)
     .filter((id) => !onCourt.has(id));
+}
+
+/**
+ * The players this round could have put on a court — the whole field it was answerable for.
+ *
+ * The bench's superset, and what compensation is owed to (ADR-0037 §3): a round that never
+ * happened owes the players it scheduled and the players it benched the same thing, because
+ * otherwise ending early becomes a penalty for wherever the rotation put you.
+ *
+ * Team Americano asks it one level up for the same reason `benchedIn` does — a player is
+ * available here because *their team* is, so the stranded half of a broken pair is left out by
+ * reading the teams rather than the roster (decision #2b).
+ */
+function playersAvailableIn(session: Session, round: Round): readonly PlayerId[] {
+  if (teamPlayIn(session).plays) {
+    return teamsAvailableIn(session, round.number).flatMap((team) =>
+      teamLineupIn(team, session.roster, round.number),
+    );
+  }
+
+  return availableIn(session, round.number).map((entry) => entry.id);
 }
 
 /** Both sides of a played match: who was on it, what it scored, and who it was against for how much. */

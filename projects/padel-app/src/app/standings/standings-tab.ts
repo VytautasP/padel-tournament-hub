@@ -37,14 +37,25 @@ export class StandingsTab {
   protected readonly ended = this.store.ended;
 
   /**
-   * End the evening, once the organizer has read what that freezes.
+   * End the evening, once the organizer has read what that freezes — and, where the evening has
+   * left something unplayed, once they have said whether it owes anybody anything (ADR-0037 §1).
    *
    * The confirmation is not politeness. The engine offers no undo (ADR-0009), so this tap is the
    * last moment anything about the evening can be changed, and the sheet is where it says so.
+   *
+   * The further question is attached only where there is something to answer it with, which is
+   * what keeps an ordinary ending a single tap on a single sentence. Its answer is carried
+   * straight into `end` rather than held anywhere: it is the organizer's judgement about the room,
+   * and the only place it is ever kept is the frozen document the engine writes it onto.
    */
   protected async end(): Promise<void> {
-    if (await this.confirm.granted(copy.standings.endConfirm)) {
-      await this.store.end();
+    const { confirmed, answeredYes } = await this.confirm.answered({
+      ...copy.standings.endConfirm,
+      ...(this.store.hasAbandonedRounds() ? { question: copy.standings.compensate } : {}),
+    });
+
+    if (confirmed) {
+      await this.store.end({ compensateUnplayed: answeredYes });
     }
   }
 }

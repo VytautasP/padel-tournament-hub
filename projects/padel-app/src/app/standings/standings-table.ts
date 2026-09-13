@@ -71,6 +71,25 @@ export class StandingsTable {
   protected readonly podium = computed(() => podiumOf(this.standings()));
   protected readonly metalInk = METAL_INK;
 
+  /**
+   * Whether an expanded row carries the compensation term at all (ADR-0037 §8).
+   *
+   * It is asked of the evening rather than of the row, which is the whole of why it is here and
+   * not in the template. Compensation is paid on an evening the organizer said yes about, and on
+   * such an evening a competitor who was paid *nothing* — the player who had gone home, the team
+   * that needed a partner (ADR-0037 §3) — has a zero that is a fact about them rather than an
+   * empty column: their row is the one that has to be able to say the evening paid and it did not
+   * pay them. Asked row by row, that row would go silent precisely where it has something to say.
+   *
+   * So the term appears on every row or on none, and the table reads the answer off the only thing
+   * it is given. An evening that paid somebody has a competitor with a figure in it; an ordinary
+   * evening, where nobody was asked the question, has none — and a column of zeroes down every
+   * line of one of those would be an answer to a question nobody put.
+   */
+  protected readonly showsCompensation = computed(() =>
+    this.standings().some((standing) => standing.compensated > 0),
+  );
+
   protected isExpanded(id: PlayerId | TeamId): boolean {
     return this.expanded().includes(id);
   }

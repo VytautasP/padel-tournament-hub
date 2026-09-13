@@ -17,7 +17,7 @@
  * typo in round 6 re-marks round 1 rather than leaving it wrong. Nothing in this file stores it,
  * and there is nowhere it could be stored.
  */
-import { sameGenderSides, teamsOnByeIn } from 'padel-engine';
+import { courtsUnusedByStrictMixing, sameGenderSides, teamsOnByeIn } from 'padel-engine';
 import type { MatchId, MatchScore, PlayerId, Session } from 'padel-engine';
 import { benchedIn } from '../session/bench';
 import { courtNameFor } from '../session/court-names';
@@ -65,6 +65,20 @@ export interface RoundView {
    * repair is offered (ADR-0012).
    */
   readonly bye: readonly string[];
+  /**
+   * The booked courts this round left empty because strict mixing had nobody to staff them, by
+   * the names the organizer calls them (ADR-0036 §8).
+   *
+   * The sentence that replaces the star. A strict session marks no pair, because it forms none —
+   * what its bench asks instead is why it is sitting out while a court stands free, and the answer
+   * is the rule the evening was created under. Named courts rather than numbers, because the
+   * organizer's club booked courts 7 and 8 (ADR-0017 §6) and a note about "court 2" would be a
+   * note about a court nobody can find.
+   *
+   * Empty in every other session, which is where the screens rendering it decide nothing: the
+   * list is the whole of whether there is a line to draw.
+   */
+  readonly unusedCourts: readonly string[];
   /**
    * Whether anything in this round carries the mark — which is whether the legend explaining it
    * is worth the line it takes.
@@ -117,6 +131,9 @@ export function roundView(
     courts,
     bench: asTeams ? [] : benchedIn(session, roundNumber).map((entry) => entry.name),
     bye: asTeams ? teamsOnByeIn(session, roundNumber).map((team) => teamNameIn(session, team)) : [],
+    unusedCourts: courtsUnusedByStrictMixing(session, roundNumber).map((courtNumber) =>
+      courtNameFor(courtNames, courtNumber),
+    ),
     hasSameGenderPair: courts.some((court) => court.sideA.sameGender || court.sideB.sameGender),
   };
 }

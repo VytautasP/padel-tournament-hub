@@ -7,7 +7,8 @@
  * refuses to build is described in exactly the same words as a session that has drifted into
  * the same state.
  */
-import type { RosterEntry, Session, SessionMode, Team } from './model';
+import { genderSplit, mixedCourtsFor, mixedPairingIn } from './mixed-pairing';
+import type { Gender, RosterEntry, Session, SessionMode, Team } from './model';
 import { availableIn, hasLeft, joinedAtRound, leftAfterRound } from './roster-availability';
 import { membersOf, PLAYERS_PER_TEAM, teamLineupIn, teamPlayIn, teamsAvailableIn } from './teams';
 
@@ -16,6 +17,30 @@ export const TEAMS_PER_COURT = 2;
 
 /** Players per match — two per side, four per court. */
 export const PLAYERS_PER_COURT = 4;
+
+/**
+ * How many courts a set of players staffs, under the rule they are playing by.
+ *
+ * The whole of the arithmetic ADR-0036 §2 made a choice: four to a court under every rule but
+ * strict mixing, and two women and two men to a court under that one. Held to the courts booked,
+ * because an organizer books courts before they know who turns up.
+ *
+ * Exported over genders rather than over a session because the organizer is owed the number
+ * *before* there is a session to ask it of: the create wizard shows the courts the roster being
+ * typed will actually fill, under the rule now chosen. A wizard that worked that out for itself
+ * would be a second opinion about the one thing the organizer is being asked to weigh — so this
+ * is the function the wizard's promise and the round's schedule are both answered by.
+ */
+export function courtsFilledBy(
+  genders: readonly (Gender | undefined)[],
+  courtCount: number,
+  strictMixing: boolean,
+): number {
+  return Math.min(
+    courtCount,
+    strictMixing ? mixedCourtsFor(genders) : Math.floor(genders.length / PLAYERS_PER_COURT),
+  );
+}
 
 /**
  * How many courts this session can fill in one particular round.
@@ -39,9 +64,44 @@ export function courtsInPlay(session: Session, roundNumber: number): number {
     return Math.min(session.courtCount, Math.floor(teams / TEAMS_PER_COURT));
   }
 
-  const available = availableIn(session, roundNumber).length;
+  // A strict Mixicano fills a court with two women and two men or does not fill it at all
+  // (ADR-0036 §2), so the question it asks of the round is how many *mixed* courts the players
+  // here can staff. Seven women and three men make one, where the four-a-court count makes two.
+  return courtsFilledBy(
+    availableIn(session, roundNumber).map((entry) => entry.gender),
+    session.courtCount,
+    mixedPairingIn(session).strict,
+  );
+}
 
-  return Math.min(session.courtCount, Math.floor(available / PLAYERS_PER_COURT));
+/**
+ * The booked courts this round leaves empty because strict mixing had nobody to staff them
+ * (ADR-0036 §8), by court number.
+ *
+ * The question the star used to answer, asked the other way round. In a strict evening the
+ * organizer is not explaining a pairing, they are explaining a bench — and "why am I sitting out
+ * while court 2 is empty?" has exactly one honest answer, which is the rule they chose.
+ *
+ * Only the courts *strictness* emptied are named. A court nobody could have filled anyway — nine
+ * players on three courts leave the third empty under every rule there is — is not strict mixing's
+ * doing, and saying it was would teach an organizer to blame the choice for the size of the room.
+ * So the count is against what this round would have filled four-to-a-court, not against what was
+ * booked. Empty for every session that does not mix strictly, which is where it is asked from:
+ * the printout and the Round tab render nothing at all rather than deciding whether to.
+ */
+export function courtsUnusedByStrictMixing(
+  session: Session,
+  roundNumber: number,
+): readonly number[] {
+  if (!mixedPairingIn(session).strict) {
+    return [];
+  }
+
+  const genders = availableIn(session, roundNumber).map((entry) => entry.gender);
+  const staffable = courtsFilledBy(genders, session.courtCount, false);
+  const inPlay = courtsInPlay(session, roundNumber);
+
+  return Array.from({ length: Math.max(staffable - inPlay, 0) }, (_, index) => inPlay + index + 1);
 }
 
 export function assertSessionShape(session: Session): void {
@@ -90,6 +150,7 @@ export function assertSessionShape(session: Session): void {
   }
 
   assertTeamsSound(session);
+  assertStrictMixingSound(session);
 
   session.rounds.forEach((round, index) => {
     if (round.number !== index + 1) {
@@ -106,6 +167,39 @@ export function assertSessionShape(session: Session): void {
   }
 
   assertEveryRoundStaffable(session);
+}
+
+/**
+ * The strict-mixing flag: held by the one mode that has a use for it, and only by a roster that
+ * can play under it.
+ *
+ * Both halves are properties of the document rather than of a prefix, so like every other rule in
+ * this file they are checked over the whole roster at once — which is also what keeps a departure
+ * from making a valid session invalid. Whether the players still *here* can fill a court is
+ * `courtsInPlay`'s question, asked per round and answered in courts rather than in errors.
+ *
+ * Two of each gender is the floor because below it `floor(min(women, men) / 2)` is zero: a round
+ * with no matches in it at all, which is not a session (ADR-0036 §5). The organizer who wants
+ * that evening anyway has hybrid fill.
+ */
+function assertStrictMixingSound(session: Session): void {
+  if (session.strictMixing === undefined) {
+    return;
+  }
+  if (session.mode !== 'mixicano') {
+    throw new Error(`Only Mixicano mixes strictly — this session is ${session.mode}.`);
+  }
+  if (!session.strictMixing) {
+    return;
+  }
+
+  const { women, men } = genderSplit(session.roster.map((entry) => entry.gender));
+  if (women < PER_GENDER_PER_COURT || men < PER_GENDER_PER_COURT) {
+    throw new Error(
+      `Strict mixing needs at least ${PER_GENDER_PER_COURT} women and ` +
+        `${PER_GENDER_PER_COURT} men — this roster has ${women} and ${men}.`,
+    );
+  }
 }
 
 /**
@@ -287,6 +381,9 @@ function assertLineupIsAPair(session: Session, team: Team): void {
     }
   }
 }
+
+/** A court takes two of each gender, which is what makes two of each the smallest strict roster. */
+const PER_GENDER_PER_COURT = PLAYERS_PER_COURT / 2;
 
 const MODES: readonly SessionMode[] = ['americano', 'mixicano', 'team-americano'];
 

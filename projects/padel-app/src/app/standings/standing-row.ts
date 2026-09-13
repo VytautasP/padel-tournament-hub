@@ -32,12 +32,17 @@ export interface StandingRow {
   readonly position: number;
   readonly joint: boolean;
   readonly matchesPlayed: number;
-  /** The ranking figure: points scored, plus a bench credit for every round sat out (ADR-0023). */
+  /**
+   * The ranking figure: points scored, plus a bench credit for every round sat out (ADR-0023),
+   * plus compensation for every abandoned round they were available for (ADR-0037).
+   */
   readonly points: number;
   readonly won: number;
   readonly tied: number;
   readonly lost: number;
   readonly benched: number;
+  /** Abandoned rounds this competitor was paid for, where the organizer said so (ADR-0037 §8). */
+  readonly compensated: number;
 }
 
 /**
@@ -92,5 +97,6 @@ function row(id: PlayerId | TeamId, standing: Omit<Standing, 'playerId'>): Stand
     tied: standing.tied,
     lost: standing.lost,
     benched: standing.benched,
+    compensated: standing.compensated,
   };
 }

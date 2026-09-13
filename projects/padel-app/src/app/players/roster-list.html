@@ -1,23 +1,17 @@
 <!--
-  Divided rather than carded, like the standings table: the list is read straight down a column
+  One card holding every player, like the standings table: the list is read straight down a column
   of names, and a gap between every line is a gap the eye has to cross once per player.
 
-  A row that has opened takes a brand outline instead of its divider, which is what makes the
-  control underneath read as belonging to the name above it rather than to the row below.
+  The hairline dividers go with the borders (ADR-0035 §2, move 1). What separates the rows is the
+  card's own padding around the lot and two pixels between them, which is enough inside one
+  surface. A row that has opened takes a brand outline, which is what makes the control underneath
+  read as belonging to the name above it rather than to the row below.
 -->
-<ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+<ul class="card flex flex-col gap-0.5 p-2">
   @for (row of rows(); track row.id) {
-    <!--
-      An open row pulls itself up a pixel so its outline lands *on* the divider it replaces
-      rather than beside it, which is what stops the whole list below shifting as one opens.
-    -->
     <li
-      class="flex flex-col gap-[10px] px-[18px] pt-[9px]"
-      [class]="
-        isExpanded(row)
-          ? '-mt-px border border-brand pb-[14px]'
-          : 'border-b border-line pb-[9px] last:border-b-0'
-      "
+      class="flex flex-col gap-[10px] rounded-control px-3 pt-[5px]"
+      [class]="isExpanded(row) ? 'border border-brand pb-3' : 'pb-[5px]'"
     >
       <!--
         The line stands at its drawn height whether or not it carries the overflow, so a row that
@@ -47,7 +41,7 @@
         -->
         @if (row.gone) {
           <span
-            class="text-meta shrink-0 rounded-full border border-line bg-surface-sunken px-[11px] py-[5px] text-ink-muted"
+            class="text-meta shrink-0 rounded-full bg-surface-sunken px-[11px] py-[5px] text-ink-muted"
           >
             {{ copy.players.gone }}
           </span>
@@ -56,6 +50,11 @@
             The one warning on this screen, in the one pair of tokens that means warning. It is a
             problem the organizer has to solve before the evening can field this team again —
             unlike everything else a row says, which is only a report.
+
+            It is the one chip that keeps an outline when the rest of the app trades borders for
+            fills (ADR-0035 §2, move 5). That is the point: every other badge on this row is a
+            report and is now borderless, so the one that is a job to do is the one thing left on
+            the screen with a line drawn around it.
           -->
           <span
             class="text-meta shrink-0 rounded-full border border-warning bg-warning-surface px-[11px] py-[5px] font-bold text-warning"
@@ -96,8 +95,10 @@
             (click)="toggleOptions(row.id)"
           >
             <span
-              class="text-control flex size-[34px] items-center justify-center rounded-full border"
-              [class]="isOpen(row.id) ? 'border-brand text-brand' : 'border-line text-ink-muted'"
+              class="text-control flex size-[34px] items-center justify-center rounded-full"
+              [class]="
+                isOpen(row.id) ? 'bg-brand-wash text-brand' : 'bg-surface-sunken text-ink-muted'
+              "
             >
               {{ copy.players.optionsGlyph }}
             </span>
@@ -116,7 +117,7 @@
       @if (canAssignPartner(row) && row.team !== null) {
         <button
           type="button"
-          class="text-control flex h-12 items-center justify-center rounded-[14px] bg-brand font-bold text-brand-ink"
+          class="text-control flex h-12 items-center justify-center rounded-full bg-brand font-bold text-brand-ink"
           [attr.aria-label]="copy.players.assignPartnerTo(row.team)"
           (click)="assignPartner(row)"
         >
@@ -130,15 +131,19 @@
         and is simply in no later round. A red button would be saying somebody is about to be
         deleted, which is exactly what this is not (CONTEXT.md, ADR-0015).
 
-        It is set exactly as the repair above it. The two canvas boards draw these at different
-        weights, and the app has already answered that question everywhere else it fills a button
-        with the brand: one weight, so a row's control is not read as two different kinds of
-        thing depending on which board it was drawn on.
+        It is set exactly as the repair above it. The canvas boards draw these at different
+        weights — the Modern board outlines this one — and the app has already answered that
+        question everywhere else it fills a button with the brand: one weight, so a row's control
+        is not read as two different kinds of thing depending on which board it was drawn on.
+
+        Filled brand rather than a gradient pill, and that distinction is the whole of move 4's
+        meaning: a gradient pill carrying the brand shadow is *the* thing to tap on a screen, and
+        there is one of those per screen. This is a control inside a row inside a list.
       -->
       @if (isOpen(row.id)) {
         <button
           type="button"
-          class="text-control flex h-12 items-center justify-center rounded-[14px] bg-brand font-bold text-brand-ink"
+          class="text-control flex h-12 items-center justify-center rounded-full bg-brand font-bold text-brand-ink"
           (click)="goHome(row)"
         >
           {{ copy.players.wentHome }}

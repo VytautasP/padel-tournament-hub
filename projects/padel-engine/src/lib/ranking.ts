@@ -10,10 +10,10 @@
  * competitors to rank.
  *
  * What a competitor *is* stays with the caller: this file is handed ids, names, the results they
- * earned and the credits they are owed, and never asks whether an id belongs to a person or to a
+ * earned and the payments they are owed, and never asks whether an id belongs to a person or to a
  * pair. Nothing here reads a session, so nothing here can disagree with what the session says a
- * result was — including *which* rounds owe a credit, which is a question about the document and
- * is answered before anything gets here.
+ * result was — including *which* rounds owe a bench credit and which owe compensation (ADR-0037),
+ * which is a question about the document and is answered before anything gets here.
  */
 
 /** Somebody being ranked: a player, or a team. */
@@ -39,17 +39,41 @@ export interface Result {
 }
 
 /**
- * One round a competitor sat out, and what that round pays them (ADR-0023 §2).
+ * One round a competitor was paid for without playing it, and what that round pays them.
  *
- * A credit is one round rather than one sum, because the count of them is a figure the table
+ * Two things arrive in this shape and are counted in two different columns: a bench credit for a
+ * round that happened and they sat out (ADR-0023 §2), and compensation for a round that did not
+ * happen at all (ADR-0037). Nothing here can tell them apart, and nothing here needs to — they are
+ * the same arithmetic answering two different questions, and which question is being answered is
+ * settled by which list the caller puts them in.
+ *
+ * A payment is one round rather than one sum, because the count of them is a figure the table
  * shows: it is the term that explains why a record of matches does not add up to a total of
- * points. Whether a round owes one at all — complete, and a bench rather than an absence — is
- * settled by the caller, which is the half of this that needs a session to answer.
+ * points. Whether a round owes one at all — and to whom — is the half of this that needs a session
+ * to answer, and it is answered before anything gets here.
  */
 export interface Credit {
   readonly id: string;
   readonly points: number;
 }
+
+/**
+ * What a competitor is owed for rounds they did not play, in the two columns that count them.
+ *
+ * Both halves are the same arithmetic and arrive in the same shape, so the only thing that tells
+ * them apart is which field they were put in — and a pair of positional lists would let a caller
+ * swap them silently. Naming them is what stops the table saying a player sat out a round it
+ * scheduled them into.
+ */
+export interface Payments {
+  /** Rounds that were played and this competitor sat out (ADR-0023 §2). Counted as `benched`. */
+  readonly credits: readonly Credit[];
+  /** Abandoned rounds this competitor was available for (ADR-0037). Counted as `compensated`. */
+  readonly compensations: readonly Credit[];
+}
+
+/** Owed nothing: what the head-to-head tier ranks on, where no round pays anybody. */
+const NOTHING_OWED: Payments = { credits: [], compensations: [] };
 
 /** One competitor's line in the table, before the caller names its id field. */
 export interface Placing {
@@ -61,7 +85,7 @@ export interface Placing {
   readonly joint: boolean;
   /** Results with a recorded score. A court still playing counts for nothing. */
   readonly matchesPlayed: number;
-  /** Points scored across those results, plus every bench credit earned. The ranking figure. */
+  /** Points scored, plus every bench credit and compensation paid. The ranking figure. */
   readonly points: number;
   /** Matches whose other side scored fewer points. */
   readonly won: number;
@@ -71,6 +95,8 @@ export interface Placing {
   readonly lost: number;
   /** Rounds sat out and paid for. Neither a match played nor any of the three above. */
   readonly benched: number;
+  /** Abandoned rounds paid for (ADR-0037). Counted apart from the bench, and from the record. */
+  readonly compensated: number;
 }
 
 /**
@@ -79,7 +105,7 @@ export interface Placing {
  * The same shape answers two different questions — the whole session for the ranking, and the
  * results inside a tied group for the head-to-head tier — which is why one fold builds both and
  * one comparison orders both. The head-to-head reading is asked of results only, so the record and
- * the credits on it come along for the ride and nothing reads them.
+ * the payments on it come along for the ride and nothing reads them.
  */
 interface Tally {
   readonly id: string;
@@ -90,15 +116,16 @@ interface Tally {
   tied: number;
   lost: number;
   benched: number;
+  compensated: number;
 }
 
 /** The competitors, ranked: one line each, in table order. */
 export function placings(
   entrants: readonly Entrant[],
   results: readonly Result[],
-  credits: readonly Credit[] = [],
+  payments: Payments = NOTHING_OWED,
 ): readonly Placing[] {
-  const ranked = rank(tally(entrants, results, credits), results);
+  const ranked = rank(tally(entrants, results, payments), results);
 
   return ranked.flatMap((group, index) =>
     group.map((entry) => ({
@@ -112,24 +139,26 @@ export function placings(
       tied: entry.tied,
       lost: entry.lost,
       benched: entry.benched,
+      compensated: entry.compensated,
     })),
   );
 }
 
 /**
- * Fold results and credits into one tally per competitor, in the order the competitors were given.
+ * Fold results and payments into one tally per competitor, in the order the competitors were given.
  *
  * Seeded from a list of entrants rather than discovered from the results, so a competitor who has
  * not been on court gets a line of zeroes instead of being missing, and an id that appears in a
  * result but not in the seed is ignored rather than conjuring a rival. `counts` decides whether a
  * result belongs in the tally, which is the only thing the head-to-head tier needs to say
  * differently: it counts a result only where it was earned against the tied group, and it is
- * handed no credits at all, because a credit was earned against nobody.
+ * handed no payments at all, because neither a credit nor a compensation was earned against
+ * anybody.
  */
 function tally(
   entrants: readonly Entrant[],
   results: readonly Result[],
-  credits: readonly Credit[],
+  payments: Payments,
   counts: (against: readonly string[]) => boolean = () => true,
 ): Tally[] {
   const tallies = new Map<string, Tally>(
@@ -144,6 +173,7 @@ function tally(
         tied: 0,
         lost: 0,
         benched: 0,
+        compensated: 0,
       },
     ]),
   );
@@ -162,11 +192,19 @@ function tally(
     }
   }
 
-  for (const credit of credits) {
+  for (const credit of payments.credits) {
     const entry = tallies.get(credit.id);
     if (entry) {
       entry.points += credit.points;
       entry.benched++;
+    }
+  }
+
+  for (const compensation of payments.compensations) {
+    const entry = tallies.get(compensation.id);
+    if (entry) {
+      entry.points += compensation.points;
+      entry.compensated++;
     }
   }
 
@@ -237,7 +275,9 @@ interface Meeting {
 /** Each member of the group, paired with their record from the results where they met another. */
 function headToHead(group: readonly Tally[], results: readonly Result[]): Meeting[] {
   const members = new Set(group.map((entry) => entry.id));
-  const meetings = tally(group, results, [], (against) => against.some((id) => members.has(id)));
+  const meetings = tally(group, results, NOTHING_OWED, (against) =>
+    against.some((id) => members.has(id)),
+  );
 
   // `tally` returns one entry per competitor given, in the order given, so the lists line up.
   return group.map((overall, index) => ({ overall, meeting: meetings[index] }));

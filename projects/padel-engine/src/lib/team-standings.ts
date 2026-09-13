@@ -18,13 +18,13 @@
  * than resting, and is not in that list — so a broken team collects nothing while it waits for a
  * repair (ADR-0023 §3).
  */
-import { creditsFor } from './bench-credit';
+import { compensationsFor, creditsFor } from './bench-credit';
 import { deepFreeze } from './freeze';
 import type { Session, TeamId } from './model';
 import { playedMatches } from './played-matches';
 import { placings } from './ranking';
 import { assertSessionShape } from './session-shape';
-import { teamPlayIn, teamsOnByeIn } from './teams';
+import { teamPlayIn, teamsAvailableIn, teamsOnByeIn } from './teams';
 
 /** One team's line in the table — a player's `Standing`, one level up. */
 export interface TeamStanding {
@@ -37,7 +37,10 @@ export interface TeamStanding {
   readonly joint: boolean;
   /** Matches with a recorded score. A court still playing counts for nothing. */
   readonly matchesPlayed: number;
-  /** Points scored across those matches, plus a bench credit for every bye. */
+  /**
+   * Points scored across those matches, plus a bench credit for every bye and compensation for
+   * every abandoned round this team was available for.
+   */
   readonly points: number;
   /** Matches whose other side scored fewer points. */
   readonly won: number;
@@ -47,6 +50,12 @@ export interface TeamStanding {
   readonly lost: number;
   /** Byes taken and paid for. A team waiting on a repair takes none of them. */
   readonly benched: number;
+  /**
+   * Abandoned rounds this team was paid for (ADR-0037 §9). Teams the round put on court and teams
+   * it sent to the bye are paid identically; a team that needs a partner was not available for it
+   * and is paid nothing.
+   */
+  readonly compensated: number;
 }
 
 /** The team standings, ranked, one line per team. Frozen, like every other engine result. */
@@ -80,9 +89,16 @@ export function computeTeamStandings(session: Session): readonly TeamStanding[] 
   const credits = creditsFor(session, (round) =>
     teamsOnByeIn(session, round.number).map((team) => team.id),
   );
+  // A team is available for a round if it fields a full pair in it, which is exactly the question
+  // `teamsAvailableIn` answers and exactly the one an orphaned team fails (ADR-0037 §9).
+  const compensations = compensationsFor(
+    session,
+    (round) => teamsAvailableIn(session, round.number).map((team) => team.id),
+    (match) => (match.teams ? [match.teams.sideA, match.teams.sideB] : []),
+  );
 
   return deepFreeze(
-    placings(entrants, results, credits).map((placing) => ({
+    placings(entrants, results, { credits, compensations }).map((placing) => ({
       teamId: placing.id,
       name: placing.name,
       position: placing.position,
@@ -93,6 +109,7 @@ export function computeTeamStandings(session: Session): readonly TeamStanding[] 
       tied: placing.tied,
       lost: placing.lost,
       benched: placing.benched,
+      compensated: placing.compensated,
     })),
   );
 }

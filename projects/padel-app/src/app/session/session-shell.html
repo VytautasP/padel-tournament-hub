@@ -37,9 +37,13 @@
       one thing it must not be. It appears only when there is somewhere to go — a session in
       progress is left by ending it or discarding it, both of which are elsewhere.
     -->
-    <header
-      class="flex items-center justify-between border-b border-line bg-surface-raised px-4 py-2"
-    >
+    <!--
+      No rule under it and no raised plane behind it. The Round tab's own header is a full-bleed
+      gradient that starts immediately below this bar (ADR-0035 §2, move 2), and a hairline between
+      the two reads as a seam across the top of the screen. On the other two tabs the bar takes the
+      page's own ground, which is what chrome standing over a screen rather than on it looks like.
+    -->
+    <header class="flex items-center justify-between bg-surface px-4 py-2">
       <div class="flex items-center gap-1">
         <button
           type="button"
@@ -117,10 +121,15 @@
       whether to let somebody go home is a question about how the evening is going, and Standings
       is no longer somewhere the organizer can go and ask (ADR-0022 §3).
 
-      The border is what keeps this plane off the page in dark, where `surface-raised` and
-      `surface` are a few points apart (ADR-0022, consequences).
+      What keeps this plane off the page in dark, where `surface-raised` and `surface` are a few
+      points apart (ADR-0022, consequences), is now the float shadow rather than a hairline — the
+      same move the rail on the other side made, and for the same reason.
+
+      The width is ADR-0022 §1's 340px. `ModernDesktop` draws 366 and that is drawing slack: the
+      board did not reason about the number and ADR-0022 did, all the way to where the 1280
+      breakpoint sits (ADR-0035 §6).
     -->
-    <aside class="w-[340px] shrink-0 overflow-y-auto border-l border-line bg-surface-raised">
+    <aside class="w-[340px] shrink-0 overflow-y-auto bg-surface-raised shadow-float">
       <app-standings-tab />
     </aside>
   }

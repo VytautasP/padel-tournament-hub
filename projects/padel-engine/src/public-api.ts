@@ -27,6 +27,7 @@ export type {
   TeamId,
 } from './lib/model';
 
+export type { FinishOptions } from './lib/finish-session';
 export type { OrphanedTeam } from './lib/teams';
 export type { Standing } from './lib/standings';
 export type { TeamStanding } from './lib/team-standings';
@@ -38,9 +39,11 @@ export { assignPartner } from './lib/assign-partner';
 export { teamsNeedingPartner, teamsOnByeIn } from './lib/teams';
 export { generateRemaining } from './lib/generate-remaining';
 export { finishSession } from './lib/finish-session';
+export { hasAbandonedRounds } from './lib/bench-credit';
 export { recordScore } from './lib/record-score';
 export { assertSessionValid } from './lib/assert-session-valid';
 export { formatSchedule } from './lib/format-schedule';
 export { sameGenderSides } from './lib/mixed-pairing';
+export { courtsFilledBy, courtsInPlay, courtsUnusedByStrictMixing } from './lib/session-shape';
 export { computeStandings } from './lib/standings';
 export { computeTeamStandings } from './lib/team-standings';

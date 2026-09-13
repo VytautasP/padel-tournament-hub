@@ -7,15 +7,18 @@
  * did last Tuesday go (ADR-0013).
  *
  * The same rule as every other spec here: rendered text and tapped labels only, never a component
- * or a signal. Two things are read off the repository — the stored status, and the referee — and
- * both are for the same reason `expectStoredSessionValid` exists: a screen that looked right while
- * writing a session the engine would refuse is a bug in the screen.
+ * or a signal. Three things are read off the repository — the stored status, the referee, and the
+ * share code an ended evening is watched by — and the first two are for the same reason
+ * `expectStoredSessionValid` exists: a screen that looked right while writing a session the engine
+ * would refuse is a bug in the screen. The third is the one fact about an evening that is not on
+ * screen anywhere: a spectator's address cannot be typed out in advance.
  *
  * The date in a history row is the one string in these tests that cannot be written down in
  * advance. It is formatted here rather than imported from the dictionary, so that a test asserts
  * the row the organizer reads rather than agreeing with whatever the app happened to produce.
  */
 import { AppHarness } from './testing/app-harness';
+import { spectatorPath } from './share/share-link';
 import {
   createSession,
   endSession,
@@ -35,6 +38,9 @@ const today = new Intl.DateTimeFormat('en-GB', {
 }).format(new Date());
 
 const ROW = `${today} · Americano · 4 players`;
+
+/** The further question's toggle, which is the one label two of these tests turn on. */
+const PAY = 'Pay for the rounds nobody played';
 
 describe('ending the session', () => {
   describe('the ending itself', () => {
@@ -140,6 +146,140 @@ describe('ending the session', () => {
       for (const name of decided.b.split(' & ')) {
         expect(timesShown(app, name)).toBe(1);
       }
+    });
+  });
+
+  /*
+   * ADR-0037, from the organizer's side: an evening that ran out of time before it ran out of
+   * rounds, and the one further question that makes the difference between a table that says so
+   * and a table that says the missing rounds were lost.
+   *
+   * Every figure below is checkable by hand from the target score, which is what these tests are
+   * really asserting. Four players on one court is three generated rounds, nobody benched, and a
+   * target of 24 — so an abandoned round pays 12, and two of them pay 24 to everybody.
+   */
+  describe('the rounds that were never played', () => {
+    it('asks nothing more of an evening whose every generated round was scored', async () => {
+      const app = await playedOut();
+      await app.tap('Standings');
+
+      await app.tap('End session');
+
+      expect(app.shows('no more scores, no more rounds, no roster changes')).toBe(true);
+      expect(app.isOnScreen(PAY)).toBe(false);
+    });
+
+    it('asks, says the podium can move, and holds the answer at no', async () => {
+      const app = await createSession(FOUR);
+      await score(app, 17);
+      await app.tap('Standings');
+
+      await app.tap('End session');
+
+      expect(app.isOnScreen(PAY)).toBe(true);
+      // The standings on screen when they reached for the button are the ones they get, unless
+      // they say otherwise — so the control is offering a departure rather than holding a choice.
+      expect(app.isPressed(PAY)).toBe(false);
+      expect(app.shows('This can change the podium.')).toBe(true);
+
+      await app.tap('Cancel');
+
+      expect(storedSession(app).status).toBe('in-progress');
+      expect(app.isOnScreen('End session')).toBe(true);
+    });
+
+    it('leaves the table exactly as it stood when the answer is no', async () => {
+      const app = await createSession(FOUR);
+      const sides = await score(app, 17);
+
+      await endSession(app);
+
+      const [winner] = sides.a.split(' & ');
+      const [loser] = sides.b.split(' & ');
+      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(true);
+      expect(app.isOnScreen(`3 ${loser} 7`)).toBe(true);
+
+      await app.tap(`1 ${winner} 17`);
+
+      expect(app.shows('Matches played 1')).toBe(true);
+      expect(app.shows('Benched 0')).toBe(true);
+      // Nothing was paid, so there is no third term: a row of zeroes would be a column about a
+      // question this evening's organizer answered no to.
+      expect(app.shows('Compensated')).toBe(false);
+      app.expectEndedSessionValid();
+    });
+
+    it('pays everybody who was there for them when the answer is yes', async () => {
+      const app = await createSession(FOUR);
+      const sides = await score(app, 17);
+
+      await endSessionPaying(app);
+
+      // Two rounds nobody played, at half of a target of 24: twenty-four points each, on top of
+      // what they scored on the one court that happened.
+      const [winner] = sides.a.split(' & ');
+      const [loser] = sides.b.split(' & ');
+      expect(app.isOnScreen(`1 ${winner} 41`)).toBe(true);
+      expect(app.isOnScreen(`3 ${loser} 31`)).toBe(true);
+
+      await app.tap(`1 ${winner} 41`);
+
+      // The three terms behind the total, so 17 + 0 + 24 can be added up off the screen.
+      expect(app.shows('Matches played 1')).toBe(true);
+      expect(app.shows('Benched 0')).toBe(true);
+      expect(app.shows('Compensated 2')).toBe(true);
+      app.expectEndedSessionValid();
+    });
+
+    it('says nothing was owed to somebody who was not there to be owed it', async () => {
+      const app = await createSession(EIGHT, 2);
+      await score(app, 17, 1);
+      const secondCourt = await score(app, 24, 2);
+      const [leaver] = secondCourt.b.split(' & ');
+
+      // One player leaves after round one, so the six rounds the evening never played were not
+      // rounds they were available for (ADR-0037 §3). Everybody still there is paid for all six.
+      await app.tap('Players');
+      await app.tap(`Options for ${leaver}`);
+      await app.tap('Went home');
+      await app.tap(`${leaver} went home`);
+
+      await endSessionPaying(app);
+
+      const [winner] = secondCourt.a.split(' & ');
+      // Six abandoned rounds at half of twenty-four: seventy-two, on top of the twenty-four scored.
+      expect(app.isOnScreen(`1 ${winner} 96`)).toBe(true);
+      expect(app.isOnScreen(`8 ${leaver} 0`)).toBe(true);
+
+      await app.tap(`1 ${winner} 96`);
+      expect(app.shows('Compensated 6')).toBe(true);
+
+      // The term is on this row too, saying nothing rather than being absent: on an evening that
+      // paid, a zero is a fact about this player, and a row with no term at all would read as an
+      // evening that paid nobody.
+      await app.tap(`8 ${leaver} 0`);
+      expect(app.shows('Compensated 0')).toBe(true);
+      app.expectEndedSessionValid();
+    });
+
+    it('shows the spectator the table the organizer made final', async () => {
+      const organizer = await createSession(FOUR);
+      const sides = await score(organizer, 17);
+      const code = storedSession(organizer).id;
+
+      await endSessionPaying(organizer);
+
+      const spectator = await AppHarness.launch({
+        repository: organizer.repository,
+        at: spectatorPath(code),
+      });
+      await spectator.tap('Standings');
+
+      const [winner] = sides.a.split(' & ');
+      expect(spectator.isOnScreen(`1 ${winner} 41`)).toBe(true);
+
+      await spectator.tap(`1 ${winner} 41`);
+      expect(spectator.shows('Compensated 2')).toBe(true);
     });
   });
 
@@ -328,6 +468,36 @@ describe('ending the session', () => {
     });
   });
 });
+
+/**
+ * Four players on one court, every one of their three rounds scored: an evening that owes nobody
+ * anything, because nothing about it was abandoned.
+ */
+async function playedOut(): Promise<AppHarness> {
+  const app = await createSession(FOUR);
+  await score(app, 17);
+  await app.tap('Round 2 →');
+  await score(app, 17);
+  await app.tap('Round 3 →');
+  await score(app, 17);
+
+  return app;
+}
+
+/**
+ * End the evening having said yes to the further question.
+ *
+ * Not an option on the `endSession` driver, because saying yes is the subject of these tests
+ * rather than setup for them: the tap that answers it is one of the things being asserted, and a
+ * driver that hid it would leave the spec asserting on a flag it never set from the screen.
+ */
+async function endSessionPaying(app: AppHarness): Promise<void> {
+  await app.tap('Standings');
+  await app.tap('End session');
+  await app.tap(PAY);
+  expect(app.isPressed(PAY)).toBe(true);
+  await app.tap('End session');
+}
 
 /**
  * The winner line a history row shows for the side that took the points.

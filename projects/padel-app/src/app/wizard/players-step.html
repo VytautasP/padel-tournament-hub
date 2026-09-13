@@ -21,15 +21,12 @@
       #field
       type="text"
       autocomplete="off"
-      class="text-control h-[52px] min-w-0 flex-1 rounded-[15px] border border-line bg-surface-raised px-4 text-ink focus:border-brand focus:outline-none"
+      class="text-control h-[52px] min-w-0 flex-1 rounded-control bg-surface-sunken px-4 text-ink focus:outline-2 focus:outline-brand"
       [placeholder]="copy.wizard.players.placeholder"
       [value]="typed()"
       (input)="onType($event)"
     />
-    <button
-      type="submit"
-      class="text-control h-[52px] w-[84px] shrink-0 rounded-[15px] bg-brand font-bold text-brand-ink"
-    >
+    <button type="submit" class="text-control h-[52px] w-[84px] shrink-0 primary-pill">
       {{ isEditing() ? copy.wizard.players.save : copy.wizard.players.add }}
     </button>
   </form>
@@ -56,16 +53,19 @@
       @case ('odd-roster') {
         <p class="text-meta font-bold text-ink">{{ copy.wizard.players.oddRoster }}</p>
       }
+      @case ('strict-too-few') {
+        <p class="text-meta font-bold text-ink">
+          {{ copy.wizard.players.strictTooFew(minimumPerGender) }}
+        </p>
+      }
     }
   </div>
 
   <!-- Absent until there is a roster: an empty card is a box with nothing in it saying nothing. -->
   @if (draft().players().length > 0) {
-    <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+    <ul class="card flex flex-col gap-0.5 p-2">
       @for (player of draft().players(); track player.id) {
-        <li
-          class="flex items-center gap-1 border-b border-line py-[5px] pr-2 pl-[18px] last:border-b-0"
-        >
+        <li class="flex items-center gap-1 rounded-control py-[5px] pr-2 pl-3">
           <button
             type="button"
             class="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
@@ -87,7 +87,7 @@
             </svg>
           </button>
 
-          @if (asksGender()) {
+          @if (draft().asksGender()) {
             <app-gender-toggle
               class="shrink-0"
               [selected]="player.gender ?? null"
@@ -117,5 +117,52 @@
         </li>
       }
     </ul>
+  }
+
+  <!--
+    The rule this Mixicano plays by, under the roster rather than back on the mode step
+    (ADR-0036 §2). What it changes is how many of the booked courts this evening actually fills,
+    and that is a fact about the roster — a choice offered before the names exist is a choice made
+    blind, and the number underneath it would have nothing to count.
+
+    The two answers are a segmented row in the treatment the roster's own toggles and the settings
+    sheet already use: `aria-pressed` is what a screen reader is told and the brand fill is what
+    everybody else reads, and they say the same thing. Under them, one sentence about the rule now
+    held and one about what it costs — the second moves as the names and the genders are typed,
+    which is the whole reason the choice is on this screen.
+  -->
+  @if (draft().asksGender()) {
+    <div class="flex flex-col gap-2">
+      <h2 class="text-micro font-bold text-ink-muted uppercase">
+        {{ copy.wizard.players.mixing.heading }}
+      </h2>
+
+      <div class="flex gap-2" role="group" [attr.aria-label]="copy.wizard.players.mixing.heading">
+        @for (rule of mixingRules; track rule) {
+          <button
+            type="button"
+            class="text-control h-12 flex-1 rounded-full font-bold"
+            [class]="
+              draft().strictMixing() === rule
+                ? 'bg-brand text-brand-ink'
+                : 'bg-surface-sunken text-ink'
+            "
+            [attr.aria-pressed]="draft().strictMixing() === rule"
+            (click)="setStrictMixing(rule)"
+          >
+            {{ mixingLabel(rule) }}
+          </button>
+        }
+      </div>
+
+      <p class="text-meta text-pretty text-ink-muted">{{ mixingLead(draft().strictMixing()) }}</p>
+
+      <!-- Absent until there is a roster to count: nobody has paid a price for nothing yet. -->
+      @if (draft().players().length > 0) {
+        <p class="text-meta font-bold text-ink">
+          {{ copy.wizard.players.mixing.courts(draft().courtsFilled(), draft().courtCount()) }}
+        </p>
+      }
+    </div>
   }
 </section>

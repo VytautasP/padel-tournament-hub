@@ -22,6 +22,18 @@
     at the left, the two sides beside it, and no score anywhere (ADR-0015).
   -->
   <div class="-mx-5 flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto px-5">
+    <!--
+      The evening this change would leave with nothing to schedule (ADR-0036 §5), said instead of
+      the rounds — because there are none: a strict Mixicano that loses its second man plans no
+      matches at all rather than quietly falling back to hybrid fill. The organizer keeps the
+      player, or ends the evening and starts another, and both of those are theirs to do.
+    -->
+    @if (nobodyCanPlay()) {
+      <p class="text-lead text-pretty font-bold text-ink">
+        {{ copy.players.preview.nobodyCanPlay }}
+      </p>
+    }
+
     @for (round of rounds(); track round.number) {
       <section class="flex flex-col gap-2">
         <h3 class="text-micro font-bold text-brand uppercase">
@@ -30,9 +42,7 @@
 
         <ul class="flex flex-col gap-2">
           @for (court of round.courts; track court.courtNumber) {
-            <li
-              class="flex items-center gap-3 rounded-[15px] border border-line bg-surface px-4 py-3"
-            >
+            <li class="flex items-center gap-3 rounded-control bg-surface px-4 py-3">
               <span class="text-micro w-[62px] shrink-0 font-bold text-ink-muted uppercase">
                 {{ court.name }}
               </span>
@@ -56,6 +66,12 @@
           <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
         }
 
+        @if (round.unusedCourts.length > 0) {
+          <p class="text-meta text-ink-muted">
+            {{ copy.round.strictMixing.unused(round.unusedCourts) }}
+          </p>
+        }
+
         @if (round.bench.length > 0) {
           <p class="text-meta text-ink-muted">{{ copy.round.bench(round.bench) }}</p>
         }
@@ -74,16 +90,12 @@
     and the rounds it rewrites are printed above the button rather than warned about on it.
   -->
   <div class="flex flex-col gap-2.5">
-    <button
-      type="button"
-      class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
-      (click)="commit()"
-    >
+    <button type="button" class="text-control h-[54px] primary-pill px-4" (click)="commit()">
       {{ data.action }}
     </button>
     <button
       type="button"
-      class="text-control h-[54px] rounded-[15px] border border-line px-4 text-ink"
+      class="text-control h-[54px] rounded-full bg-surface-sunken px-4 text-ink"
       (click)="dismiss()"
     >
       {{ copy.players.preview.dismiss }}

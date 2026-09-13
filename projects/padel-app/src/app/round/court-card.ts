@@ -43,6 +43,16 @@ interface SideOnTheCard {
   readonly points?: number;
   /** The classes that set those points: the winner pointed at, the loser stated and left alone. */
   readonly emphasis: string;
+  /**
+   * The ground under this side's row: a tinted fill where they won, and nothing where they did
+   * not (ADR-0035 §2, move 5).
+   *
+   * A second reading of the same fact as `emphasis`, deliberately. The card lost the border that
+   * used to thicken when a score landed, so the result has to be legible without reading the
+   * numbers — and a fill behind a whole row carries across a court at arm's length in a way the
+   * weight of one figure does not.
+   */
+  readonly fill: string;
 }
 
 @Component({
@@ -71,13 +81,13 @@ export class CourtCard {
         letter: 'A',
         view: sideA,
         points: score?.sideA,
-        emphasis: emphasisOf(score?.sideA, score?.sideB),
+        ...treatmentOf(score?.sideA, score?.sideB),
       },
       {
         letter: 'B',
         view: sideB,
         points: score?.sideB,
-        emphasis: emphasisOf(score?.sideB, score?.sideA),
+        ...treatmentOf(score?.sideB, score?.sideA),
       },
     ];
   });
@@ -103,15 +113,40 @@ export const SCORE_EMPHASIS = {
 
 export type ScoreEmphasis = keyof typeof SCORE_EMPHASIS;
 
-/** How one side's points are set, read off the pair: pointed at, muted, or neither. */
-function emphasisOf(points: number | undefined, against: number | undefined): string {
+/**
+ * The two grounds a side's row can sit on.
+ *
+ * `brand-wash` rather than an opacity modifier on the brand, because the two themes do not agree
+ * on the strength — which is the reason that token exists at all.
+ */
+export const SIDE_FILL = {
+  /** The winner's row: the brand at a whisper (ADR-0035 §2, move 5). */
+  won: 'bg-brand-wash',
+  /** Everybody else's: the card's own surface showing through, which is to say no fill at all. */
+  unwon: '',
+} as const;
+
+/**
+ * How one side of a court is set: the weight on its number, and the ground under its row.
+ *
+ * One function for both, because they are one reading of one pair rather than two questions that
+ * happen to agree. Asked separately they were two copies of the same guard cascade — two places
+ * for `>` to drift to `>=`, and only one of them noticed, which is a drawn court tinted on both
+ * sides and so looking won twice.
+ */
+function treatmentOf(
+  points: number | undefined,
+  against: number | undefined,
+): { readonly emphasis: string; readonly fill: string } {
   if (points === undefined || against === undefined || points === against) {
     // A draw is neither treatment. It has no winner to point at and no loser to mute, so
     // borrowing either would state something untrue about a court that ended level. No board
     // draws one — an even target score is what reaches it, 24 going to 12–12. An unscored court
     // takes the same answer and never uses it: there is no number for it to set.
-    return SCORE_EMPHASIS.drawn;
+    return { emphasis: SCORE_EMPHASIS.drawn, fill: SIDE_FILL.unwon };
   }
 
-  return points > against ? SCORE_EMPHASIS.won : SCORE_EMPHASIS.lost;
+  return points > against
+    ? { emphasis: SCORE_EMPHASIS.won, fill: SIDE_FILL.won }
+    : { emphasis: SCORE_EMPHASIS.lost, fill: SIDE_FILL.unwon };
 }

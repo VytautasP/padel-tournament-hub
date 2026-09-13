@@ -30,6 +30,10 @@ export function createSession(config: SessionConfig): Session {
     ...(config.teams ? { teams: config.teams.map((team) => teamEntry(team)) } : {}),
     courtCount: config.courtCount,
     targetScore: config.targetScore,
+    // Absent rather than `false` when the configuration carries no choice, so the one reading
+    // "older than ADR-0036" stays distinguishable from an organizer who asked for hybrid fill.
+    // The wizard writes it on every new Mixicano, so absent only ever means the former.
+    ...(config.strictMixing === undefined ? {} : { strictMixing: config.strictMixing }),
     rounds: Array.from({ length: config.roundCount }, (_, index) => ({
       id: roundId(config.id, index + 1),
       number: index + 1,

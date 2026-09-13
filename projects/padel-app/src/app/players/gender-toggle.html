@@ -2,11 +2,9 @@
   @for (gender of genders; track gender) {
     <button
       type="button"
-      class="rounded-full border px-4 py-2 text-meta font-bold"
+      class="text-meta rounded-full px-4 py-2 font-bold"
       [class]="
-        selected() === gender
-          ? 'border-brand bg-brand text-brand-ink'
-          : 'border-line text-ink-muted'
+        selected() === gender ? 'bg-brand text-brand-ink' : 'bg-surface-sunken text-ink-muted'
       "
       [attr.aria-label]="labelFor(gender)"
       [attr.aria-pressed]="selected() === gender"

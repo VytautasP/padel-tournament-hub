@@ -62,6 +62,7 @@ function standingsOf(positions: readonly number[], matchesPlayed = 4): readonly 
     tied: 0,
     lost: 0,
     benched: 0,
+    compensated: 0,
   }));
 }
 

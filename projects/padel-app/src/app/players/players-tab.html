@@ -57,16 +57,13 @@
           #field
           type="text"
           autocomplete="off"
-          class="text-control min-w-0 flex-1 rounded-[15px] border border-line bg-surface-raised px-4 py-[15px] text-ink"
+          class="text-control min-w-0 flex-1 rounded-full bg-surface-raised px-5 py-[15px] text-ink shadow-card"
           [placeholder]="copy.players.placeholder"
           [value]="typed()"
           (input)="onType($event)"
         />
         @if (canAdd()) {
-          <button
-            type="submit"
-            class="text-control w-[84px] shrink-0 rounded-[15px] bg-brand font-bold text-brand-ink"
-          >
+          <button type="submit" class="text-control w-[84px] shrink-0 primary-pill">
             {{ copy.players.add }}
           </button>
         }

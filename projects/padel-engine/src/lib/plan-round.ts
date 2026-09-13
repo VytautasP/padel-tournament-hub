@@ -18,7 +18,7 @@
  * Every tie is broken by enumeration order, so the plan is a function of the roster order and the
  * history alone. No clock, no random source (decision #6).
  */
-import { benchSets } from './bench-sets';
+import { benchSetsAcross } from './bench-sets';
 import type { MixedPairing } from './mixed-pairing';
 import type { PlayerId } from './model';
 import {
@@ -48,8 +48,10 @@ export interface PlannedMatch {
  * lets the referee assert them one at a time: a round never buys a cheaper repeat with an extra
  * same-gender pair, because no number of repeats reaches the price of one.
  *
- *   1. `SAME_GENDER_PAIR` — Mixicano forms one only when the arithmetic on court forces it
- *      (decision #7), so the search minimises their count before it considers anything else.
+ *   1. `SAME_GENDER_PAIR` — hybrid fill forms one only when the arithmetic on court forces it
+ *      (decision #7), so the search minimises their count before it considers anything else. A
+ *      strict session never reaches this term: there the pair is not expensive, it is unavailable,
+ *      and `UNAVAILABLE` takes it out of the search instead (ADR-0036 §1).
  *   2. `STARVING_REPEAT` — a repeat that leaves someone without a partner they have never had.
  *   3. `UNROTATED` — how far the players being compromised are from the least-compromised ones.
  *      A rank, not a raw count, so its total is bounded by the roster size rather than by how
@@ -59,33 +61,91 @@ export interface PlannedMatch {
 const SAME_GENDER_PAIR = 10_000_000_000;
 const UNROTATED = 10_000;
 
+/**
+ * A partnership the session's rule does not allow at any price — under strict mixing, a
+ * same-gender one.
+ *
+ * Not a very large number: a filter. The search skips a candidate costing this, so no total it
+ * reports can include one, and a round is planned out of the partnerships that remain or not at
+ * all. That is the difference ADR-0036 §1 turns on — a cost the search would pay when the
+ * alternative is worse is exactly what strict mixing is not.
+ */
+const UNAVAILABLE = Number.POSITIVE_INFINITY;
+
 export function planRound(
   order: readonly PlayerId[],
   courtCount: number,
   history: SessionHistory,
   mixed: MixedPairing,
 ): PlannedMatch[] {
-  const benchSize = order.length - courtCount * PLAYERS_PER_COURT;
   const budget: Budget = { spent: 0 };
   const rotation = history.compromiseRanks(order);
   let best: { pairs: Pair[]; cost: number } | undefined;
 
-  for (const benched of benchSets(order, (id) => history.benchCount(id), benchSize)) {
+  for (const benched of benchesFor(order, courtCount, history, mixed)) {
     const playing = order.filter((id) => !benched.has(id));
     const candidate = choosePairs(playing, order, history, { mixed, rotation }, budget);
 
-    if (!best || candidate.cost < best.cost) {
+    // A bench the pairing rule cannot pair at all is not a cheaper plan, it is no plan: it never
+    // becomes the best one, and the next bench in the order gets its turn.
+    if (Number.isFinite(candidate.cost) && (!best || candidate.cost < best.cost)) {
       best = candidate;
     }
     // A repeat-free, fully mixed round is as good as a round can be — nothing left to look for.
-    if (best.cost === 0 || budget.spent > SEARCH_BUDGET) {
+    if (best && (best.cost === 0 || budget.spent > SEARCH_BUDGET)) {
       break;
     }
   }
 
-  // `benchSets` always yields at least one set, so a plan always exists by here. Court assignment
-  // gets a budget of its own: it searches a handful of pairs, never the whole roster.
+  // Every queue yields at least one bench, and every bench they yield admits a pairing — under
+  // strict mixing because it leaves equal numbers of each gender on court, and otherwise because
+  // no partnership is unavailable at all. So there is always a plan by here, and if there is not,
+  // the honest thing is to say so: a round quietly returned with fewer courts than the session
+  // was told it would fill is a fairness bug that would surface rounds later, as a bench spread
+  // nobody can explain.
+  const paired = best?.pairs.flat().length ?? 0;
+  if (paired !== courtCount * PLAYERS_PER_COURT) {
+    throw new Error(
+      `Round for ${order.length} player(s) on ${courtCount} court(s) could not be paired — ` +
+        `the search put ${paired} of ${courtCount * PLAYERS_PER_COURT} players onto a court.`,
+    );
+  }
+
+  // Court assignment gets a budget of its own: it searches a handful of pairs, never the whole
+  // roster.
   return assignCourts(best?.pairs ?? [], history, { spent: 0 });
+}
+
+/**
+ * The benches this round may choose between, in the order the planner will try them.
+ *
+ * `mixed.benchQueues` says which populations rotate independently — one for everybody, or one per
+ * gender under strict mixing (ADR-0036 §3) — and the arithmetic follows from how many there are,
+ * because the queues divide a court between them evenly: four players from a single queue, two
+ * women and two men from a pair of them.
+ *
+ * Under strict mixing the court count is already the one the smaller gender can staff, because
+ * `courtsInPlay` settled that before the planner was called. So every bench this yields leaves an
+ * equal number of women and men on court — which is what makes a fully mixed round available to
+ * the search at all, and why the search can treat a same-gender pair as unavailable rather than
+ * merely dear.
+ */
+function benchesFor(
+  order: readonly PlayerId[],
+  courtCount: number,
+  history: SessionHistory,
+  mixed: MixedPairing,
+): Generator<ReadonlySet<PlayerId>> {
+  const queues = mixed.benchQueues(order, (id) => id);
+  const perCourt = PLAYERS_PER_COURT / queues.length;
+
+  return benchSetsAcross(
+    queues.map((queue) => ({
+      order: queue,
+      benchSize: queue.length - courtCount * perCourt,
+    })),
+    (id) => history.benchCount(id),
+  );
 }
 
 /**
@@ -141,6 +201,10 @@ function partnerCosts(
         return 0;
       }
       if (mixed.sameGender(a, b)) {
+        if (mixed.strict) {
+          return UNAVAILABLE;
+        }
+
         // A same-gender pair is the compromise, so it is priced as one: the cost of making it at
         // all, plus how far down the rotation the two players carrying it are. Partner repeats
         // still count, so the surplus does not fall to the same two people twice over.
