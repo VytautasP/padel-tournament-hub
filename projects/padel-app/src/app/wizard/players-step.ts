@@ -10,7 +10,13 @@
  * rule true (there is only ever one place to type) and it means a correction is committed by the
  * same key that commits a new name.
  *
- * In Mixicano each row grows a two-state gender toggle, and in no other mode — Americano has
+ * Mixicano asks two things here that no other mode does. Each row grows a two-state gender
+ * toggle, and under the list the evening picks the rule it settles an unequal pool by — strict
+ * mixing or hybrid fill, with the courts this roster fills underneath it (ADR-0036 §2). The choice
+ * is on this screen rather than the mode step because the number it changes is a function of the
+ * roster, and a choice made before the roster exists is a choice made blind.
+ *
+ * The gender toggle is on every row in Mixicano, and in no other mode — Americano has
  * nothing to ask, and a control that appears whether or not it means anything teaches the
  * organizer to ignore it. The toggle has **no default** (ADR-0010): an untouched row holds the
  * step with the reason inline, because a guessed gender does not fail loudly. It silently
@@ -28,7 +34,7 @@ import {
 import type { Gender } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { GenderToggle } from '../players/gender-toggle';
-import { MINIMUM_PLAYERS } from '../session/round-defaults';
+import { MINIMUM_PER_GENDER, MINIMUM_PLAYERS } from '../session/round-defaults';
 import { WizardDraft } from './wizard-draft';
 
 @Component({
@@ -45,11 +51,39 @@ export class PlayersStep {
 
   protected readonly copy = copy;
   protected readonly minimumPlayers = MINIMUM_PLAYERS;
+  protected readonly minimumPerGender = MINIMUM_PER_GENDER;
   protected readonly typed = signal('');
   protected readonly isEditing = computed(() => this.editing() !== null);
 
-  /** Whether this evening pairs across gender, which is the whole of whether the toggle is here. */
-  protected readonly asksGender = computed(() => this.draft().mode() === 'mixicano');
+  /**
+   * The two answers the mixing row offers, in the order they are shown — strict first, because it
+   * is the one an organizer who says nothing is playing under (ADR-0036 §1).
+   *
+   * Booleans rather than a pair of labelled objects, because the draft holds a boolean and the
+   * label is a lookup: `mixingLabel` below is where the two meet, exactly as the settings sheet
+   * pairs its themes with their words.
+   */
+  protected readonly mixingRules: readonly boolean[] = [true, false];
+
+  /** What one half of the mixing row says, and what the sentence under it says once it holds. */
+  protected mixingLabel(strict: boolean): string {
+    return strict ? copy.mixing.strict : copy.mixing.hybrid;
+  }
+
+  protected mixingLead(strict: boolean): string {
+    return strict ? copy.mixing.strictLead : copy.mixing.hybridLead;
+  }
+
+  /**
+   * Choose the rule this Mixicano settles an unequal pool by (ADR-0036 §1).
+   *
+   * It leaves the field and the focus alone, for the reason the gender toggles do: answering a
+   * question about the evening is not committing a name, and a half-typed twelfth player must
+   * survive a tap on the rule the first eleven will play under.
+   */
+  protected setStrictMixing(strict: boolean): void {
+    this.draft().strictMixing.set(strict);
+  }
 
   protected onType(event: Event): void {
     this.typed.set((event.target as HTMLInputElement).value);

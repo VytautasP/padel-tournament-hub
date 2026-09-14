@@ -14,13 +14,11 @@
     <!--
       Weighted as the ordinary end of an evening, not as a hazard. It is how every session is
       supposed to finish and it is what produces the podium above; `danger` here would teach the
-      organizer to fear the happy path (ADR-0021 §3).
+      organizer to fear the happy path (ADR-0021 §3). The gradient pill is the treatment every
+      primary action in the app now wears (ADR-0035 §2, move 4), which is the same statement made
+      louder — this is the thing to tap, and it is the good ending.
     -->
-    <button
-      type="button"
-      class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
-      (click)="end()"
-    >
+    <button type="button" class="text-control h-[54px] primary-pill px-4" (click)="end()">
       {{ copy.standings.end }}
     </button>
   }

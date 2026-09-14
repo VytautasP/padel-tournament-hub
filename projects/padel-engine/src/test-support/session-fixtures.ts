@@ -5,7 +5,8 @@
  * from the public API. They build *inputs* — every assertion still runs against what the
  * engine returns through `public-api.ts`.
  */
-import type { RosterEntry, SessionConfig } from '../public-api';
+import { recordScore } from '../public-api';
+import type { RosterEntry, Session, SessionConfig } from '../public-api';
 
 const NAMES = [
   'Ana',
@@ -50,4 +51,31 @@ export function americanoConfig(overrides: Partial<SessionConfig> = {}): Session
     roundCount: 5,
     ...overrides,
   };
+}
+
+/**
+ * Every generated match of a session scored, so no round in it is abandoned.
+ *
+ * Both specs that need an evening with nothing left to compensate build it this way, and a second
+ * copy of the fold would be a second chance to leave one court unscored by accident — which is
+ * precisely the state these tests exist to tell apart.
+ */
+export function scoredThrough(session: Session, points = 15): Session {
+  return session.rounds
+    .flatMap((round) => round.matches)
+    .reduce(
+      (scored, match) => recordScore(scored, { matchId: match.id, side: 'A', points }),
+      session,
+    );
+}
+
+/**
+ * The session as an organizer left it who ended the evening and said yes to compensation.
+ *
+ * `finishSession` is the only thing that writes the flag in production, but a standings test
+ * wants a hand-built session with an abandoned round in it and no interest in how it froze — so
+ * this states the ending outright, the way the fixtures state the rounds outright.
+ */
+export function compensating(session: Session): Session {
+  return { ...session, status: 'finished', compensatedUnplayed: true };
 }

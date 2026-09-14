@@ -25,6 +25,11 @@
  * bench credit is none of the three (ADR-0023 §5), so a record of three matches beside a total of
  * four rounds' points is right rather than a discrepancy.
  *
+ * The three terms that would account for it — matches played, rounds benched, rounds compensated
+ * — are on `StandingRow` and on no screen. ADR-0037 §8 asked the row to show the third of them in
+ * the expansion, and #97 took the expansion away; the figure is still derived on every read, so
+ * the day there is somewhere to put it, there is nothing to restore.
+ *
  * Positions come from the engine and are rendered exactly as given: a joint second is `2` twice
  * and the next player is `4`. The app never invents a separator and never renumbers, because the
  * places a joint position occupies are used up (decision #8).

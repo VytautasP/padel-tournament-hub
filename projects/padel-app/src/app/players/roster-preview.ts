@@ -27,6 +27,7 @@
  */
 import { ChangeDetectionStrategy, Component, computed, inject, Injectable } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { courtsInPlay } from 'padel-engine';
 import type { Session } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { roundView } from '../round/round-view';
@@ -73,6 +74,19 @@ export class RosterPreviewSheet {
   });
 
   protected readonly roundCount = computed(() => this.data.candidate.rounds.length);
+
+  /**
+   * Whether this change would leave a strict evening with no court it can staff (ADR-0036 §5).
+   *
+   * Asked of the round the evening is on, which is the first round the change touches and the
+   * first one it could empty. The engine does not rescue it — a fallback to hybrid fill would
+   * undo the organizer's choice at exactly the moment the choice mattered — so the preview is
+   * where the arithmetic is said out loud, and there is nothing else to show: a round that staffs
+   * no court renders no rounds at all.
+   */
+  protected readonly nobodyCanPlay = computed(
+    () => courtsInPlay(this.data.candidate, this.data.fromRound) === 0,
+  );
 
   protected commit(): void {
     this.sheetRef.close(true);

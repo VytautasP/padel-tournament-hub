@@ -53,11 +53,30 @@ import type { Session } from 'padel-engine';
 import { copy } from '../copy/copy';
 import { CourtCard } from './court-card';
 import { currentRoundNumber } from '../session/current-round';
+import { roundProgress } from './round-progress';
 import { roundView } from './round-view';
 import type { CourtView } from './round-view';
+import type { RoundState } from './round-progress';
 
 /** Rounds are numbered from one, which is where the paging range starts. */
 const FIRST_ROUND = 1;
+
+/**
+ * How strongly one segment of the progress bar is drawn, per round state.
+ *
+ * The segments are all one colour — the header's own ink — and differ only in strength, which is
+ * what keeps the bar readable at arm's length in both themes without a second themed pair: the
+ * ground under it is teal in light and near-black in dark, and the ink follows it either way.
+ *
+ * Named here rather than spelled out as a ternary in the template, for the reason `SCORE_EMPHASIS`
+ * is: three states is one decision, and a nested conditional in a class binding is where the third
+ * one quietly goes missing.
+ */
+const SEGMENT_STRENGTH: Record<RoundState, string> = {
+  complete: 'opacity-100',
+  partial: 'opacity-50',
+  untouched: 'opacity-20',
+};
 
 @Component({
   selector: 'app-round-board',
@@ -128,6 +147,21 @@ export class RoundBoard {
   protected readonly interactive = computed(() => this.organizing() && !this.ended());
 
   protected readonly roundCount = computed(() => this.session().rounds.length);
+
+  /**
+   * The shape of the whole evening, one segment per generated round (ADR-0035 §2, move 2).
+   *
+   * Derived by `roundProgress` rather than counted here, because measuring a round against
+   * anything but its own courts is how a bye or an unscheduled round reads as played out. It does
+   * not know which round is on screen and does not need to: the bar says how much padel is left,
+   * and where the reader is standing is the heading's job.
+   */
+  protected readonly progress = computed(() =>
+    roundProgress(this.session()).map((round) => ({
+      ...round,
+      strength: SEGMENT_STRENGTH[round.state],
+    })),
+  );
 
   protected readonly round = computed(() =>
     roundView(this.session(), this.showing(), this.courtNames()),

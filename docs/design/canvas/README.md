@@ -40,12 +40,19 @@ the artboards.
 | Directions | `DirectionA`, `DirectionB`, `DirectionC` |
 | Modern | `ModernRound`, `ModernScore`, `ModernStandings`, `ModernPlayers`, `ModernRoundDark`, `ModernDesktop` |
 
+The **Modern** page is a later pass: the Phone set re-dressed in a more current idiom, adding no
+screen and no copy. The `modern-note` annotation lists the five moves. **Modern is the idiom the app
+is built in** — ADR-0035 chose it over direction A's component treatment, keeping ADR-0021's palette,
+faces and type scale untouched, because the five moves are about how a surface is held rather than
+what colour it is.
+
 `Main.dc.html` is the Round tab, named for its position as the canvas's entry artboard rather than
 for anything in the app.
 
 Three visual directions were drawn and **A — Court at dusk** was taken forward; every other
-artboard is built in it. B and C are kept because the choice between them is still reversible —
-the `directions-note` annotation says what each one costs.
+artboard uses its palette, and every artboard outside the Modern page uses its component treatment
+too. B and C are kept as the record of what was considered — the `directions-note` annotation says
+what each one costs.
 
 **Modern** is a fourth answer to that same question, drawn later: the Phone set re-dressed in a
 more current idiom — shadowed cards instead of hairlines, a floating pill nav, gradient primary
@@ -66,16 +73,43 @@ Adding those tokens keeps ADR-0018's rule intact: a component still names a util
 (`bg-podium-gold`, `shadow-sheet`) and never a colour. Implementing the palette is editing the top
 half of `projects/padel-app/src/styles.css` and nothing else.
 
-## Two decisions this does not settle
+## Which pages are live, and which are a record
 
-Both are called out by the canvas's own annotations. Neither should be resolved inside an
-implementation ticket.
+Every board is kept, but they no longer all describe the app. ADR-0035 split the canvas by page,
+because the Modern idiom replaced direction A's while the palette underneath it did not change.
 
-1. **The desktop boards diverge from ADR-0016.** `DesktopSession` turns the three tabs into a left
-   rail and puts standings permanently alongside the round. ADR-0016 words the navigation as
-   "three tabs, bottom nav". That is an amendment to the ADR, not a stylesheet change.
-2. **The identity is a proposal, not a decision.** ADR-0018 defers the visual identity until after
-   a real padel night; issue #25 is still open, so that night has not happened. Every value here is
-   a starting position to be tested at a court. `docs/DECISIONS.md` § Open questions still reads
-   *"Visual identity: colours, typography, dark mode — undecided"*, and it stays open until it is
-   decided rather than merely drawn.
+| Page | Standing |
+|---|---|
+| **Foundations** (`Palette`, `TypeScale`) | **Live.** The token record. It carries ADR-0021's eight tokens and the five ADR-0035 added, and if a value changes in `styles.css` it changes here too — a second copy of a palette out of step is worse than none. |
+| **Modern** | **Live.** The idiom the app is built in. |
+| **Phone**, **Desktop**, **Dark** | **Historical.** Direction A as it was built and shipped, before ADR-0035 re-dressed it. Kept as the record of what the app looked like, not as a description of what it looks like. |
+| **Directions** (`A`, `B`, `C`) | **The record of what was considered.** Always was. |
+
+Two consequences worth knowing before reading a board:
+
+- **The desktop widths here are not the app's.** `DesktopSession` and `ModernDesktop` draw a rail
+  and an aside at 232 and 366 pixels. ADR-0022 §1 fixes them at **248 and 340**, and reasons about
+  those numbers to place the 1280 breakpoint — the boards' widths are drawing slack.
+  ADR-0035 §6 kept the ADR's.
+- **The `modern-note` undercounts its own tokens, and so did the ADR.** The note names two the set
+  lacks. Extracting every value from the six Modern boards, ADR-0035 §3 counted four: one gradient
+  and three shadows, one of which was drawn at two slightly different values and none of which was
+  drawn in dark; §4 records the one value in the whole change with no drawing behind it. Building
+  it found a fifth, which is the ink on the header's gradient — the boards draw it white in light
+  and the reading ink in dark, and nothing already in the palette is both. ADR-0035's consequences
+  record it.
+
+## What the annotations still settle
+
+The five annotations in `canvas.json` carry the reasoning, and they remain the primary source for
+*why* rather than *what*. Two of them flag questions that have since been answered, so read them
+with the answers in hand:
+
+- The `desktop-note` flags its own divergence from ADR-0016's "three tabs, bottom nav". That was
+  resolved by **ADR-0022**, which amended ADR-0016 §1: at the desk tier standings stop being a
+  destination and become a permanent aside.
+- The `foundations-note` and the `directions-note` call the identity a proposal rather than a
+  decision, pending the real padel night of issue #25. That was resolved by **ADR-0021**, which
+  chose direction A and struck decision #16's open question. Issue #25 is closed. ADR-0021 §6
+  still stands, though, and ADR-0035 widened it: the values are a starting position, and so is the
+  idiom.

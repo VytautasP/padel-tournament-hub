@@ -28,6 +28,16 @@ export const MINIMUM_SESSION_NUMBER = 1;
 export const MINIMUM_PLAYERS = 4;
 
 /**
+ * Two of each gender is the smallest roster strict mixing can seat, because a court takes two
+ * women and two men (ADR-0036 §5).
+ *
+ * The engine holds the same number and refuses the roster that falls short of it; this is the app
+ * asking one screen earlier, where the organizer is still standing with the group and can do
+ * something about the answer — the same bargain `MINIMUM_PLAYERS` makes.
+ */
+export const MINIMUM_PER_GENDER = 2;
+
+/**
  * Two players make a team — which is what makes an odd roster unpairable (decision #2a).
  *
  * The engine holds the same number and enforces it (`teams.ts`), but does not export it: what it

@@ -14,6 +14,12 @@
  * A "unit" is a player in Americano and a whole team in Team Americano (decision #2c). The rule
  * does not change with the level, so neither does this file: it is given ids and a count, and has
  * no idea which it is rotating.
+ *
+ * One rule asks the question of a *partition* rather than of a list: under strict mixing the
+ * genders queue separately, because three men among seven women are on court every round by
+ * arithmetic and no rotation can even that out (ADR-0036 §3). `benchSetsAcross` is that shape, and
+ * it is the same rule run once per queue rather than a second rule — which is what keeps a defect
+ * in it from reaching an Americano evening.
  */
 
 /**
@@ -44,6 +50,43 @@ export function* benchSets<Id extends string>(
   const tied = order.filter((id) => benchCount(id) === cutOff);
 
   yield* combinations(tied, benchSize - forced.length, (chosen) => new Set([...forced, ...chosen]));
+}
+
+/**
+ * One queue of a partitioned bench: the units in it, and how many of them must sit.
+ *
+ * Strict mixing is the one rule that partitions the roster (ADR-0036 §3) — a woman was never a
+ * candidate for the seat a man is taking, so the counts that must stay within one are the counts
+ * within each gender. Every other mode hands `benchSets` a single list and is unaffected.
+ */
+export interface BenchQueue<Id extends string> {
+  readonly order: readonly Id[];
+  readonly benchSize: number;
+}
+
+/**
+ * Every bench that keeps counts within one *inside each queue*: one choice from each queue, in a
+ * fixed order, with the earlier queues varying slowest.
+ *
+ * The guarantee `benchSets` makes — that at least one set always comes out — has to hold per
+ * queue rather than once, and it does, because it is made per call: each queue yields at least
+ * one bench of its own size, so their product is never empty either.
+ */
+export function* benchSetsAcross<Id extends string>(
+  queues: readonly BenchQueue<Id>[],
+  benchCount: (id: Id) => number,
+): Generator<ReadonlySet<Id>> {
+  const [queue, ...rest] = queues;
+  if (!queue) {
+    yield new Set();
+    return;
+  }
+
+  for (const benched of benchSets(queue.order, benchCount, queue.benchSize)) {
+    for (const others of benchSetsAcross(rest, benchCount)) {
+      yield new Set([...benched, ...others]);
+    }
+  }
 }
 
 /** Every `size`-subset of `items`, in enumeration order, mapped as it is produced. */

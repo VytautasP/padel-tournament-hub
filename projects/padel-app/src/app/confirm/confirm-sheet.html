@@ -9,10 +9,56 @@
     <p class="text-lead text-ink-muted">{{ data.lead }}</p>
   </header>
 
+  <!--
+    The one further question, where the act has one (ADR-0037 §1).
+
+    A toggle rather than a pair of pills, because the two answers are not two choices: the default
+    is the standings already on screen, and what the organizer is doing is departing from them. An
+    unpressed control says "this evening is as you see it", which is the sentence a yes/no pair
+    cannot make without pre-selecting one of its own halves.
+
+    The tick is drawn rather than written for the reason every glyph in this app is: it is a state,
+    not a word, and it is `aria-hidden` because `aria-pressed` has already said it out loud.
+
+    The note is outside the button on purpose. It is the consequence of a yes, not part of the
+    label a screen reader announces for the control, and running the two together would announce a
+    warning about the podium every time the toggle is touched.
+  -->
+  @if (data.question; as further) {
+    <div class="flex flex-col gap-2">
+      <button
+        type="button"
+        class="text-control flex items-center gap-3 rounded-control px-3 py-3 text-left text-ink"
+        [class]="answer() ? 'bg-brand-wash' : 'bg-surface-sunken'"
+        [attr.aria-pressed]="answer()"
+        (click)="toggle()"
+      >
+        <span
+          class="flex size-6 shrink-0 items-center justify-center rounded-control border"
+          [class]="answer() ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink-muted'"
+        >
+          @if (answer()) {
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 7.5 5.5 10.5 11.5 3.5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          }
+        </span>
+        <span class="min-w-0 flex-1">{{ further.question }}</span>
+      </button>
+      <p class="text-meta text-ink-muted">{{ further.note }}</p>
+    </div>
+  }
+
   <div class="flex gap-3">
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-[15px] border border-line px-4 text-ink"
+      class="text-control h-[54px] flex-1 rounded-full bg-surface-sunken px-4 text-ink"
       (click)="cancel()"
     >
       {{ copy.confirm.cancel }}
@@ -26,10 +72,17 @@
       white over the light theme's red and near-black over the dark theme's, which is the contrast
       each of them needs. A `danger-ink` token would be a second name for a value that has never
       differed.
+
+      The confirming button is a flat fill in both of its colours, and deliberately not the gradient
+      pill move 4 gives a primary action. A gradient with the brand shadow under it is the app
+      saying *this is the good thing to tap*, which is exactly the wrong sentence over Discard and
+      over Delete — and a danger-coloured lift would be the loudest control in the app sitting on
+      the one screen that must not sell what it is offering. The shape is a pill like everything
+      else; the invitation is not.
     -->
     <button
       type="button"
-      class="text-control h-[54px] flex-1 rounded-[15px] px-4 font-bold text-brand-ink"
+      class="text-control h-[54px] flex-1 rounded-full px-4 font-bold text-brand-ink"
       [class]="data.unrecoverable ? 'bg-danger' : 'bg-brand'"
       (click)="confirm()"
     >

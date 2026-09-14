@@ -9,6 +9,7 @@
  *   npm run print:schedule                # the sessions below
  *   npm run print:schedule -- 11 2 11     # 11 players, 2 courts, 11 rounds
  *   npm run print:schedule -- 11 2 11 7   # ...as Mixicano, with 7 of the 11 women
+ *   npm run print:schedule -- 11 2 11 7 strict   # ...mixing strictly, so the courts shrink
  *
  * It imports the built library, so it also proves the printed output survives the package build
  * rather than only the test bundler. `npm run print:schedule` builds first.
@@ -70,7 +71,7 @@ const teamSchedule = (id, playerCount, courtCount, roundCount) => {
   );
 };
 
-const schedule = (id, players, courtCount, roundCount, women) =>
+const schedule = (id, players, courtCount, roundCount, women, strictMixing) =>
   generateRemaining(
     createSession({
       id,
@@ -79,25 +80,29 @@ const schedule = (id, players, courtCount, roundCount, women) =>
       courtCount,
       targetScore: 24,
       roundCount,
+      ...(strictMixing === undefined ? {} : { strictMixing }),
     }),
   );
 
 /** A usage mistake is the reader's, not the code's — say what is wrong, without a stack trace. */
 function usage(message) {
   process.stderr.write(
-    `${message}\nUsage: node tools/print-schedule.mjs [players] [courts] [rounds] [women]\n`,
+    `${message}\nUsage: node tools/print-schedule.mjs [players] [courts] [rounds] [women] [strict]\n`,
   );
   process.exit(1);
 }
 
 function main(argv) {
   if (argv.length > 0) {
+    // The fifth argument is the word rather than a number, because `1` at the end of five digits
+    // says nothing about what it turns on — and strict mixing is what it is called everywhere else.
+    const strict = argv.length === 5 && argv[4] === 'strict';
     const [players, courts, rounds, women] = argv.map(Number);
     if (
-      (argv.length !== 3 && argv.length !== 4) ||
+      (argv.length !== 3 && argv.length !== 4 && !strict) ||
       ![players, courts, rounds].every((value) => Number.isInteger(value) && value > 0)
     ) {
-      usage('Expected three positive whole numbers, and optionally a fourth.');
+      usage('Expected three positive whole numbers, optionally a fourth, optionally `strict`.');
     }
     if (players < 4) {
       usage('A session needs at least 4 players.');
@@ -106,7 +111,18 @@ function main(argv) {
       usage(`Expected the number of women to be between 0 and ${players}.`);
     }
 
-    return [{ session: schedule(`cli-${players}p`, players, courts, rounds, women) }];
+    return [
+      {
+        session: schedule(
+          `cli-${players}p`,
+          players,
+          courts,
+          rounds,
+          women,
+          strict ? true : undefined,
+        ),
+      },
+    ];
   }
 
   return [
@@ -137,6 +153,14 @@ function main(argv) {
     {
       session: schedule('mixicano-10p-skew', 10, 2, 10, 9),
       note: 'Mixicano with one man among nine women: the degenerate end of hybrid fill.',
+    },
+    {
+      session: schedule('mixicano-10p-strict', 10, 2, 12, 7, true),
+      note: [
+        'The same seven women and three men, mixing strictly (ADR-0036). Nothing is starred,',
+        'because no pair shares a gender — the price is in the court line under each round and',
+        'in the bench beside it: one court of the two booked, and six people sitting down.',
+      ].join('\n'),
     },
     {
       session: teamSchedule('team-8p', 8, 2, 7),

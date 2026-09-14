@@ -12,6 +12,12 @@
  * to mean the same thing in both — a repeat that leaves someone with a counterpart they have
  * never had costs more than any number of ordinary repeats, whether the counterpart is a partner
  * or an opposing team.
+ *
+ * There is one thing a caller can say that is not a cost: an infinite one. That pairing is not
+ * dear, it is unavailable — strict mixing's same-gender partnership (ADR-0036 §1) — and it is
+ * dropped from the candidates rather than ranked last among them. A search over the remaining
+ * pairings either finds a complete answer or reports none, which is the whole point of saying it
+ * that way instead of naming a very large number the search would pay when cornered.
  */
 
 /** A repeat that leaves someone without a counterpart they have never played. */
@@ -113,7 +119,10 @@ export function inOrder(taken: readonly boolean[]): number {
   return taken.indexOf(false);
 }
 
-/** The still-unpaired candidates for this one, cheapest first, ties by order. */
+/**
+ * The still-unpaired candidates for this one, cheapest first, ties by order — and never one the
+ * caller has priced as unavailable.
+ */
 function cheapestFirst(
   item: number,
   taken: readonly boolean[],
@@ -121,7 +130,7 @@ function cheapestFirst(
 ): number[] {
   const free: number[] = [];
   for (let index = 0; index < taken.length; index++) {
-    if (!taken[index]) {
+    if (!taken[index] && Number.isFinite(costs[item][index])) {
       free.push(index);
     }
   }

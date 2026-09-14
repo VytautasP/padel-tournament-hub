@@ -1,132 +1,181 @@
-<section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
-  <header class="flex items-center justify-between gap-3">
-    <button
-      type="button"
-      class="flex size-[46px] items-center justify-center rounded-full border border-line bg-surface-raised text-name text-ink-muted disabled:opacity-30"
-      [attr.aria-label]="copy.round.previous"
-      [disabled]="!canPage().back"
-      (click)="previous()"
-    >
-      {{ copy.round.previousGlyph }}
-    </button>
+<section class="flex min-h-full flex-col">
+  <!--
+    The header is a full-bleed gradient carrying the paging and, under it, the shape of the whole
+    evening (ADR-0035 §2, move 2). Its ground and its ink arrive together from `header-gradient`,
+    because in dark the gradient is drawn from two surfaces with no brand in it at all and a header
+    that took one without the other would be right in one theme by accident.
 
-    <h1 class="text-header text-center font-bold text-ink">
-      @if (pastTheLastRound()) {
-        {{ copy.round.addRound.heading }}
-      } @else {
-        {{ copy.round.heading(showing(), roundCount()) }}
-      }
-    </h1>
+    It rounds only at the bottom, because it is bled to both edges and to the top of the panel:
+    what it is, is the top of the screen, not a card that happens to be up there.
+  -->
+  <header class="header-gradient flex flex-col gap-4 rounded-b-card px-5 pt-6 pb-5">
+    <div class="flex items-center justify-between gap-3">
+      <button
+        type="button"
+        class="text-name flex size-[46px] items-center justify-center rounded-full bg-header-ink/15 disabled:opacity-30"
+        [attr.aria-label]="copy.round.previous"
+        [disabled]="!canPage().back"
+        (click)="previous()"
+      >
+        {{ copy.round.previousGlyph }}
+      </button>
 
-    <button
-      type="button"
-      class="flex size-[46px] items-center justify-center rounded-full border border-line bg-surface-raised text-name text-ink-muted disabled:opacity-30"
-      [attr.aria-label]="copy.round.next"
-      [disabled]="!canPage().forward"
-      (click)="next()"
-    >
-      {{ copy.round.nextGlyph }}
-    </button>
-  </header>
+      <h1 class="text-header text-center font-bold">
+        @if (pastTheLastRound()) {
+          {{ copy.round.addRound.heading }}
+        } @else {
+          {{ copy.round.heading(showing(), roundCount()) }}
+        }
+      </h1>
 
-  @if (canReturnToCurrentRound()) {
-    <button
-      type="button"
-      class="text-meta self-center font-bold text-brand underline"
-      (click)="backToCurrentRound()"
-    >
-      {{ copy.round.backToCurrent }}
-    </button>
-  }
-
-  @if (round(); as view) {
-    <!--
-      Two-up from the middle tier, one court per row below it (ADR-0022 §1). The grid is the whole
-      of what widening the Round tab means, which is why it is a utility and not a signal: nothing
-      here is a different screen at a different width, it is the same courts in more room.
-    -->
-    <ul class="grid gap-3 md:grid-cols-2">
-      @for (court of view.courts; track court.courtNumber) {
-        <li>
-          @if (!interactive()) {
-            <div
-              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
-              [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
-            >
-              <ng-container
-                [ngTemplateOutlet]="card"
-                [ngTemplateOutletContext]="{ $implicit: court }"
-              />
-            </div>
-          } @else {
-            <button
-              type="button"
-              class="w-full rounded-[18px] bg-surface-raised px-[18px] py-4 text-left"
-              [class]="court.score ? 'border-[1.5px] border-brand' : 'border border-line'"
-              [attr.aria-label]="copy.round.enterScore(court.name)"
-              (click)="score(court)"
-            >
-              <ng-container
-                [ngTemplateOutlet]="card"
-                [ngTemplateOutletContext]="{ $implicit: court }"
-              />
-            </button>
-          }
-        </li>
-      }
-    </ul>
+      <button
+        type="button"
+        class="text-name flex size-[46px] items-center justify-center rounded-full bg-header-ink/15 disabled:opacity-30"
+        [attr.aria-label]="copy.round.next"
+        [disabled]="!canPage().forward"
+        (click)="next()"
+      >
+        {{ copy.round.nextGlyph }}
+      </button>
+    </div>
 
     <!--
-      The three notes are one group rather than three siblings, because that is what they are on
-      the artboard: footnotes to the courts, set close together, and one step further from the
-      courts than they are from each other. The outer `@if` is what keeps that true when none of
-      them applies — an empty group would still take the section's gap on both sides.
+      One segment per round the session holds, full where the round is played out, half-lit where
+      it is part-scored and a whisper where nobody has been on it yet. It grows when a round is
+      added, because it is the rounds rather than a drawn seven (ADR-0035, consequences).
+
+      A graphic and not a sentence: the heading above it already says `Round 3 of 7` in both
+      dictionaries, so the bar adds no string and is hidden from the accessibility tree rather than
+      read out as a row of nothing.
     -->
-    @if (view.hasSameGenderPair || view.bench.length > 0 || view.bye.length > 0) {
-      <div class="flex flex-col gap-2">
-        @if (view.hasSameGenderPair) {
-          <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
-        }
-
-        @if (view.bench.length > 0) {
-          <p class="text-meta text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
-        }
-
-        @if (view.bye.length > 0) {
-          <p class="text-meta text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
+    @if (progress().length > 0) {
+      <div class="flex gap-[5px]" aria-hidden="true">
+        @for (round of progress(); track round.number) {
+          <span class="h-1 flex-1 rounded-full bg-header-ink" [class]="round.strength"></span>
         }
       </div>
     }
+  </header>
 
-    <!--
-      The advance card sits at the bottom of the screen, not under the last note. `min-h-full`
-      above plus this spacer is what puts it there without pinning it: a round with more courts
-      than fit simply scrolls, and the button arrives at the end of the scroll rather than
-      floating over it.
-    -->
-    <div class="flex-1"></div>
-
-    @if (advanceTo(); as nextRound) {
+  <div class="flex flex-1 flex-col gap-5 px-4 pt-5 pb-3">
+    @if (canReturnToCurrentRound()) {
       <button
         type="button"
-        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
-        (click)="show(nextRound)"
+        class="text-meta self-center font-bold text-brand underline"
+        (click)="backToCurrentRound()"
       >
-        {{ copy.round.advance(nextRound) }}
+        {{ copy.round.backToCurrent }}
       </button>
     }
-  } @else if (pastTheLastRound()) {
-    <div class="space-y-3 rounded-[18px] border border-dashed border-line p-4 text-center">
-      <p class="text-meta text-ink-muted">{{ copy.round.addRound.lead }}</p>
-      <button
-        type="button"
-        class="text-control h-[54px] rounded-[15px] bg-brand px-4 font-bold text-brand-ink"
-        (click)="addRound()"
-      >
-        {{ copy.round.addRound.action }}
-      </button>
-    </div>
-  }
+
+    @if (round(); as view) {
+      <!--
+        Two-up from the middle tier, one court per row below it (ADR-0022 §1). The grid is the whole
+        of what widening the Round tab means, which is why it is a utility and not a signal: nothing
+        here is a different screen at a different width, it is the same courts in more room.
+      -->
+      <ul class="grid gap-3.5 md:grid-cols-2">
+        @for (court of view.courts; track court.courtNumber) {
+          <li>
+            <!--
+              A card rests on a shadow now rather than sitting inside a hairline, and it is the
+              same card whether or not it has been scored: a scored court is marked by the tinted
+              fill under its winning side, which is inside the card and not around it (ADR-0035 §2,
+              moves 1 and 5). The border that used to thicken when a score landed is gone, so
+              nothing on this screen asks the reader to compare two line weights.
+            -->
+            @if (!interactive()) {
+              <div class="card w-full p-3.5 text-left">
+                <ng-container
+                  [ngTemplateOutlet]="card"
+                  [ngTemplateOutletContext]="{ $implicit: court }"
+                />
+              </div>
+            } @else {
+              <button
+                type="button"
+                class="card w-full p-3.5 text-left"
+                [attr.aria-label]="copy.round.enterScore(court.name)"
+                (click)="score(court)"
+              >
+                <ng-container
+                  [ngTemplateOutlet]="card"
+                  [ngTemplateOutletContext]="{ $implicit: court }"
+                />
+              </button>
+            }
+          </li>
+        }
+      </ul>
+
+      <!--
+        The notes are one group rather than a row of siblings, because that is what they are on
+        the artboard: footnotes to the courts, set close together, and one step further from the
+        courts than they are from each other. The outer `@if` is what keeps that true when none of
+        them applies — an empty group would still take the section's gap on both sides.
+      -->
+      @if (
+        view.hasSameGenderPair ||
+        view.unusedCourts.length > 0 ||
+        view.bench.length > 0 ||
+        view.bye.length > 0
+      ) {
+        <div class="flex flex-col gap-2 px-1">
+          @if (view.hasSameGenderPair) {
+            <p class="text-meta text-ink-muted">{{ copy.round.sameGender.legend }}</p>
+          }
+
+          <!--
+            A strict evening has no marked pair to explain and one thing of its own to say: which
+            booked court is standing empty, and why (ADR-0036 §8). It sits with the other
+            footnotes, above the bench it is the reason for.
+          -->
+          @if (view.unusedCourts.length > 0) {
+            <p class="text-meta text-ink-muted">
+              {{ copy.round.strictMixing.unused(view.unusedCourts) }}
+            </p>
+          }
+
+          @if (view.bench.length > 0) {
+            <p class="text-meta text-ink-muted">{{ copy.round.bench(view.bench) }}</p>
+          }
+
+          @if (view.bye.length > 0) {
+            <p class="text-meta text-ink-muted">{{ copy.round.bye(view.bye) }}</p>
+          }
+        </div>
+      }
+
+      <!--
+        The advance card sits at the bottom of the screen, not under the last note. `min-h-full`
+        above plus this spacer is what puts it there without pinning it: a round with more courts
+        than fit simply scrolls, and the button arrives at the end of the scroll rather than
+        floating over it.
+      -->
+      <div class="flex-1"></div>
+
+      @if (advanceTo(); as nextRound) {
+        <button
+          type="button"
+          class="text-control h-[54px] primary-pill px-4"
+          (click)="show(nextRound)"
+        >
+          {{ copy.round.advance(nextRound) }}
+        </button>
+      }
+    } @else if (pastTheLastRound()) {
+      <!--
+        Not a card. A dashed outline around a space the evening has not filled is the one place a
+        border still says something a shadow cannot, which is that there is nothing here yet.
+      -->
+      <div class="space-y-3 rounded-card border border-dashed border-line p-4 text-center">
+        <p class="text-meta text-ink-muted">{{ copy.round.addRound.lead }}</p>
+        <button type="button" class="text-control h-[54px] primary-pill px-4" (click)="addRound()">
+          {{ copy.round.addRound.action }}
+        </button>
+      </div>
+    }
+  </div>
 </section>
 
 <!--

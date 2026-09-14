@@ -475,8 +475,9 @@ function declaring(arity: number, sentence: DictionaryFunction): DictionaryFunct
  * use either throws — `names.join` on a number — or produces the same answer twice, and both read
  * as "this pair says nothing", which is the next pair's cue.
  *
- * The zero is last and is there for one entry. `standings.total` reads two of its three arguments
- * without ever printing them: they choose between a dash and a figure (ADR-0023 §2), and no pair
+ * The zero is last and is there for one entry. `standings.total` reads three of its four arguments
+ * without ever printing them: they choose between a dash and a figure (ADR-0023 §2, ADR-0037 §8),
+ * and no pair
  * of ordinary counts moves that branch. A pair that is zero on one side does, which is the
  * difference between an argument this walk can speak about and one it has to pass over.
  */

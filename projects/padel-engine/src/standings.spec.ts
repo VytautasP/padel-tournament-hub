@@ -1,7 +1,7 @@
 import { computeStandings, createSession, generateRemaining, recordScore } from './public-api';
 import type { PlayerId, Session, Standing } from './public-api';
 import { damaged } from './test-support/damaged-session';
-import { americanoConfig } from './test-support/session-fixtures';
+import { americanoConfig, compensating } from './test-support/session-fixtures';
 import { scoredSession } from './test-support/standings-fixtures';
 
 function standingOf(standings: readonly Standing[], playerId: PlayerId): Standing {
@@ -42,6 +42,7 @@ describe('computeStandings', () => {
       tied: 0,
       lost: 0,
       benched: 0,
+      compensated: 0,
     });
   });
 
@@ -168,6 +169,191 @@ describe('computeStandings', () => {
 
       expect(standingOf(standings, 'p5').points).toBe(12);
       expect(positionOf(standings, 'p5')).toBeLessThan(positionOf(standings, 'p3'));
+    });
+  });
+
+  describe('compensation', () => {
+    it('pays nothing at all unless the organizer said so', () => {
+      // The same document, ended without the question answered yes: round two is abandoned and
+      // it owes nobody anything. This is every session ever written before ADR-0037.
+      const standings = computeStandings(
+        scoredSession(
+          [
+            [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
+            [{ sideA: ['p1', 'p3'], sideB: ['p2', 'p4'] }],
+          ],
+          { playerCount: 5 },
+        ),
+      );
+
+      expect(standingOf(standings, 'p1')).toMatchObject({ points: 16, compensated: 0 });
+      expect(standingOf(standings, 'p5')).toMatchObject({ points: 12, compensated: 0 });
+    });
+
+    it('pays the players an abandoned round put on court half the target score', () => {
+      const standings = computeStandings(
+        compensating(
+          scoredSession([
+            [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
+            [{ sideA: ['p1', 'p3'], sideB: ['p2', 'p4'] }],
+          ]),
+        ),
+      );
+
+      expect(standingOf(standings, 'p1')).toMatchObject({
+        points: 28,
+        compensated: 1,
+        benched: 0,
+        matchesPlayed: 1,
+        won: 1,
+        tied: 0,
+        lost: 0,
+      });
+    });
+
+    it('pays the players it benched exactly what it pays the players it scheduled', () => {
+      // The bench credit exists so the rotation cannot decide the table (ADR-0023 §3), and
+      // ending early would hand it the decision back if only the scheduled were paid.
+      const standings = computeStandings(
+        compensating(
+          scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'] }]], { playerCount: 5 }),
+        ),
+      );
+
+      expect(standingOf(standings, 'p5')).toMatchObject({ points: 12, compensated: 1 });
+      expect(standingOf(standings, 'p1')).toMatchObject({ points: 12, compensated: 1 });
+    });
+
+    it('pays half of a target score that does not halve', () => {
+      const standings = computeStandings(
+        compensating(
+          scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'] }]], { targetScore: 21 }),
+        ),
+      );
+
+      expect(standingOf(standings, 'p1').points).toBe(10.5);
+    });
+
+    it('pays only the unscored courts of a half-scored round', () => {
+      // Court one finished, so it paid its four players what they scored; court two never took
+      // the court at all (ADR-0037 §2). The bench of that round is owed either way — an
+      // incomplete round earns no bench credit, so nobody is paid twice.
+      const standings = computeStandings(
+        compensating(
+          scoredSession(
+            [
+              [
+                { sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] },
+                { sideA: ['p5', 'p6'], sideB: ['p7', 'p8'] },
+              ],
+            ],
+            { playerCount: 9 },
+          ),
+        ),
+      );
+
+      expect(standingOf(standings, 'p1')).toMatchObject({ points: 16, compensated: 0 });
+      expect(standingOf(standings, 'p5')).toMatchObject({ points: 12, compensated: 1 });
+      expect(standingOf(standings, 'p9')).toMatchObject({ points: 12, compensated: 1, benched: 0 });
+    });
+
+    it('pays nobody for a round slot nobody generated', () => {
+      // Two abandoned rounds would be three if a slot counted, and a slot costs the organizer
+      // one number in a form field.
+      const standings = computeStandings(
+        compensating(
+          scoredSession([
+            [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'] }],
+            [{ sideA: ['p1', 'p3'], sideB: ['p2', 'p4'] }],
+            [],
+          ]),
+        ),
+      );
+
+      expect(standingOf(standings, 'p1')).toMatchObject({ points: 24, compensated: 2 });
+    });
+
+    it('pays nobody who was not in the session for the round', () => {
+      // p5 had not arrived and p6 had gone home. Absence is not availability, in exactly the
+      // words the bench credit already uses (ADR-0023 §3).
+      const standings = computeStandings(
+        compensating(
+          scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'] }]], {
+            playerCount: 6,
+            arrivals: { p5: { joinedAtRound: 2 }, p6: { leftAfterRound: 0 } },
+          }),
+        ),
+      );
+
+      expect(standingOf(standings, 'p5')).toMatchObject({ points: 0, compensated: 0 });
+      expect(standingOf(standings, 'p6')).toMatchObject({ points: 0, compensated: 0 });
+      expect(standingOf(standings, 'p1')).toMatchObject({ points: 12, compensated: 1 });
+    });
+
+    it('leaves the record alone — a payment is not a match', () => {
+      const standings = computeStandings(
+        compensating(scoredSession([[{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'] }]])),
+      );
+
+      expect(standingOf(standings, 'p1')).toMatchObject({
+        matchesPlayed: 0,
+        won: 0,
+        tied: 0,
+        lost: 0,
+        benched: 0,
+        compensated: 1,
+      });
+    });
+
+    it('keeps the total the sum of its parts: scores, bench credits and compensation', () => {
+      // p5 sits out round one, which is played and pays a bench credit; round two is abandoned
+      // and pays everybody. 12 + 12 for p5, 16 + 12 for p1 — arithmetic a reader can check by
+      // hand, which is what compensation has its own column for.
+      const standings = computeStandings(
+        compensating(
+          scoredSession(
+            [
+              [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p4'], score: [16, 8] }],
+              [{ sideA: ['p1', 'p2'], sideB: ['p3', 'p5'] }],
+            ],
+            { playerCount: 5 },
+          ),
+        ),
+      );
+
+      expect(standingOf(standings, 'p5')).toMatchObject({
+        points: 24,
+        benched: 1,
+        compensated: 1,
+      });
+      expect(standingOf(standings, 'p1')).toMatchObject({
+        points: 28,
+        benched: 0,
+        compensated: 1,
+      });
+    });
+
+    it('can move the podium, which is the whole reason it is asked about', () => {
+      // p1 beat p2 in the one round that was played and then went home, so round two — generated,
+      // never played — owes p2 and owes p1 nothing. Compensating it puts p2 above p1, which is
+      // the reordering on the way to the final screen the confirmation has to warn about.
+      const played = scoredSession(
+        [
+          [{ sideA: ['p1', 'p5'], sideB: ['p2', 'p6'], score: [14, 10] }],
+          [{ sideA: ['p2', 'p3'], sideB: ['p4', 'p5'] }],
+        ],
+        { playerCount: 6, arrivals: { p1: { leftAfterRound: 1 } } },
+      );
+
+      expect(positionOf(computeStandings(played), 'p1')).toBeLessThan(
+        positionOf(computeStandings(played), 'p2'),
+      );
+
+      const compensated = computeStandings(compensating(played));
+
+      expect(standingOf(compensated, 'p1')).toMatchObject({ points: 14, compensated: 0 });
+      expect(standingOf(compensated, 'p2')).toMatchObject({ points: 22, compensated: 1 });
+      expect(positionOf(compensated, 'p1')).toBeGreaterThan(positionOf(compensated, 'p2'));
     });
   });
 

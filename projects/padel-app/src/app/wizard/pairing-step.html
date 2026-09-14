@@ -21,11 +21,9 @@
       <h2 class="text-micro font-bold text-ink-muted uppercase">
         {{ copy.wizard.pairing.teams }}
       </h2>
-      <ul class="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface-raised">
+      <ul class="card flex flex-col gap-0.5 p-2">
         @for (team of draft().teams(); track team.key) {
-          <li
-            class="flex items-center gap-1 border-b border-line py-[5px] pr-2 pl-[18px] last:border-b-0"
-          >
+          <li class="flex items-center gap-1 rounded-control py-[5px] pr-2 pl-3">
             <span class="text-row min-w-0 flex-1 truncate text-ink">
               {{ copy.team.name(team.names) }}
             </span>
@@ -63,10 +61,8 @@
           <li>
             <button
               type="button"
-              class="text-control rounded-full border px-4 py-[10px] font-bold"
-              [class]="
-                choice.waiting ? 'border-brand bg-brand text-brand-ink' : 'border-line text-ink'
-              "
+              class="text-control rounded-full px-4 py-[10px] font-bold"
+              [class]="choice.waiting ? 'bg-brand text-brand-ink' : 'bg-surface-sunken text-ink'"
               [attr.aria-label]="copy.wizard.pairing.choose(choice.name)"
               [attr.aria-pressed]="choice.waiting"
               (click)="choose(choice.id)"

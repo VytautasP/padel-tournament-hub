@@ -172,6 +172,33 @@ export interface Session {
   /** Fixed point total per match (decision #3). */
   readonly targetScore: number;
   readonly rounds: readonly Round[];
+  /**
+   * The organizer said the evening's abandoned rounds should be paid for (ADR-0037).
+   *
+   * The one stored fact in the standings, and the only kind there will be: everything else the
+   * table shows is computed on every read (decision #17), but whether a night that stopped early
+   * owes anybody anything is a judgement about the room that no reading of the rounds recovers.
+   *
+   * Written by `finishSession` at the instant the document freezes, so it can never disagree with
+   * anything later. Absent means no — which is every session ever written before this one.
+   */
+  readonly compensatedUnplayed?: true;
+  /**
+   * The organizer chose how this Mixicano settles an unequal pool (ADR-0036).
+   *
+   * `true` is **strict mixing**: no same-gender pair is ever formed, and the courts shrink to
+   * what the smaller gender can staff. `false` is **hybrid fill**: the courts take mixed pairs
+   * first and the surplus plays same-gender, marked and rotated.
+   *
+   * Absent means hybrid fill — a session written before the choice existed was scheduled under
+   * the rule of its day, and nothing rewrites the past. The wizard writes it explicitly on every
+   * new session, so "absent" only ever means "older than this decision".
+   *
+   * Held by Mixicano and by no other mode, and fixed at creation like the mode itself: the
+   * referee judges every prefix, so a session switched mid-evening would be a document whose
+   * played rounds are illegal under its own flag.
+   */
+  readonly strictMixing?: boolean;
 }
 
 /** Everything `createSession` needs to build a schedulable session. */
@@ -185,4 +212,6 @@ export interface SessionConfig {
   readonly courtCount: number;
   readonly targetScore: number;
   readonly roundCount: number;
+  /** How this Mixicano settles an unequal pool (ADR-0036). Refused by every other mode. */
+  readonly strictMixing?: boolean;
 }

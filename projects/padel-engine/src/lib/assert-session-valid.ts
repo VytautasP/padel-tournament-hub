@@ -14,6 +14,7 @@
  * It throws on the first violation with a message naming the round and the players involved,
  * because a fairness bug is only useful if you can see what it did.
  */
+import { hasAbandonedRounds } from './bench-credit';
 import { FixtureLedger } from './fixture-ledger';
 import { mixedPairingIn } from './mixed-pairing';
 import type { MixedPairing } from './mixed-pairing';
@@ -35,6 +36,7 @@ export function assertSessionValid(session: Session): void {
   assertMatchIdsUnique(session);
   assertGeneratedRoundsComeFirst(session);
   assertScoresSumToTarget(session);
+  assertCompensationIsOwed(session);
 
   const mixed = mixedPairingIn(session);
   const play = teamPlayIn(session);
@@ -85,7 +87,12 @@ export function assertSessionValid(session: Session): void {
       assertOpponentVariety(round, availableTeams, meetings, play);
     } else {
       countBench(playersIn(round), available, benchCounts);
-      assertBenchSpread(round, available, benchCounts, nameOf);
+      // Everybody available is one bench queue, except under strict mixing, where each gender is
+      // its own and the spread is checked within it (ADR-0036 §3). Which populations those are is
+      // the scheduler's answer too, so neither can drift from the other.
+      for (const queue of mixed.benchQueues(available, (entry) => entry.id)) {
+        assertBenchSpread(round, queue, benchCounts, nameOf);
+      }
       // Partner variety is asked of every mode but Team Americano, where the partnership is the
       // format rather than something the scheduler chose — exempt for the same reason a Mixicano
       // same-gender pair is (ADR-0010). What replaces it is `assertOpponentVariety` above.
@@ -93,6 +100,24 @@ export function assertSessionValid(session: Session): void {
     }
 
     assertMixedPairing(round, available, mixed, sameGenderCounts, nameOf);
+  }
+}
+
+/**
+ * A session that says its abandoned rounds were paid for has an abandoned round in it (ADR-0037 §7).
+ *
+ * The flag is the one stored fact in the standings, so it is the one thing here that no
+ * recomputation can catch: every other figure the table shows is derived from the rounds and
+ * cannot drift from them. A flag on a fully-scored evening pays nobody and claims the organizer
+ * answered a question they were never asked, which is exactly the kind of drift the referee is
+ * for. A round slot nobody generated does not rescue it — a slot is not a fixture (§2).
+ */
+function assertCompensationIsOwed(session: Session): void {
+  if (session.compensatedUnplayed && !hasAbandonedRounds(session)) {
+    throw new Error(
+      `Session "${session.id}" compensates its abandoned rounds, but has nothing to compensate — ` +
+        'every generated round has been scored.',
+    );
   }
 }
 
@@ -263,6 +288,12 @@ function assertBenchSpread<Id extends string>(
   nameOf: (id: Id) => string,
 ): void {
   const counts = available.map((unit) => benchCounts.get(unit.id) ?? 0);
+  // Nobody to compare is no spread. Only a strict session reaches this with an empty queue — a
+  // gender none of whose players is available this round, which is a round with no matches in it.
+  if (counts.length === 0) {
+    return;
+  }
+
   const spread = Math.max(...counts) - Math.min(...counts);
   if (spread <= 1) {
     return;
@@ -278,8 +309,19 @@ function assertBenchSpread<Id extends string>(
 }
 
 /**
- * Mixicano's two rules, both consequences of same-gender pairing being a soft cost rather than a
- * hard constraint (decision #7).
+ * Mixicano's pairing rule, in whichever of its two forms this session plays by.
+ *
+ * Under **strict mixing** there is one clause and it is the format's own: no same-gender pair, in
+ * any round, ever (ADR-0036 §1). The arithmetic hybrid fill argues with is settled earlier and
+ * elsewhere — `courtsInPlay` shrinks the round to the courts two women and two men can staff, so
+ * by the time a strict round reaches here every player on it had a partner of the other gender
+ * available, and a same-gender pair is a fault rather than a compromise. Which is why this
+ * replaces the minimised clause rather than joining it: a strict round that forced a pair would
+ * pass "no more than the players on court force" while breaking the one rule the organizer chose
+ * the format for.
+ *
+ * Under **hybrid fill** the two rules below hold instead, both consequences of same-gender pairing
+ * being a soft cost rather than a hard constraint (decision #7, ADR-0010).
  *
  *   - **Minimised.** A round forms exactly as many same-gender pairs as the players on court
  *     force and not one more: `|women - men| / 2`, since every man on court can partner a woman
@@ -290,8 +332,9 @@ function assertBenchSpread<Id extends string>(
  *     a player of their gender who is on court and *not* in one — that player could have taken
  *     their place, because within a gender the surplus is interchangeable.
  *
- * Both are prefix checks, like the bench spread: an evening that stops after round four has to
- * have spread its compromises over those four rounds, not over the twelve it planned for.
+ * All three are prefix checks, like the bench spread: an evening that stops after round four has
+ * to have kept its rule over those four rounds, not over the twelve it planned for. And the flag
+ * is fixed at creation (ADR-0036 §6) precisely so that every prefix answers to the same one.
  *
  * A mode that does not pair across gender skips the check, where every question it asks would
  * answer "none forced" and "nobody compromised".
@@ -307,9 +350,24 @@ function assertMixedPairing(
     return;
   }
 
-  const playing = round.matches.flatMap(playersOf);
   const sides = round.matches.flatMap((match) => [match.sideA, match.sideB]);
   const compromised = sides.filter((side) => mixed.sameGender(side[0], side[1]));
+
+  if (mixed.strict) {
+    const [offending] = compromised;
+    if (offending !== undefined) {
+      throw new Error(
+        `Round ${round.number} pairs ${nameOf(offending[0])} with ${nameOf(offending[1])}, who ` +
+          'are the same gender — this session mixes strictly.',
+      );
+    }
+
+    // Nobody carries a compromise, so there is none to have minimised and none to rotate, and the
+    // running tally stays untouched — it counts compromises handed out, and this round handed none.
+    return;
+  }
+
+  const playing = round.matches.flatMap(playersOf);
   const forced = mixed.forcedSameGenderPairs(playing);
 
   if (compromised.length > forced) {

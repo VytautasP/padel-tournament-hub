@@ -8,7 +8,7 @@ import {
   recordScore,
 } from './public-api';
 import type { RosterEntry, Session } from './public-api';
-import { americanoConfig } from './test-support/session-fixtures';
+import { americanoConfig, scoredThrough } from './test-support/session-fixtures';
 
 /** A generated session: two courts, three rounds, target 24, nothing scored yet. */
 function generated(): Session {
@@ -23,6 +23,11 @@ function partlyPlayed(): Session {
     (scored, match) => recordScore(scored, { matchId: match.id, side: 'A', points: 15 }),
     session,
   );
+}
+
+/** Every match of every generated round scored, so there is nothing left to abandon. */
+function fullyPlayed(): Session {
+  return scoredThrough(generated());
 }
 
 describe('finishSession', () => {
@@ -50,6 +55,66 @@ describe('finishSession', () => {
     expect(computeStandings(finishSession(played))).toEqual(computeStandings(played));
 
     assertSessionValid(finishSession(played));
+  });
+
+  describe('compensating the abandoned rounds', () => {
+    it('leaves the flag off when it is not asked for', () => {
+      // Absent means no, which is what lets every session written before ADR-0037 read back and
+      // rank exactly as it did.
+      expect(finishSession(partlyPlayed()).compensatedUnplayed).toBeUndefined();
+      expect(finishSession(partlyPlayed(), {}).compensatedUnplayed).toBeUndefined();
+      expect(
+        finishSession(partlyPlayed(), { compensateUnplayed: false }).compensatedUnplayed,
+      ).toBeUndefined();
+    });
+
+    it('ranks a session finished without the option exactly as it ranked before', () => {
+      const played = partlyPlayed();
+
+      expect(computeStandings(finishSession(played))).toEqual(computeStandings(played));
+    });
+
+    it('writes the flag when the organizer says yes, and pays the abandoned rounds', () => {
+      const finished = finishSession(partlyPlayed(), { compensateUnplayed: true });
+
+      expect(finished.compensatedUnplayed).toBe(true);
+      expect(finished.status).toBe('finished');
+
+      // Rounds two and three were generated and never played; the target is 24.
+      for (const standing of computeStandings(finished)) {
+        expect(standing.compensated).toBe(2);
+      }
+
+      assertSessionValid(finished);
+    });
+
+    it('refuses to promise a payment the document cannot make', () => {
+      // Every generated round scored and nothing left to abandon: saying yes here would write a
+      // flag the referee refuses, so `finishSession` refuses first (ADR-0037 §7).
+      const played = fullyPlayed();
+
+      expect(() => finishSession(played, { compensateUnplayed: true })).toThrow(
+        /nothing to compensate/,
+      );
+      expect(finishSession(played).status).toBe('finished');
+    });
+
+    it('leaves the session it was given untouched, option or no option', () => {
+      const session = partlyPlayed();
+
+      finishSession(session, { compensateUnplayed: true });
+
+      expect(session.compensatedUnplayed).toBeUndefined();
+      expect(session.status).toBe('in-progress');
+    });
+
+    it('freezes the flag along with everything else', () => {
+      const finished = finishSession(partlyPlayed(), { compensateUnplayed: true });
+
+      expect(() => {
+        (finished as { compensatedUnplayed?: true }).compensatedUnplayed = undefined;
+      }).toThrow();
+    });
   });
 
   it('rejects a score recorded on a finished session', () => {

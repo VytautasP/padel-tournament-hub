@@ -41,8 +41,10 @@ import {
   createSession,
   finishSession,
   generateRemaining,
+  hasAbandonedRounds,
   recordScore,
   removePlayer,
+  type FinishOptions,
   type Gender,
   type OrphanedTeam,
   type PlayerId,
@@ -116,6 +118,15 @@ export interface SessionDraft {
   readonly courtNames: readonly string[];
   readonly targetScore: number;
   readonly roundCount: number;
+  /**
+   * Which rule this Mixicano settles an unequal pool by (ADR-0036), and absent in every other
+   * mode — the engine refuses the flag where it has no meaning.
+   *
+   * Optional here because the wizard is not the only shape a draft could take, and required of
+   * every Mixicano the wizard builds: a flag written explicitly on creation is what keeps an
+   * absent one meaning "written before the choice existed".
+   */
+  readonly strictMixing?: boolean;
 }
 
 /**
@@ -262,6 +273,21 @@ export class SessionStore implements OnDestroy {
    * "accepts no edits of any kind" amounts to in the UI.
    */
   readonly ended = computed(() => this.openSession()?.status === 'finished');
+
+  /**
+   * Whether ending this evening has one further question to ask: it still holds an abandoned
+   * round, so there is something to compensate (ADR-0037 §1).
+   *
+   * The engine answers it. What counts as abandoned is its definition — a generated round holding
+   * an unscored match, never a round slot nobody generated — and a screen that worked it out from
+   * the rounds itself would be a second definition of the one thing the referee is watching for
+   * drift in (ADR-0037 §7).
+   */
+  readonly hasAbandonedRounds = computed(() => {
+    const session = this.openSession();
+
+    return session !== null && hasAbandonedRounds(session);
+  });
 
   /**
    * What the organizer calls each court of the session on screen (ADR-0017 §6).
@@ -446,6 +472,10 @@ export class SessionStore implements OnDestroy {
         courtCount: draft.courtCount,
         targetScore: draft.targetScore,
         roundCount: draft.roundCount,
+        // Absent rather than false where the mode does not mix, for the reason `teams` is absent
+        // above: the engine reads the key at all as a claim about the session, and refuses it from
+        // a mode that has no use for it.
+        ...(draft.strictMixing === undefined ? {} : { strictMixing: draft.strictMixing }),
       }),
     );
 
@@ -540,7 +570,7 @@ export class SessionStore implements OnDestroy {
    * The record stays open afterwards, because the organizer is standing in front of the table it
    * has just made final.
    */
-  async end(): Promise<void> {
+  async end(options: FinishOptions = {}): Promise<void> {
     const current = this.record();
     if (current === null) {
       throw new Error('There is no active session to end.');
@@ -548,7 +578,7 @@ export class SessionStore implements OnDestroy {
 
     const record: SessionRecord = {
       ...current,
-      session: finishSession(current.session),
+      session: finishSession(current.session, options),
       endedAt: new Date().toISOString(),
     };
     await this.repository.addToHistory(record);

@@ -27,6 +27,74 @@ function scheduledSplit(
   );
 }
 
+/** The same, under strict mixing — the rule ADR-0036 makes the default. */
+function strictSplit(
+  women: number,
+  men: number,
+  courtCount: number,
+  roundCount: number,
+  id = 'session-1',
+): Session {
+  return scheduled(
+    mixicanoConfig({
+      id,
+      players: mixedRoster(women, men),
+      courtCount,
+      roundCount,
+      strictMixing: true,
+    }),
+  );
+}
+
+/**
+ * The roster/court grid the specs above walk, at the depth they walk it, minus the splits strict
+ * mixing refuses outright: one man among nine is not two, and the shape check says so before any
+ * of this is asked (ADR-0036 §5). The even splits are here because they are the case where the
+ * booked courts rather than the roster are the binding constraint.
+ */
+const STRICT_SPLITS = [
+  { women: 7, men: 3, courts: 2, rounds: 10 },
+  { women: 5, men: 3, courts: 2, rounds: 8 },
+  { women: 6, men: 2, courts: 2, rounds: 8 },
+  { women: 9, men: 3, courts: 3, rounds: 8 },
+  { women: 10, men: 2, courts: 2, rounds: 8 },
+  { women: 4, men: 4, courts: 2, rounds: 8 },
+  { women: 6, men: 6, courts: 3, rounds: 8 },
+] as const;
+
+/**
+ * The one split above whose generated evening the referee still throws on — a defect rather than
+ * an exemption, carried by issue #95 and pinned by the last test in this block.
+ */
+const REFUSED_BY_THE_REFEREE = { women: 5, men: 3 };
+
+function isRefusedByTheReferee(split: { women: number; men: number }): boolean {
+  return split.women === REFUSED_BY_THE_REFEREE.women && split.men === REFUSED_BY_THE_REFEREE.men;
+}
+
+/** What a strict round owes the roster: courts filled, and who is left benched, by gender. */
+interface StrictShape {
+  readonly courts: number;
+  readonly benchedWomen: number;
+  readonly benchedMen: number;
+}
+
+/**
+ * Re-derived from the roster alone, the way `fewestPossible` re-derives the hybrid minimum.
+ *
+ * A court is two women and two men, so the smaller gender staffs `floor(min(women, men) / 2)` of
+ * them and the organizer's booking caps that. Everyone those courts cannot take is benched — all
+ * of the surplus gender, and, where the cap binds first, some of both.
+ */
+function strictShape(session: Session): StrictShape {
+  const gender = genderOf(session);
+  const women = session.roster.filter((entry) => gender(entry.id) === 'woman').length;
+  const men = session.roster.length - women;
+  const courts = Math.min(session.courtCount, Math.floor(Math.min(women, men) / 2));
+
+  return { courts, benchedWomen: women - courts * 2, benchedMen: men - courts * 2 };
+}
+
 function genderOf(session: Session): (id: PlayerId) => Gender | undefined {
   const genders = new Map(session.roster.map((entry) => [entry.id, entry.gender]));
 
@@ -377,6 +445,73 @@ describe('generateRemaining — Mixicano on an unequal split', () => {
     }
 
     assertSessionValid(session);
+  });
+});
+
+describe('generateRemaining — Mixicano under strict mixing', () => {
+  it('fills the courts the roster staffs and benches the surplus, on every split', () => {
+    // The strict half of the oracle, and the same claim as `fewestPossible` above made about a
+    // rule with no slack in it. Hybrid fill leaves the search a choice — which bench mixes best —
+    // so its oracle has to re-derive a minimum over every bench. Strictness leaves none: a court
+    // is two women and two men or it is not a court, so the shape of every round follows from the
+    // roster and the booked courts alone, and a scheduler that got it wrong has either idled a
+    // court four people could have played on or seated the wrong gender to fill one.
+    for (const split of STRICT_SPLITS) {
+      const { women, men, courts, rounds } = split;
+      const session = strictSplit(women, men, courts, rounds, `strict-${women}w${men}m`);
+      const shape = strictShape(session);
+      const gender = genderOf(session);
+
+      expect(sameGenderPairs(session).flat()).toEqual([]);
+
+      for (const round of session.rounds) {
+        const onCourt = new Set(round.matches.flatMap((match) => [...match.sideA, ...match.sideB]));
+        const benched = session.roster.filter((entry) => !onCourt.has(entry.id));
+
+        expect(round.matches).toHaveLength(shape.courts);
+        expect(benched.filter((entry) => gender(entry.id) === 'woman')).toHaveLength(
+          shape.benchedWomen,
+        );
+        expect(benched.filter((entry) => gender(entry.id) === 'man')).toHaveLength(
+          shape.benchedMen,
+        );
+      }
+
+      if (!isRefusedByTheReferee(split)) {
+        assertSessionValid(session);
+      }
+    }
+  });
+
+  it('leaves hybrid fill filling the courts the four-a-court count gives it', () => {
+    // The two rules on the same rosters, so the oracle above is visibly measuring strictness
+    // rather than something both branches do. Seven women and three men play one strict court and
+    // two hybrid ones, and the hybrid evening pays for the second with a same-gender pair.
+    for (const { women, men, courts, rounds } of STRICT_SPLITS) {
+      const session = scheduledSplit(women, men, courts, rounds, `hybrid-${women}w${men}m`);
+      const players = women + men;
+
+      for (const round of session.rounds) {
+        expect(round.matches).toHaveLength(Math.min(courts, Math.floor(players / 4)));
+      }
+
+      assertSessionValid(session);
+    }
+  });
+
+  it('is still refused by the referee on the one roster issue #95 names', () => {
+    // A failing case pinned rather than hidden. Five women and three men staff one court, and by
+    // round five the per-gender bench queues have narrowed the women who may take it to two the
+    // men have already partnered — so the scheduler emits an evening its own referee throws on,
+    // over a partner-variety clause ADR-0036 never revisited.
+    //
+    // The oracle above therefore holds this split to every claim it is an oracle *for* and stops
+    // short of `assertSessionValid`. This test is what keeps that honest: it fails the day #95 is
+    // decided, which is the day that skip has to go.
+    const { women, men } = REFUSED_BY_THE_REFEREE;
+    const session = strictSplit(women, men, 2, 8, `refused-${women}w${men}m`);
+
+    expect(() => assertSessionValid(session)).toThrow(/partners .* for the 2 time\(s\)/);
   });
 });
 

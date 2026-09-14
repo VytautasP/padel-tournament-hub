@@ -2,9 +2,19 @@
   The podium is a block rather than three lighter rows at the top of the table. It is the one
   warm thing on the screen — the three metals are the only colour in the app that is not the
   teal or the neutral ramp — and it is the whole reason the evening was played.
+
+  It loses its brand outline and gains the card shadow like everything else (ADR-0035 §2, move 1),
+  and it **keeps its tinted ground** rather than taking the header gradient the Modern board draws
+  it on. That is a deliberate departure from the board, and the reason is the metals. They are the
+  one thing on this screen that must not lose contrast, and the light gold is a deep brown-gold
+  picked to read on a light surface. On a saturated teal ground it is mud, which is why the board
+  drew the *dark* metals there instead. Following the board would therefore mean three more themed
+  pairs, one per metal, keyed to a ground rather than to a theme — three more chances for a medal
+  to go quietly unreadable. `brand-wash` is already the podium's own ground in both themes, and
+  the metals are already proven on it.
 -->
 @if (podium().length > 0) {
-  <section class="flex flex-col gap-3 rounded-[20px] border border-brand bg-brand-wash p-[18px]">
+  <section class="flex flex-col gap-3 rounded-card bg-brand-wash p-[18px] shadow-card">
     <h2 class="text-micro font-bold text-brand uppercase">{{ copy.standings.podium }}</h2>
     <ol class="flex flex-col gap-[10px]">
       @for (place of podium(); track place.standing.id) {
@@ -48,7 +58,8 @@
               copy.standings.total(
                 place.standing.points,
                 place.standing.matchesPlayed,
-                place.standing.benched
+                place.standing.benched,
+                place.standing.compensated
               )
             }}
           </span>
@@ -59,25 +70,29 @@
 }
 
 <!--
-  One row per competitor, divided rather than carded: the table is read down a column of totals,
-  and a gap between every line is a gap the eye has to cross seven times.
+  One card holding every competitor, rather than one card each: the table is read down a column of
+  totals, and a gap between every line is a gap the eye has to cross seven times.
+
+<!--
+  One card holding every competitor, rather than one card each: the table is read down a column of
+  totals, and a gap between every line is a gap the eye has to cross seven times.
 
   A `<table>` rather than a list, because the screen is tabular data with a header. A `<ul>` whose
   first `<li>` was the header row would announce "list, 8 items" and read the header as a sibling
   of the data it heads.
 
-  The card is the wrapper rather than the table: `overflow` is ignored on a table box, and the
-  rounded corners have to be clipped by something that honours it.
+  The hairline dividers went with the borders (ADR-0035 §2, move 5). What separates the rows is the
+  two pixels between them and the card's own padding around the lot, which `border-separate` and a
+  vertical border-spacing are the table's way of spelling. Nothing has to round with the list
+  either: the rows are inset by the card's padding, so the corner curve never reaches one.
 -->
-<div class="overflow-hidden rounded-[20px] border border-line bg-surface-raised">
-  <table class="w-full table-fixed border-collapse">
+<div class="card p-2">
+  <table class="w-full table-fixed border-separate border-spacing-y-0.5">
     <!--
       The legend is the caption, bottom-side. That is what associates it with the table it
       explains, which a trailing paragraph under the card only appears to do.
     -->
-    <caption
-      class="text-meta caption-bottom px-[18px] pt-[10px] pb-[14px] text-left text-ink-muted"
-    >
+    <caption class="text-meta caption-bottom px-3 pt-[10px] pb-[6px] text-left text-ink-muted">
       {{
         copy.standings.legend
       }}
@@ -86,6 +101,9 @@
       Every column is headed, in the artboard's four words. `#` and `Player` say what the two
       columns on the left hold; `W–T–L` and `PTS` are abbreviations, and the caption underneath
       expands the ones that are not already the thing they name.
+
+      No rule under the header, for the reason the rows have none between them: what separates a
+      row from the next one here is the gap.
 
       The widths are set here and the layout is fixed, so the name column is the remainder and the
       record column is one width in both dictionaries — `Perg.–Lyg.–Pral.` is the longer of the two
@@ -100,25 +118,25 @@
       having to ask what mode it is.
     -->
     <thead>
-      <tr class="border-b border-line">
+      <tr>
         <th
           scope="col"
-          class="text-micro w-[44px] pt-[15px] pb-[9px] pl-[18px] text-left font-bold text-ink-muted"
+          class="text-micro w-[38px] pt-[6px] pb-[8px] pl-3 text-left font-bold text-ink-muted"
         >
           {{ copy.standings.position }}
         </th>
-        <th scope="col" class="text-micro pt-[15px] pb-[9px] text-left font-bold text-ink-muted">
+        <th scope="col" class="text-micro pt-[6px] pb-[8px] text-left font-bold text-ink-muted">
           {{ copy.standings.player }}
         </th>
         <th
           scope="col"
-          class="text-micro w-[124px] pt-[15px] pb-[9px] text-right font-bold text-ink-muted"
+          class="text-micro w-[124px] pt-[6px] pb-[8px] text-right font-bold text-ink-muted"
         >
           {{ copy.standings.record }}
         </th>
         <th
           scope="col"
-          class="text-micro w-[56px] pt-[15px] pb-[9px] pr-[18px] text-right font-bold text-ink-muted"
+          class="text-micro w-[52px] pt-[6px] pb-[8px] pr-3 text-right font-bold text-ink-muted"
         >
           {{ copy.standings.points }}
         </th>
@@ -126,22 +144,31 @@
     </thead>
     <tbody>
       @for (standing of standings(); track standing.id) {
-        <tr class="border-b border-line last:border-b-0">
-          <td class="text-meta py-[15px] pl-[18px] align-baseline tabular-nums text-ink-muted">
+        <tr>
+          <td class="text-meta py-[13px] pl-3 align-baseline tabular-nums text-ink-muted">
             {{ standing.position }}
           </td>
-          <td class="text-row truncate py-[15px] align-baseline text-ink">{{ standing.name }}</td>
-          <td class="text-meta py-[15px] text-right align-baseline tabular-nums text-ink-muted">
+          <td class="text-row truncate py-[13px] align-baseline text-ink">{{ standing.name }}</td>
+          <td class="text-meta py-[13px] text-right align-baseline tabular-nums text-ink-muted">
             {{ copy.standings.recordOf(standing.won, standing.tied, standing.lost) }}
           </td>
           <!-- A dash is not a score, so it is not weighted like one. -->
           <td
-            class="text-name py-[15px] pr-[18px] text-right align-baseline font-bold tabular-nums"
+            class="text-name py-[13px] pr-3 text-right align-baseline font-bold tabular-nums"
             [class]="
-              standing.matchesPlayed === 0 && standing.benched === 0 ? 'text-ink-muted' : 'text-ink'
+              standing.matchesPlayed === 0 && standing.benched === 0 && standing.compensated === 0
+                ? 'text-ink-muted'
+                : 'text-ink'
             "
           >
-            {{ copy.standings.total(standing.points, standing.matchesPlayed, standing.benched) }}
+            {{
+              copy.standings.total(
+                standing.points,
+                standing.matchesPlayed,
+                standing.benched,
+                standing.compensated
+              )
+            }}
           </td>
         </tr>
       }

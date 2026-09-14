@@ -16,6 +16,22 @@ import { copy } from '../copy/copy';
 /** The three panels a session shell holds. Not the same list as the destinations. */
 export type Panel = 'round' | 'standings' | 'players';
 
+/**
+ * How a navigation sets the destination in view, and the ones that are not (ADR-0035 §2, move 3).
+ *
+ * Here rather than in the rail and the island separately, for the reason `DestinationIcon` is one
+ * component: the two shapes are genuinely different components — exactly one navigation exists at a
+ * time and that is ADR-0022 §5's test seam — but *which destination is filled* is one fact about
+ * the app, not two facts that happen to agree. Written out in both templates it was byte-identical
+ * in both, which is the state a treatment is in just before it stops being.
+ */
+export const DESTINATION_PILL = {
+  /** Where the reader is: a filled brand pill, so it is a shape rather than a weight to compare. */
+  current: 'bg-brand font-bold text-brand-ink',
+  /** Everywhere else they could go, stated and left alone. */
+  elsewhere: 'text-ink-muted',
+} as const;
+
 /** One place the navigation offers: what it is called, and the panel it shows. */
 export interface Destination {
   readonly id: Panel;
