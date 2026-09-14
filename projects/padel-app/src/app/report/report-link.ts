@@ -26,7 +26,7 @@ import {
 import { buildReport } from './report-document';
 import { BUILD_RELOAD } from '../share/build-reload';
 import { copy } from '../copy/copy';
-import { deliver, reportFilename } from './report-file';
+import { download, reportFilename } from './report-file';
 import { PDF_MAKER } from './pdf-maker';
 import type { SessionRecord } from '../session/session-record';
 import type { StandingRow } from '../standings/standing-row';
@@ -93,16 +93,11 @@ export class ReportLink {
     this.building.set(false);
 
     /*
-     * Delivery has a `catch` of its own rather than joining the one above, and the difference is
-     * what each failure means. A dismissed share sheet is somebody's decision, and telling them
-     * they need a connection would be the app inventing a fault out of it; a download the browser
-     * refused is nothing this sentence would help with either. So neither sets it — but both are
-     * caught, because an escaping rejection here is an unhandled one inside `PendingTasks`.
+     * Unguarded, because there is one failure mode here and it is the one above. The download
+     * cannot reject — it is a detached anchor clicking itself (ADR-0039) — and it reports nothing
+     * either way, so the document being built is the last thing this component knows. Whatever the
+     * browser does with it afterwards is between it and its owner.
      */
-    try {
-      await deliver(report, reportFilename(this.record()));
-    } catch {
-      // The document was built. Whatever the browser did with it is between it and its owner.
-    }
+    download(report, reportFilename(this.record()));
   }
 }

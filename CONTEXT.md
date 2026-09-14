@@ -70,6 +70,13 @@ the whole of the permission — a session is unlisted, not private, and a code o
 taken back.
 _Avoid_: Link, invite code, password, session id (the code *is* the session's identity)
 
+**Share sheet**:
+The panel the organizer opens to hand the **share code** to somebody: the code itself, and the
+same code as a square a phone camera can read. It is the app's own panel, drawn by the app — the
+one place this word is used. Nothing here opens the panel the operating system offers, and the
+**report** leaves by being downloaded rather than handed to one.
+_Avoid_: Share dialog, share menu, the OS share sheet (this app opens no such thing), invite screen
+
 **Device identity**:
 The anonymous uid Firebase mints for a browser the first time it reaches the network, and the only
 identity this product has. Every session an organizer creates carries it, and that is the whole of
