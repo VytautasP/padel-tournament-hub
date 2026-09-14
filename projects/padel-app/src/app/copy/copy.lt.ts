@@ -305,6 +305,9 @@ export const copyLt = {
       lead: 'Nuo šiol lentelė galutinė: jokių naujų rezultatų, raundų ar sąrašo pakeitimų. To atšaukti nebus galima.',
       action: 'Baigti sesiją',
     },
+    position: '#',
+    player: 'Žaidėjas',
+    points: 'Tšk.',
     total: (points: number, matchesPlayed: number, benched: number): string =>
       matchesPlayed === 0 && benched === 0
         ? '–'
@@ -314,7 +317,7 @@ export const copyLt = {
     record: 'Perg.–Lyg.–Pral.',
     recordOf: (won: number, tied: number, lost: number): string =>
       won + tied + lost === 0 ? '–' : `${won}–${tied}–${lost}`,
-    recordLegend: 'Perg. = Pergalės · Lyg. = Lygiosios · Pral. = Pralaimėjimai',
+    legend: 'Perg. = Pergalės · Lyg. = Lygiosios · Pral. = Pralaimėjimai · Tšk. = Taškai',
     matchesPlayed: 'Sužaista rungtynių',
     benched: 'Nežaidė raundų',
   },

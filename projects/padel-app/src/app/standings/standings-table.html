@@ -79,36 +79,49 @@
       class="text-meta caption-bottom px-[18px] pt-[10px] pb-[14px] text-left text-ink-muted"
     >
       {{
-        copy.standings.recordLegend
+        copy.standings.legend
       }}
     </caption>
     <!--
-      Only the record column is headed. A column of positions beside a column of names explains
-      itself, and the total is under a podium that has just spelled it out; `4–1–1` is the one set
-      of figures on the screen that does not say what it is.
+      Every column is headed, in the artboard's four words. `#` and `Player` say what the two
+      columns on the left hold; `W–T–L` and `PTS` are abbreviations, and the caption underneath
+      expands the ones that are not already the thing they name.
 
       The widths are set here and the layout is fixed, so the name column is the remainder and the
       record column is one width in both dictionaries — `Perg.–Lyg.–Pral.` is the longer of the two
       and is what it was chosen for, on one line rather than two.
 
-      `text-micro` without the `uppercase` every other micro heading wears. `W–T–L` is already
-      capitals and gains nothing; `Perg.–Lyg.–Pral.` is three abbreviated words, and shouting them
-      both hides the abbreviation and costs the width the line does not have.
+      `text-micro` without the `uppercase` every other micro heading wears. Two of the four are
+      already capitals and gain nothing, and shouting `Perg.–Lyg.–Pral.` would both hide the
+      abbreviation and cost the width the line does not have.
 
-      The other three columns are `<td>` rather than an empty `<th>`: a cell that heads nothing is
-      not a header, and a `<th>` with no words in it is one a screen reader has to announce blank.
+      `Player` heads the column in every mode. Team Americano ranks teams on this table and a row
+      there is `Ana & Ben` (ADR-0011) — one word over one column is what keeps this screen from
+      having to ask what mode it is.
     -->
     <thead>
       <tr class="border-b border-line">
-        <td class="w-[44px]"></td>
-        <td></td>
+        <th
+          scope="col"
+          class="text-micro w-[44px] pt-[15px] pb-[9px] pl-[18px] text-left font-bold text-ink-muted"
+        >
+          {{ copy.standings.position }}
+        </th>
+        <th scope="col" class="text-micro pt-[15px] pb-[9px] text-left font-bold text-ink-muted">
+          {{ copy.standings.player }}
+        </th>
         <th
           scope="col"
           class="text-micro w-[124px] pt-[15px] pb-[9px] text-right font-bold text-ink-muted"
         >
           {{ copy.standings.record }}
         </th>
-        <td class="w-[56px]"></td>
+        <th
+          scope="col"
+          class="text-micro w-[56px] pt-[15px] pb-[9px] pr-[18px] text-right font-bold text-ink-muted"
+        >
+          {{ copy.standings.points }}
+        </th>
       </tr>
     </thead>
     <tbody>

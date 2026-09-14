@@ -623,6 +623,8 @@ export const copyEn = {
      * than rounding the credit into something that is no longer exactly a drawn match. Whole
      * totals stay whole: `.0` on every line to accommodate the one evening in two is noise.
      */
+    /** The heading over the totals, abbreviated because the column is 38px wide. */
+    points: 'PTS',
     total: (points: number, matchesPlayed: number, benched: number): string =>
       matchesPlayed === 0 && benched === 0
         ? '–'
@@ -630,15 +632,25 @@ export const copyEn = {
           ? String(points)
           : points.toFixed(1),
     /**
+     * The four column headings, in the order they are read across a row.
+     *
+     * `#` is a symbol rather than a word, so it is the same in every language and is written here
+     * anyway: a heading the template spelled itself would be the one visible string in the app
+     * that is not in a dictionary (decision #20).
+     *
+     * `Player` is what the column holds in every mode that rotates partners. Team Americano ranks
+     * teams on this same table and a row there is `Ana & Ben` (ADR-0011) — the heading does not
+     * follow, deliberately, because one word over one column is what keeps this screen from having
+     * to ask what mode it is.
+     */
+    position: '#',
+    player: 'Player',
+    /**
      * Wins, ties and losses as one triple, labelled by the only thing that says which is which.
      *
      * The label carries the order because the figures cannot: a `0` in the middle is a number of
      * ties only if the reader already knows where ties sit. En dashes rather than hyphens, which
      * is the dash this app writes everywhere else.
-     *
-     * It heads the record column, and it is the only column on the table that is headed: a column
-     * of positions beside a column of names explains itself, and the total is under a podium that
-     * has just spelled it out. This is the one set of figures that does not say what it is.
      */
     record: 'W–T–L',
     /**
@@ -652,13 +664,15 @@ export const copyEn = {
     recordOf: (won: number, tied: number, lost: number): string =>
       won + tied + lost === 0 ? '–' : `${won}–${tied}–${lost}`,
     /**
-     * What the three letters stand for, in the table's caption.
+     * What the abbreviated headings stand for, in the table's caption.
      *
-     * One sentence rather than three assembled fragments, so the word order and the separator are
-     * inside the dictionary where a translator can see them and change them. There is no
-     * `PTS = Points` in it because there is no `PTS` on the screen to explain.
+     * One sentence rather than four assembled fragments, so the word order and the separator are
+     * inside the dictionary where a translator can see them and change them.
+     *
+     * `PTS` is in it because `PTS` is on the screen. `#` is not: a column of `1 2 3` under a hash
+     * is not an abbreviation anybody has to be told the expansion of.
      */
-    recordLegend: 'W = Wins · T = Ties · L = Losses',
+    legend: 'W = Wins · T = Ties · L = Losses · PTS = Points',
     /**
      * Nothing renders this. It is kept against the day the figures behind a name come back — a
      * tap, a wider column, a screen of their own — because the word for them is a decision and

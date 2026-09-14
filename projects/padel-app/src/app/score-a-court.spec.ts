@@ -203,9 +203,9 @@ describe('scoring a court', () => {
       expect(app.shows(`1 ${winner} 1–0–0 17`)).toBe(true);
       expect(app.shows(`3 ${loser} 0–0–1 7`)).toBe(true);
 
-      // The column is headed, and the caption says what the three letters are.
-      expect(app.shows('W–T–L')).toBe(true);
-      expect(app.shows('W = Wins · T = Ties · L = Losses')).toBe(true);
+      // Every column is headed, and the caption expands the headings that are abbreviations.
+      expect(app.shows('# Player W–T–L PTS')).toBe(true);
+      expect(app.shows('W = Wins · T = Ties · L = Losses · PTS = Points')).toBe(true);
     });
 
     /*
