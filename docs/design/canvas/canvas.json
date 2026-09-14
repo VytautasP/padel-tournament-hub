@@ -152,6 +152,60 @@
       "h": 700,
       "title": "C — Scoreboard",
       "page": "page-5"
+    },
+    {
+      "file": "ModernRound.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Round — modern",
+      "page": "page-6"
+    },
+    {
+      "file": "ModernScore.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Score sheet — modern",
+      "page": "page-6"
+    },
+    {
+      "file": "ModernStandings.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Standings — modern",
+      "page": "page-6"
+    },
+    {
+      "file": "ModernPlayers.dc.html",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Players — modern",
+      "page": "page-6"
+    },
+    {
+      "file": "ModernRoundDark.dc.html",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Round — modern, dark",
+      "page": "page-6"
+    },
+    {
+      "file": "ModernDesktop.dc.html",
+      "x": 2450,
+      "y": 0,
+      "w": 1586,
+      "h": 1004,
+      "title": "Round — modern, desktop",
+      "page": "page-6"
     }
   ],
   "annotations": [
@@ -194,11 +248,19 @@
       "w": 740,
       "text": "Three ways the app could look. Every other page is built in A.\n\nA was taken forward because the case to design for is a phone read at arm's length in fading light, and A is the one that stays legible without shouting. B is the most likeable in a clubhouse and the least readable outdoors. C is the most legible and the most opinionated — and it is a dark design whose light theme would always be the lesser half.\n\nIf B or C is the one you want, say so and it becomes the built-out set instead.",
       "page": "page-5"
+    },
+    {
+      "id": "modern-note",
+      "x": -20,
+      "y": -619,
+      "w": 951,
+      "text": "The same app in a more current idiom. Nothing here is a new screen — it is the Phone set re-dressed.\n\nFive moves, all reversible:\n1. Cards lose their hairline border and are held by a shadow instead. Radius goes 18 → 24.\n2. The round header becomes a full-bleed brand gradient with a seven-segment progress bar — the bar is a graphic, not a string, so it adds no copy.\n3. The bottom bar becomes a floating pill island, inset 16px, with the active tab as a filled brand pill and its label beside the icon rather than under it.\n4. Primary actions become gradient pills with a coloured shadow.\n5. Emphasis moves from borders to tinted fills: the winning side sits on brand at 5%, \"No score yet\" becomes a chip.\n\nTwo things this needs that the token set does not yet have: a --gradient-brand (brand-strong → brand) and a --shadow-card (0 6px 20px rgba, heavier than --shadow-raised, which was drawn for bordered cards). Both belong in styles.css — no template should spell out an rgba or a gradient stop.\n\nEverything else reuses existing tokens exactly. The dark board proves it: the gradient there runs sunken → raised rather than brand, because a saturated brand header at night is the one thing a phone at a court cannot afford.",
+      "page": "page-6"
     }
   ],
   "launch": {
     "view": "canvas",
-    "page": "page-1"
+    "page": "page-6"
   },
   "pages": [
     {
@@ -220,6 +282,10 @@
     {
       "id": "page-5",
       "name": "Directions"
+    },
+    {
+      "id": "page-6",
+      "name": "Modern"
     }
   ]
 }
