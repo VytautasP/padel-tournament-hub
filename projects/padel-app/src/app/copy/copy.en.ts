@@ -799,6 +799,19 @@ export const copyEn = {
      */
     link: 'Save this evening as a PDF',
     /**
+     * The way out, under the link and only once a report has been built (ADR-0040 §2).
+     *
+     * Some browsers take the download and do nothing with it — an in-app WebView, which is where a
+     * spectator tapping a link in a group chat meets this app. Those same browsers have no share
+     * sheet, so there is no mechanism left to offer and this is an instruction rather than a
+     * control: the chat app's own menu opens the page in a real browser, where the download works.
+     *
+     * The question mark is what makes it bearable on the screens where nothing went wrong. It is
+     * shown on every browser after a tap, because the ones that swallow a file cannot be detected,
+     * so it has to be legible to the one person it is for and ignorable by everyone else.
+     */
+    openInBrowser: "Didn't save? Open this page in your browser",
+    /**
      * The report's library did not arrive — a court with no signal, and there is still no service
      * worker to have kept it (decision #15, ADR-0030).
      *

@@ -1,6 +1,7 @@
 # 39. The report is downloaded, and the browser is asked nothing
 
-- **Status:** Accepted
+- **Status:** Accepted, and refined by [ADR-0040](0040-a-webview-cannot-be-handed-a-file.md)
+  (2026-09-14), which found §2's open loop closed the wrong way
 - **Date:** 2026-09-14
 - **Refines:** [ADR-0038](0038-the-report-is-a-document-not-the-screen.md) §7, which is reversed.
   Every other section of ADR-0038 stands.
@@ -43,6 +44,14 @@ without doing so was taken deliberately rather than overlooked.
 The open loop is one tap. Until somebody makes it, the honest statement of this ADR's evidence is
 that one path was preferred to two and the platform question was assumed rather than answered. If a
 report tapped on an iPhone opens a tab instead of saving, this ADR is where the fault is.
+
+> **Closed, and not where this section was looking** (2026-09-14, [ADR-0040](0040-a-webview-cannot-be-handed-a-file.md)).
+> The tap happened the same day. Android, in the browser, downloads the report correctly, and
+> nothing has contradicted the iOS claim above. But a spectator opening the share code from a
+> message in Facebook Messenger gets an in-app WebView, which accepts the download and silently
+> discards it — and has no share sheet either, so ADR-0038 §7's two paths would both have failed
+> there. This section's error was not its guess about iOS, and it was not removing the sheet. It
+> was treating the platform as the question when the question was where the person was standing.
 
 **3. Delivery is synchronous and reports nothing.** `download` returns `void`. The `try`/`catch`
 that wrapped it in `ReportLink` existed for exactly one reason — `navigator.share` rejects when the
