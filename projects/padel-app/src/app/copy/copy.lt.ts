@@ -348,6 +348,7 @@ export const copyLt = {
 
   report: {
     link: 'Išsaugoti šį vakarą PDF formatu',
+    openInBrowser: 'Neišsisaugojo? Atidarykite šį puslapį naršyklėje',
     unavailable: 'Ataskaitai sukurti reikia ryšio. Lentelei viršuje — ne.',
     played: 'Sž',
     won: 'Perg.',

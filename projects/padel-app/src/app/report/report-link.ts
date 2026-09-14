@@ -56,9 +56,22 @@ export class ReportLink {
   /** Held so a second tap while the first is still fetching does not build the document twice. */
   private readonly building = signal(false);
 
+  /** Whether a report has been downloaded, which is when the escape below becomes worth saying. */
+  private readonly delivered = signal(false);
+
   protected readonly copy = copy;
   protected readonly unavailable = this.failed.asReadonly();
   protected readonly busy = this.building.asReadonly();
+
+  /**
+   * Whether to show the way out (ADR-0040 §2).
+   *
+   * Only after a download has been attempted, and then on every browser — there is no condition to
+   * put on it, because the browsers that swallow a download are indistinguishable from here. Before
+   * the first tap it is `false` everywhere, so the screen is the one line ADR-0038 §1 asked for
+   * until the moment the sentence could mean something to somebody.
+   */
+  protected readonly stuck = this.delivered.asReadonly();
 
   protected save(): void {
     if (this.building()) {
@@ -95,9 +108,11 @@ export class ReportLink {
     /*
      * Unguarded, because there is one failure mode here and it is the one above. The download
      * cannot reject — it is a detached anchor clicking itself (ADR-0039) — and it reports nothing
-     * either way, so the document being built is the last thing this component knows. Whatever the
-     * browser does with it afterwards is between it and its owner.
+     * either way. A browser that quietly discards the file looks from here exactly like one that
+     * saved it, and no second attempt would land anywhere better (ADR-0040 §1). So what is recorded
+     * is only that the attempt happened, which is what entitles the screen to say the sentence.
      */
     download(report, reportFilename(this.record()));
+    this.delivered.set(true);
   }
 }

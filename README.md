@@ -108,18 +108,21 @@ twice. A joint first is repeated rather than broken, because the engine declared
 evidence and stopped (decision #8).
 
 An ended session gains a **report**: a link under the final table, on the organizer's tab and the
-spectator's alike, that writes the whole evening out as a PDF and downloads it (ADR-0038). It is
-the first thing this app produces that is read somewhere the app is not, so it is a document rather
-than the screen made bigger — the table carries the played count, the full record, the bench credit
-and the compensation the phone had no room for, joint positions are marked, abandoned rounds are
-printed and marked unplayed, and every round the evening played follows the table in order. It is
-set in Roboto rather than the app's Verdana, and that is forced: Verdana was chosen because it
-costs no bytes, which is exactly what makes it unembeddable, and the fonts a PDF falls back to
-cannot spell `Deimantė`. The document is built by a pure function and pdfmake sits behind an
-injection token, so a missing chunk is a sentence about needing a connection rather than a button
-that does nothing (ADR-0030). It ships with no automated tests on purpose (ADR-0038 §8):
-`npm run print:report` writes an awkward evening to a PDF for a person to read, which is the
-treatment ADR-0005 gives a generated artefact.
+spectator's alike, that writes the whole evening out as a PDF and downloads it (ADR-0038). Once a
+report has been built, a muted second line says what to do if nothing saved: an in-app WebView — a
+link tapped inside a chat app — accepts the download and discards it, has no share sheet to fall
+back to, and reports neither, so the line is an instruction to open the page in a real browser and
+it is shown to everybody (ADR-0040). It is the first thing this app produces that is read somewhere
+the app is not, so it is a document rather than the screen made bigger — the table carries the
+played count, the full record, the bench credit and the compensation the phone had no room for,
+joint positions are marked, abandoned rounds are printed and marked unplayed, and every round the
+evening played follows the table in order. It is set in Roboto rather than the app's Verdana, and
+that is forced: Verdana was chosen because it costs no bytes, which is exactly what makes it
+unembeddable, and the fonts a PDF falls back to cannot spell `Deimantė`. The document is built by a
+pure function and pdfmake sits behind an injection token, so a missing chunk is a sentence about
+needing a connection rather than a button that does nothing (ADR-0030). It ships with no automated
+tests on purpose (ADR-0038 §8): `npm run print:report` writes an awkward evening to a PDF for a
+person to read, which is the treatment ADR-0005 gives a generated artefact.
 
 That makes the landing page the app's front door (ADR-0013). One evening is in progress at a time:
 a Resume card names the mode, the round and the player count, New session is *absent* rather than

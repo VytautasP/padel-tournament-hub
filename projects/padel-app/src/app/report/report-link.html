@@ -21,6 +21,22 @@
 </button>
 
 <!--
+  The way out, for a download that went nowhere (ADR-0040 §2).
+
+  A sentence rather than a control, because there is nothing left to tap: a WebView that discards
+  the download has no share sheet either, so every mechanism this page could offer has already been
+  tried by the time anybody reads this. What is left is the browser the WebView is hiding, which the
+  chat app offers in its own menu.
+
+  Shown after the first tap on every browser, since the ones that swallow a download cannot be told
+  apart from here — muted, and phrased as a question, so it stays ignorable to everyone whose file
+  arrived.
+-->
+@if (stuck()) {
+  <p class="text-meta text-pretty text-ink-muted">{{ copy.report.openInBrowser }}</p>
+}
+
+<!--
   The chunk did not arrive (ADR-0030). A sentence rather than a button that does nothing, exactly
   as the QR's is — and it says what still works without a connection, because the table it sits
   under is the answer.

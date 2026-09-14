@@ -1,14 +1,20 @@
 /*
- * Getting the finished report off the phone that made it (ADR-0039, refining ADR-0038 §7).
+ * Getting the finished report off the phone that made it (ADR-0040, refining ADR-0039).
  *
- * One path: the file is downloaded, and the browser is asked nothing first. The link above this
- * says "Save this evening as a PDF", and a share sheet between the tap and the file is a second
- * decision nobody asked to make — every destination it offers is one the downloads folder reaches
- * anyway, a minute later and with the file still there afterwards.
+ * One function, because there is one way to hand somebody a file and the alternatives turned out
+ * not to exist. A tap downloads, and the browser is asked nothing first: a sheet in front of the
+ * file is a second decision nobody asked to make, and every destination it offers is one the
+ * downloads folder reaches anyway.
  *
- * This costs the app its only signal that the file arrived. `click()` on a detached anchor reports
- * nothing and cannot reject, so a browser that refuses the download is silence. That was already
- * true of the fallback path; what is new is that there is no other path for it to be true of.
+ * Some browsers take the download and do nothing with it. An in-app WebView — a link tapped inside
+ * Messenger, which is where a spectator meets this app — accepts `download` on a `blob:` URL,
+ * fires no error and saves no file. `navigator.share` is not the way out of that: the Web Share
+ * API is a Chrome feature rather than a WebView one, so the browsers that swallow the download are
+ * the same ones that cannot open a sheet. There is nothing left here to try.
+ *
+ * So the escape is not in this file and is not code. It is a sentence on the screen telling the
+ * person to open the page in their browser, which is the one thing a WebView still offers and the
+ * one thing that works (ADR-0040 §2).
  */
 import type { SessionRecord } from '../session/session-record';
 
