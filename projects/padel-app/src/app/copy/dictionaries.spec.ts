@@ -268,6 +268,8 @@ describe('the Lithuanian dictionary', () => {
       'copy.round.nextGlyph',
       'copy.round.sameGender.mark',
       'copy.players.optionsGlyph',
+      // The standings table's position heading: a hash over a column of numbers, not a word.
+      'copy.standings.position',
       'copy.history.deleteGlyph',
     ]);
   });

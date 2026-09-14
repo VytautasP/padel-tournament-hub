@@ -196,16 +196,8 @@ describe('ending the session', () => {
 
       const [winner] = sides.a.split(' & ');
       const [loser] = sides.b.split(' & ');
-      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(true);
-      expect(app.isOnScreen(`3 ${loser} 7`)).toBe(true);
-
-      await app.tap(`1 ${winner} 17`);
-
-      expect(app.shows('Matches played 1')).toBe(true);
-      expect(app.shows('Benched 0')).toBe(true);
-      // Nothing was paid, so there is no third term: a row of zeroes would be a column about a
-      // question this evening's organizer answered no to.
-      expect(app.shows('Compensated')).toBe(false);
+      expect(app.shows(`1 ${winner} 1–0–0 17`)).toBe(true);
+      expect(app.shows(`3 ${loser} 0–0–1 7`)).toBe(true);
       app.expectEndedSessionValid();
     });
 
@@ -219,15 +211,12 @@ describe('ending the session', () => {
       // what they scored on the one court that happened.
       const [winner] = sides.a.split(' & ');
       const [loser] = sides.b.split(' & ');
-      expect(app.isOnScreen(`1 ${winner} 41`)).toBe(true);
-      expect(app.isOnScreen(`3 ${loser} 31`)).toBe(true);
+      expect(app.shows(`1 ${winner} 1–0–0 41`)).toBe(true);
+      expect(app.shows(`3 ${loser} 0–0–1 31`)).toBe(true);
 
-      await app.tap(`1 ${winner} 41`);
-
-      // The three terms behind the total, so 17 + 0 + 24 can be added up off the screen.
-      expect(app.shows('Matches played 1')).toBe(true);
-      expect(app.shows('Benched 0')).toBe(true);
-      expect(app.shows('Compensated 2')).toBe(true);
+      // The record is untouched by the payment. A compensated round is not a result, so it is
+      // none of the three (ADR-0023 §5) — it lands in the total and nowhere else, which is the
+      // whole of what the screen says about it now that the expansion is gone (#97).
       app.expectEndedSessionValid();
     });
 
@@ -248,17 +237,10 @@ describe('ending the session', () => {
 
       const [winner] = secondCourt.a.split(' & ');
       // Six abandoned rounds at half of twenty-four: seventy-two, on top of the twenty-four scored.
-      expect(app.isOnScreen(`1 ${winner} 96`)).toBe(true);
-      expect(app.isOnScreen(`8 ${leaver} 0`)).toBe(true);
-
-      await app.tap(`1 ${winner} 96`);
-      expect(app.shows('Compensated 6')).toBe(true);
-
-      // The term is on this row too, saying nothing rather than being absent: on an evening that
-      // paid, a zero is a fact about this player, and a row with no term at all would read as an
-      // evening that paid nobody.
-      await app.tap(`8 ${leaver} 0`);
-      expect(app.shows('Compensated 0')).toBe(true);
+      expect(app.shows(`1 ${winner} 1–0–0 96`)).toBe(true);
+      // The player who had gone home is paid for none of them, and their line says so by standing
+      // still at what they scored while everybody else's moved.
+      expect(app.shows(`8 ${leaver} 0–0–1 0`)).toBe(true);
       app.expectEndedSessionValid();
     });
 
@@ -276,10 +258,7 @@ describe('ending the session', () => {
       await spectator.tap('Standings');
 
       const [winner] = sides.a.split(' & ');
-      expect(spectator.isOnScreen(`1 ${winner} 41`)).toBe(true);
-
-      await spectator.tap(`1 ${winner} 41`);
-      expect(spectator.shows('Compensated 2')).toBe(true);
+      expect(spectator.shows(`1 ${winner} 1–0–0 41`)).toBe(true);
     });
   });
 

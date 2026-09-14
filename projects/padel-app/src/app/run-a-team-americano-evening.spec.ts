@@ -185,8 +185,10 @@ describe('running a Team Americano evening', () => {
       await score(app, 12);
       await app.tap('Standings');
 
-      expect(app.shows('1 Ana & Ben 12')).toBe(true);
-      expect(app.shows('1 Cara & Dov 12')).toBe(true);
+      // The whole row, record column and all — the podium above shows a position, a name and a
+      // total too, and an assertion that stopped at the total would be reading it instead.
+      expect(app.shows('1 Ana & Ben 0–1–0 12')).toBe(true);
+      expect(app.shows('1 Cara & Dov 0–1–0 12')).toBe(true);
     });
   });
 
@@ -246,7 +248,7 @@ describe('running a Team Americano evening', () => {
       await repair(app, 'Gita');
 
       await app.tap('Standings');
-      expect(app.shows(`${partner} & Gita 17`)).toBe(true);
+      expect(app.shows(`${partner} & Gita 1–0–0 17`)).toBe(true);
       expect(pointsOf(app, teamId)).toBe(17);
       app.expectStoredSessionValid();
     });

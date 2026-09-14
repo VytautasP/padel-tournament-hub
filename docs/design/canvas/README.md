@@ -4,7 +4,8 @@ The source of the design canvas **"Padel Tournament Hub UI"**, committed here so
 refactor has a primary source in the repo rather than only a URL.
 
 - **Canvas:** <https://claude.ai/code/artifact/ca52ae55-e500-4de9-ac8a-6bea4358a29f>
-- **Captured:** 2026-09-04, verbatim. These files are the canvas's own source, not a transcription.
+- **Captured:** 2026-09-04, verbatim; the Modern page added 2026-09-14. These files are the
+  canvas's own source, not a transcription.
 
 Open the URL to *look* at the design. Read the files here to know what a value actually is — the
 canvas is what the artboards look like, and these are what they are made of.
@@ -18,6 +19,11 @@ Reading them is the point; rendering them is what the canvas URL is for.
 
 They are also exempt from Prettier (see `.prettierignore`). They are a captured artefact, and
 reformatting them would silently make this a paraphrase.
+
+**`Palette` and `TypeScale` here are ahead of the canvas.** The committed pair carry
+`--palette-brand-wash` and a separate `Score field` type step; the canvas's own copies predate
+both. Re-capturing those two files would walk the record backwards, so they were deliberately left
+alone when the Modern page was copied in — a later capture has to merge them, not overwrite them.
 
 ## What is here
 
@@ -48,14 +54,20 @@ artboard uses its palette, and every artboard outside the Modern page uses its c
 too. B and C are kept as the record of what was considered — the `directions-note` annotation says
 what each one costs.
 
+**Modern** is a fourth answer to that same question, drawn later: the Phone set re-dressed in a
+more current idiom — shadowed cards instead of hairlines, a floating pill nav, gradient primary
+actions. The `modern-note` annotation lists its five moves and the two tokens it needs that the
+set does not have (`--gradient-brand`, `--shadow-card`). It is the page the canvas now opens on,
+which is not the same as it having been chosen.
+
 ## What this proposes
 
 `Palette.dc.html` holds the whole colour proposal. In outline: a teal brand (`#0e6f87`, lightening
-to `#3fa8c4` in dark) on a cool blue-grey neutral ramp, plus **eight new tokens** —
+to `#3fa8c4` in dark) on a cool blue-grey neutral ramp, plus **nine new tokens** —
 `podium-gold`, `podium-silver`, `podium-bronze`, `warning`, `warning-surface`, `danger`,
-`shadow-raised`, `shadow-sheet`. The body face is **Verdana**, chosen because it is installed
-everywhere and drawn for small sizes, so no webfont carries the text the organizer has to read at
-arm's length; only **Space Grotesk** loads, and only titles and numbers depend on it.
+`shadow-raised`, `shadow-sheet`, `brand-wash`. The body face is **Verdana**, chosen because it is
+installed everywhere and drawn for small sizes, so no webfont carries the text the organizer has to
+read at arm's length; only **Space Grotesk** loads, and only titles and numbers depend on it.
 
 Adding those tokens keeps ADR-0018's rule intact: a component still names a utility
 (`bg-podium-gold`, `shadow-sheet`) and never a colour. Implementing the palette is editing the top

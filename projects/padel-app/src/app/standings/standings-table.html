@@ -73,85 +73,105 @@
   One card holding every competitor, rather than one card each: the table is read down a column of
   totals, and a gap between every line is a gap the eye has to cross seven times.
 
-  The hairline dividers go with the borders. What separates the rows now is the two pixels between
-  them and the card's own padding around the lot, which is enough inside one surface and is what
-  the Modern board draws. An expanded row takes a brand outline, which is what makes the figures
-  underneath read as belonging to the name above them rather than to the row below.
+<!--
+  One card holding every competitor, rather than one card each: the table is read down a column of
+  totals, and a gap between every line is a gap the eye has to cross seven times.
 
-  Nothing has to round with the list any more. The rows are inset by the card's padding, so the
-  corner curve never reaches one — which also retires the last radius in this file that was a
-  measurement rather than a role.
+  A `<table>` rather than a list, because the screen is tabular data with a header. A `<ul>` whose
+  first `<li>` was the header row would announce "list, 8 items" and read the header as a sibling
+  of the data it heads.
+
+  The hairline dividers went with the borders (ADR-0035 §2, move 5). What separates the rows is the
+  two pixels between them and the card's own padding around the lot, which `border-separate` and a
+  vertical border-spacing are the table's way of spelling. Nothing has to round with the list
+  either: the rows are inset by the card's padding, so the corner curve never reaches one.
 -->
-<ul class="card flex flex-col gap-0.5 p-2">
-  @for (standing of standings(); track standing.id) {
-    <li class="rounded-control" [class]="isExpanded(standing.id) ? 'border border-brand' : ''">
-      <button
-        type="button"
-        class="flex w-full items-baseline gap-[14px] px-3 pt-[13px] text-left"
-        [class]="isExpanded(standing.id) ? 'pb-2' : 'pb-[13px]'"
-        [attr.aria-expanded]="isExpanded(standing.id)"
-        (click)="toggle(standing.id)"
-      >
-        <span class="text-meta w-[22px] tabular-nums text-ink-muted">{{ standing.position }}</span>
-        <span class="text-row min-w-0 flex-1 truncate text-ink">{{ standing.name }}</span>
-        <!-- A dash is not a score, so it is not weighted like one. -->
-        <span
-          class="text-name font-bold tabular-nums"
-          [class]="
-            standing.matchesPlayed === 0 && standing.benched === 0 && standing.compensated === 0
-              ? 'text-ink-muted'
-              : 'text-ink'
-          "
+<div class="card p-2">
+  <table class="w-full table-fixed border-separate border-spacing-y-0.5">
+    <!--
+      The legend is the caption, bottom-side. That is what associates it with the table it
+      explains, which a trailing paragraph under the card only appears to do.
+    -->
+    <caption class="text-meta caption-bottom px-3 pt-[10px] pb-[6px] text-left text-ink-muted">
+      {{
+        copy.standings.legend
+      }}
+    </caption>
+    <!--
+      Every column is headed, in the artboard's four words. `#` and `Player` say what the two
+      columns on the left hold; `W–T–L` and `PTS` are abbreviations, and the caption underneath
+      expands the ones that are not already the thing they name.
+
+      No rule under the header, for the reason the rows have none between them: what separates a
+      row from the next one here is the gap.
+
+      The widths are set here and the layout is fixed, so the name column is the remainder and the
+      record column is one width in both dictionaries — `Perg.–Lyg.–Pral.` is the longer of the two
+      and is what it was chosen for, on one line rather than two.
+
+      `text-micro` without the `uppercase` every other micro heading wears. Two of the four are
+      already capitals and gain nothing, and shouting `Perg.–Lyg.–Pral.` would both hide the
+      abbreviation and cost the width the line does not have.
+
+      `Player` heads the column in every mode. Team Americano ranks teams on this table and a row
+      there is `Ana & Ben` (ADR-0011) — one word over one column is what keeps this screen from
+      having to ask what mode it is.
+    -->
+    <thead>
+      <tr>
+        <th
+          scope="col"
+          class="text-micro w-[38px] pt-[6px] pb-[8px] pl-3 text-left font-bold text-ink-muted"
         >
-          {{
-            copy.standings.total(
-              standing.points,
-              standing.matchesPlayed,
-              standing.benched,
-              standing.compensated
-            )
-          }}
-        </span>
-      </button>
-
-      @if (isExpanded(standing.id)) {
-        <!--
-          Indented past the position column, so the figures line up under the name.
-
-          The three of them are one sentence read left to right: what happened on court, how many
-          courts that was, and how many rounds it was not. The last is there because the total
-          above includes a bench credit for each of them (ADR-0023 §2) — without the count, a
-          record of three matches beside a total of four rounds' points looks like a bug.
-
-          A fourth term joins them where the evening was ended owing somebody a round it never
-          played (ADR-0037 §8). It is beside `Benched` rather than folded into it, because a round
-          somebody was scheduled into is not a round they sat out. Whether it is there at all is a
-          fact about the evening rather than about the row — `showsCompensation` says why — so on an
-          evening that paid, every row carries it, zero included.
-        -->
-        <dl class="text-meta flex gap-[22px] pt-0 pr-3 pb-[13px] pl-[50px] text-ink-muted">
-          <div class="flex gap-2">
-            <dt>{{ copy.standings.record }}</dt>
-            <dd class="tabular-nums text-ink">
-              {{ copy.standings.recordOf(standing.won, standing.tied, standing.lost) }}
-            </dd>
-          </div>
-          <div class="flex gap-2">
-            <dt>{{ copy.standings.matchesPlayed }}</dt>
-            <dd class="tabular-nums text-ink">{{ standing.matchesPlayed }}</dd>
-          </div>
-          <div class="flex gap-2">
-            <dt>{{ copy.standings.benched }}</dt>
-            <dd class="tabular-nums text-ink">{{ standing.benched }}</dd>
-          </div>
-          @if (showsCompensation()) {
-            <div class="flex gap-2">
-              <dt>{{ copy.standings.compensated }}</dt>
-              <dd class="tabular-nums text-ink">{{ standing.compensated }}</dd>
-            </div>
-          }
-        </dl>
+          {{ copy.standings.position }}
+        </th>
+        <th scope="col" class="text-micro pt-[6px] pb-[8px] text-left font-bold text-ink-muted">
+          {{ copy.standings.player }}
+        </th>
+        <th
+          scope="col"
+          class="text-micro w-[124px] pt-[6px] pb-[8px] text-right font-bold text-ink-muted"
+        >
+          {{ copy.standings.record }}
+        </th>
+        <th
+          scope="col"
+          class="text-micro w-[52px] pt-[6px] pb-[8px] pr-3 text-right font-bold text-ink-muted"
+        >
+          {{ copy.standings.points }}
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (standing of standings(); track standing.id) {
+        <tr>
+          <td class="text-meta py-[13px] pl-3 align-baseline tabular-nums text-ink-muted">
+            {{ standing.position }}
+          </td>
+          <td class="text-row truncate py-[13px] align-baseline text-ink">{{ standing.name }}</td>
+          <td class="text-meta py-[13px] text-right align-baseline tabular-nums text-ink-muted">
+            {{ copy.standings.recordOf(standing.won, standing.tied, standing.lost) }}
+          </td>
+          <!-- A dash is not a score, so it is not weighted like one. -->
+          <td
+            class="text-name py-[13px] pr-3 text-right align-baseline font-bold tabular-nums"
+            [class]="
+              standing.matchesPlayed === 0 && standing.benched === 0 && standing.compensated === 0
+                ? 'text-ink-muted'
+                : 'text-ink'
+            "
+          >
+            {{
+              copy.standings.total(
+                standing.points,
+                standing.matchesPlayed,
+                standing.benched,
+                standing.compensated
+              )
+            }}
+          </td>
+        </tr>
       }
-    </li>
-  }
-</ul>
+    </tbody>
+  </table>
+</div>

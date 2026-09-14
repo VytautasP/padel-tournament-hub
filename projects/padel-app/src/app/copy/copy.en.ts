@@ -709,6 +709,22 @@ export const copyEn = {
           ? String(points)
           : points.toFixed(1),
     /**
+     * The four column headings, in the order they are read across a row.
+     *
+     * `#` is a symbol rather than a word, so it is the same in every language and is written here
+     * anyway: a heading the template spelled itself would be the one visible string in the app
+     * that is not in a dictionary (decision #20).
+     *
+     * `Player` is what the column holds in every mode that rotates partners. Team Americano ranks
+     * teams on this same table and a row there is `Ana & Ben` (ADR-0011) — the heading does not
+     * follow, deliberately, because one word over one column is what keeps this screen from having
+     * to ask what mode it is.
+     */
+    position: '#',
+    player: 'Player',
+    /** The heading over the totals, abbreviated because the column is 52px wide. */
+    points: 'PTS',
+    /**
      * Wins, ties and losses as one triple, labelled by the only thing that says which is which.
      *
      * The label carries the order because the figures cannot: a `0` in the middle is a number of
@@ -716,14 +732,38 @@ export const copyEn = {
      * is the dash this app writes everywhere else.
      */
     record: 'W–T–L',
-    recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
+    /**
+     * The triple itself, or a dash for a competitor no match has happened to yet.
+     *
+     * Not `total`'s condition, and deliberately so. A bench credit makes a total real while the
+     * record is still empty (ADR-0023 §2), so somebody who has been paid for sitting out and has
+     * never been on a court reads a dash here and a number beside it — which is exactly what has
+     * happened to them.
+     */
+    recordOf: (won: number, tied: number, lost: number): string =>
+      won + tied + lost === 0 ? '–' : `${won}–${tied}–${lost}`,
+    /**
+     * What the abbreviated headings stand for, in the table's caption.
+     *
+     * One sentence rather than four assembled fragments, so the word order and the separator are
+     * inside the dictionary where a translator can see them and change them.
+     *
+     * `PTS` is in it because `PTS` is on the screen. `#` is not: a column of `1 2 3` under a hash
+     * is not an abbreviation anybody has to be told the expansion of.
+     */
+    legend: 'W = Wins · T = Ties · L = Losses · PTS = Points',
+    /**
+     * Nothing renders this. It is kept against the day the figures behind a name come back — a
+     * tap, a wider column, a screen of their own — because the word for them is a decision and
+     * not a string, and nothing here checks for unused keys (#97).
+     */
     matchesPlayed: 'Matches played',
     /**
-     * Rounds sat out, beside the record rather than inside it.
+     * Rounds sat out — a term of the total, and none of the three the record counts (ADR-0023 §5).
      *
-     * A bench round is not a result, so it is none of the three (ADR-0023 §5) — which leaves a
-     * total that the record alone cannot account for. This is the missing term, and without it a
-     * player who sat out twice reads their own line as a bug.
+     * Nothing renders it either, and it is kept for the same reason as `matchesPlayed` above: the
+     * word for a benched round is a decision this app has already made once, and the screen it
+     * belongs on may come back.
      */
     benched: 'Benched',
     /**
@@ -734,11 +774,9 @@ export const copyEn = {
      * so the roster tab and this one would contradict each other — and adding the points silently
      * would break the arithmetic this row exists to let a reader check by hand.
      *
-     * It is shown on every row of an evening that paid and on no row of one that did not — which
-     * is a fact about the evening, and is decided in `standings-table.ts` rather than here. A `0`
-     * down every line of every ordinary evening would be a column about a question nobody was
-     * asked; a row missing the term on an evening that did pay would be the one row that has
-     * something to say about it going silent.
+     * Nothing renders it. ADR-0037 §8 asked the expanded row to show it and #97 took the expansion
+     * away, so it is kept for the reason `matchesPlayed` and `benched` above are: the word is a
+     * decision already made, and the figure is still derived on every read.
      */
     compensated: 'Compensated',
   },

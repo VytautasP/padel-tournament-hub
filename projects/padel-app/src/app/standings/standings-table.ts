@@ -1,5 +1,5 @@
 /*
- * The table itself: the podium, the rows, and what a tapped row shows underneath it (ADR-0008).
+ * The table itself: the podium and the rows (ADR-0008).
  *
  * It is a component with one input and no store, because two screens render this same table about
  * two different sessions. The Standings tab hands it the evening the organizer is running and adds
@@ -12,25 +12,29 @@
  * every read (decision #17) — so a correction typed into the Round tab is already in this table
  * before it is looked at, and there is no refresh and nothing to keep in step.
  *
- * A row shows the three things asked at the side of a court — where am I, who am I, how many
- * points have I got — and hides what is asked afterwards behind a tap. The record, the matches
- * played and the rounds benched explain a total rather than establish one, and a table that shows
- * everything at once is a table nobody can read across a court in the dark.
+ * A row shows four things: where am I, who am I, what has happened to me, how many points have I
+ * got. The record is a column rather than something behind a tap, because a row that opens has to
+ * announce itself as a control, and the thing it opened was three figures that fit on the line.
  *
  * A row is a competitor rather than a player: the same table ranks teams in Team Americano, and
  * the only thing that changes is the name in the middle column (ADR-0011). Nothing on this screen
  * asks what mode it is.
  *
- * The figure beside a name is the competitor's total, bench credits and all (ADR-0023). The app
- * neither computes it nor explains it: the expansion shows the terms and the reader does the
- * arithmetic if they want to.
+ * The figure at the end of a row is the competitor's total, bench credits and all (ADR-0023). The
+ * app neither computes it nor explains it, and the record beside it is not an account of it: a
+ * bench credit is none of the three (ADR-0023 §5), so a record of three matches beside a total of
+ * four rounds' points is right rather than a discrepancy.
+ *
+ * The three terms that would account for it — matches played, rounds benched, rounds compensated
+ * — are on `StandingRow` and on no screen. ADR-0037 §8 asked the row to show the third of them in
+ * the expansion, and #97 took the expansion away; the figure is still derived on every read, so
+ * the day there is somewhere to put it, there is nothing to restore.
  *
  * Positions come from the engine and are rendered exactly as given: a joint second is `2` twice
  * and the next player is `4`. The app never invents a separator and never renumbers, because the
  * places a joint position occupies are used up (decision #8).
  */
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import type { PlayerId, TeamId } from 'padel-engine';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { copy } from '../copy/copy';
 import { podiumOf } from './podium';
 import type { Metal } from './podium';
@@ -64,39 +68,7 @@ const METAL_INK: Record<Metal, string> = {
 export class StandingsTable {
   readonly standings = input.required<readonly StandingRow[]>();
 
-  /** Which rows are open, by competitor id — a player's, or a team's (ADR-0011). */
-  private readonly expanded = signal<readonly (PlayerId | TeamId)[]>([]);
-
   protected readonly copy = copy;
   protected readonly podium = computed(() => podiumOf(this.standings()));
   protected readonly metalInk = METAL_INK;
-
-  /**
-   * Whether an expanded row carries the compensation term at all (ADR-0037 §8).
-   *
-   * It is asked of the evening rather than of the row, which is the whole of why it is here and
-   * not in the template. Compensation is paid on an evening the organizer said yes about, and on
-   * such an evening a competitor who was paid *nothing* — the player who had gone home, the team
-   * that needed a partner (ADR-0037 §3) — has a zero that is a fact about them rather than an
-   * empty column: their row is the one that has to be able to say the evening paid and it did not
-   * pay them. Asked row by row, that row would go silent precisely where it has something to say.
-   *
-   * So the term appears on every row or on none, and the table reads the answer off the only thing
-   * it is given. An evening that paid somebody has a competitor with a figure in it; an ordinary
-   * evening, where nobody was asked the question, has none — and a column of zeroes down every
-   * line of one of those would be an answer to a question nobody put.
-   */
-  protected readonly showsCompensation = computed(() =>
-    this.standings().some((standing) => standing.compensated > 0),
-  );
-
-  protected isExpanded(id: PlayerId | TeamId): boolean {
-    return this.expanded().includes(id);
-  }
-
-  protected toggle(id: PlayerId | TeamId): void {
-    this.expanded.update((open) =>
-      open.includes(id) ? open.filter((held) => held !== id) : [...open, id],
-    );
-  }
 }

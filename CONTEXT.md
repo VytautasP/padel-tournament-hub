@@ -191,7 +191,7 @@ _Avoid_: Leaderboard, table, rankings, results
 **Total points**:
 Everything a competitor has to their name: what they scored on court, plus a bench credit for every
 round they sat out, plus compensation for every abandoned round they were available for. The
-ranking figure, and the only figure the table shows beside a name.
+ranking figure, and the figure the table ranks a name by.
 _Avoid_: Score (a score is one match's), total, tally, points per match (gone — see ADR-0023)
 
 **Bench credit**:
@@ -217,8 +217,8 @@ _Avoid_: Bonus, reward, payout, make-good, credit (a **bench credit** is its own
 
 **Record**:
 A competitor's wins, ties and losses across the matches they have actually played, written as one
-triple. A bench round is none of the three, which is why the record does not add up to the total
-on its own and why the count of benched rounds is shown beside it.
+triple. A bench round is none of the three (ADR-0023 §5), so the record does not account for the
+whole of a competitor's total on its own.
 _Avoid_: Form, results, W/L, win rate
 
 **Joint position**:

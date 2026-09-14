@@ -328,6 +328,9 @@ export const copyLt = {
       question: 'Atlyginti nesužaistus raundus',
       note: 'Atlyginama visiems, kurie buvo pasirengę juos žaisti — ir aikštelėje, ir ant suolo. Tai gali pakeisti pjedestalą.',
     },
+    position: '#',
+    player: 'Žaidėjas',
+    points: 'Tšk.',
     total: (points: number, matchesPlayed: number, benched: number, compensated: number): string =>
       matchesPlayed === 0 && benched === 0 && compensated === 0
         ? '–'
@@ -335,7 +338,9 @@ export const copyLt = {
           ? String(points)
           : points.toFixed(1),
     record: 'Perg.–Lyg.–Pral.',
-    recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
+    recordOf: (won: number, tied: number, lost: number): string =>
+      won + tied + lost === 0 ? '–' : `${won}–${tied}–${lost}`,
+    legend: 'Perg. = Pergalės · Lyg. = Lygiosios · Pral. = Pralaimėjimai · Tšk. = Taškai',
     matchesPlayed: 'Sužaista rungtynių',
     benched: 'Nežaidė raundų',
     compensated: 'Atlyginta raundų',
