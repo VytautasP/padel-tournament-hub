@@ -312,7 +312,9 @@ export const copyLt = {
           ? String(points)
           : points.toFixed(1),
     record: 'Perg.–Lyg.–Pral.',
-    recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
+    recordOf: (won: number, tied: number, lost: number): string =>
+      won + tied + lost === 0 ? '–' : `${won}–${tied}–${lost}`,
+    recordLegend: 'Perg. = Pergalės · Lyg. = Lygiosios · Pral. = Pralaimėjimai',
     matchesPlayed: 'Sužaista rungtynių',
     benched: 'Nežaidė raundų',
   },

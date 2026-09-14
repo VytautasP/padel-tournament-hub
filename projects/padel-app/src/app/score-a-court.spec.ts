@@ -15,6 +15,7 @@
 import { createSession, openSheet, score, scoreOf, showsScore } from './testing/session-driver';
 
 const FOUR = ['Ana', 'Ben', 'Cara', 'Dov'];
+const FIVE = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin'];
 const EIGHT = ['Ana', 'Ben', 'Cara', 'Dov', 'Elin', 'Finn', 'Gita', 'Hugo'];
 
 describe('scoring a court', () => {
@@ -187,26 +188,54 @@ describe('scoring a court', () => {
       await app.tap('Standings');
 
       for (const name of FOUR) {
-        expect(app.isOnScreen(`1 ${name} –`)).toBe(true);
+        expect(app.shows(`1 ${name} – –`)).toBe(true);
       }
       expect(app.shows('0.0')).toBe(false);
     });
 
-    it('ranks on total points, and expands a row for the record behind them', async () => {
+    it('ranks on total points, with the record in a column of its own', async () => {
       const app = await createSession(FOUR);
       const sides = await score(app, 17);
       await app.tap('Standings');
 
       const [winner] = sides.a.split(' & ');
       const [loser] = sides.b.split(' & ');
-      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(true);
-      expect(app.isOnScreen(`3 ${loser} 7`)).toBe(true);
+      expect(app.shows(`1 ${winner} 1–0–0 17`)).toBe(true);
+      expect(app.shows(`3 ${loser} 0–0–1 7`)).toBe(true);
 
-      await app.tap(`1 ${winner} 17`);
+      // The column is headed, and the caption says what the three letters are.
+      expect(app.shows('W–T–L')).toBe(true);
+      expect(app.shows('W = Wins · T = Ties · L = Losses')).toBe(true);
+    });
 
-      expect(app.shows('W–T–L 1–0–0')).toBe(true);
-      expect(app.shows('Matches played 1')).toBe(true);
-      expect(app.shows('Benched 0')).toBe(true);
+    /*
+     * The row was a button while the record was behind a tap. Nothing on this table opens now, so
+     * nothing on it announces itself as something that could be opened.
+     */
+    it('offers no control on a row', async () => {
+      const app = await createSession(FOUR);
+      const sides = await score(app, 17);
+      await app.tap('Standings');
+
+      const [winner] = sides.a.split(' & ');
+      expect(app.isOnScreen(`1 ${winner} 1–0–0 17`)).toBe(false);
+      expect(app.shows('Matches played')).toBe(false);
+      expect(app.shows('Benched')).toBe(false);
+    });
+
+    /*
+     * A bench credit makes a total real while the record is still empty (ADR-0023 §2), so the two
+     * dashes go out at different moments and the row that proves it is a player who has been paid
+     * for a round they sat out and has never been on a court.
+     */
+    it('dashes the record of somebody the bench has paid and no match has happened to', async () => {
+      const app = await createSession(FIVE);
+      const sides = await score(app, 17);
+      await app.tap('Standings');
+
+      const onCourt = [...sides.a.split(' & '), ...sides.b.split(' & ')];
+      const [benched] = FIVE.filter((name) => !onCourt.includes(name));
+      expect(app.shows(`${benched} – 12`)).toBe(true);
     });
 
     it('repeats a joint position and skips the place it uses up', async () => {
@@ -216,14 +245,14 @@ describe('scoring a court', () => {
       await app.tap('Standings');
 
       for (const name of decided.a.split(' & ')) {
-        expect(app.isOnScreen(`1 ${name} 24`)).toBe(true);
+        expect(app.shows(`1 ${name} 1–0–0 24`)).toBe(true);
       }
       // Two players share first, so second is used up and the next four are joint third.
       for (const name of [...drawn.a.split(' & '), ...drawn.b.split(' & ')]) {
-        expect(app.isOnScreen(`3 ${name} 12`)).toBe(true);
+        expect(app.shows(`3 ${name} 0–1–0 12`)).toBe(true);
       }
       for (const name of decided.b.split(' & ')) {
-        expect(app.isOnScreen(`7 ${name} 0`)).toBe(true);
+        expect(app.shows(`7 ${name} 0–0–1 0`)).toBe(true);
       }
     });
 
@@ -233,7 +262,7 @@ describe('scoring a court', () => {
       const [winner] = sides.a.split(' & ');
 
       await app.tap('Standings');
-      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(true);
+      expect(app.shows(`1 ${winner} 1–0–0 17`)).toBe(true);
 
       await app.tap('Round');
       await app.tap('Enter score for Court 1');
@@ -241,8 +270,8 @@ describe('scoring a court', () => {
       await app.tap('Save');
       await app.tap('Standings');
 
-      expect(app.isOnScreen(`1 ${winner} 20`)).toBe(true);
-      expect(app.isOnScreen(`1 ${winner} 17`)).toBe(false);
+      expect(app.shows(`1 ${winner} 1–0–0 20`)).toBe(true);
+      expect(app.shows(`1 ${winner} 1–0–0 17`)).toBe(false);
       app.expectStoredSessionValid();
     });
   });

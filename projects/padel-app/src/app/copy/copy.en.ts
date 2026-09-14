@@ -635,16 +635,42 @@ export const copyEn = {
      * The label carries the order because the figures cannot: a `0` in the middle is a number of
      * ties only if the reader already knows where ties sit. En dashes rather than hyphens, which
      * is the dash this app writes everywhere else.
+     *
+     * It heads the record column, and it is the only column on the table that is headed: a column
+     * of positions beside a column of names explains itself, and the total is under a podium that
+     * has just spelled it out. This is the one set of figures that does not say what it is.
      */
     record: 'W–T–L',
-    recordOf: (won: number, tied: number, lost: number): string => `${won}–${tied}–${lost}`,
+    /**
+     * The triple itself, or a dash for a competitor no match has happened to yet.
+     *
+     * Not `total`'s condition, and deliberately so. A bench credit makes a total real while the
+     * record is still empty (ADR-0023 §2), so somebody who has been paid for sitting out and has
+     * never been on a court reads a dash here and a number beside it — which is exactly what has
+     * happened to them.
+     */
+    recordOf: (won: number, tied: number, lost: number): string =>
+      won + tied + lost === 0 ? '–' : `${won}–${tied}–${lost}`,
+    /**
+     * What the three letters stand for, in the table's caption.
+     *
+     * One sentence rather than three assembled fragments, so the word order and the separator are
+     * inside the dictionary where a translator can see them and change them. There is no
+     * `PTS = Points` in it because there is no `PTS` on the screen to explain.
+     */
+    recordLegend: 'W = Wins · T = Ties · L = Losses',
+    /**
+     * Nothing renders this. It is kept against the day the figures behind a name come back — a
+     * tap, a wider column, a screen of their own — because the word for them is a decision and
+     * not a string, and nothing here checks for unused keys (#97).
+     */
     matchesPlayed: 'Matches played',
     /**
-     * Rounds sat out, beside the record rather than inside it.
+     * Rounds sat out — a term of the total, and none of the three the record counts (ADR-0023 §5).
      *
-     * A bench round is not a result, so it is none of the three (ADR-0023 §5) — which leaves a
-     * total that the record alone cannot account for. This is the missing term, and without it a
-     * player who sat out twice reads their own line as a bug.
+     * Nothing renders it either, and it is kept for the same reason as `matchesPlayed` above: the
+     * word for a benched round is a decision this app has already made once, and the screen it
+     * belongs on may come back.
      */
     benched: 'Benched',
   },

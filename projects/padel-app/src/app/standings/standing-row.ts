@@ -4,13 +4,16 @@
  * The engine ranks players and teams on the same ladder and says so twice: `Standing` carries a
  * `playerId`, `TeamStanding` a `teamId`, and every other field on the two is identical, means the
  * same thing and was computed by the same code (`ranking.ts`, ADR-0011). The Standings tab is the
- * same table for both — position, name, total, and the three figures behind a tap — so it renders
- * this rather than one of them, and the mode is read once, in the store, rather than in every
- * template that shows a row.
+ * same table for both — position, name, record, total — so it renders this rather than one of
+ * them, and the mode is read once, in the store, rather than in every template that shows a row.
  *
- * `id` is what a row is addressed by: which row is expanded, which is on the podium. It is a
- * player's id in the rotating modes and a team's in Team Americano, which is exactly the shift
- * decision #2c describes — the competitor changes, and nothing else does.
+ * `matchesPlayed` and `benched` are on the row and on no screen. The engine derives the whole line
+ * on every read (ADR-0008 §1), so carrying two figures nothing renders costs nothing, and the
+ * total's dash is decided by both of them (ADR-0023 §2).
+ *
+ * `id` is what a row is addressed by: which row is on the podium, which row `@for` is tracking.
+ * It is a player's id in the rotating modes and a team's in Team Americano, which is exactly the
+ * shift decision #2c describes — the competitor changes, and nothing else does.
  */
 import {
   computeStandings,
