@@ -61,6 +61,23 @@ export function formatDay(instant: string): string {
 }
 
 /**
+ * A day with its year on it: `26 Aug 2026`, or `2026 m. rugp. 26 d.`.
+ *
+ * The same argument as `formatDay` and one more field, because the one place this is read is the
+ * footer of a report (ADR-0038) — a file that is forwarded into a group chat six months later and
+ * pinned to a club board after that. A history row is a list of this year's Tuesdays and says so;
+ * a document that left the app has no list around it to say which year it came from.
+ *
+ * The weekday goes, for the same reason the year arrives: which Wednesday is a question somebody
+ * scrolling their own history asks, and not one anybody asks of a footer.
+ */
+let dateFormat = fullFormatterFor('en');
+
+export function formatDate(instant: string): string {
+  return dateFormat.format(new Date(instant));
+}
+
+/**
  * Speak this language from here on.
  *
  * Called once, by `Preferences`, before the first screen is built. It is not exported for anybody
@@ -70,11 +87,20 @@ export function formatDay(instant: string): string {
 export function useLanguage(language: Language): void {
   copy = DICTIONARIES[language];
   dayFormat = formatterFor(language);
+  dateFormat = fullFormatterFor(language);
 }
 
 function formatterFor(language: Language): Intl.DateTimeFormat {
   return new Intl.DateTimeFormat(LOCALES[language], {
     weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function fullFormatterFor(language: Language): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(LOCALES[language], {
+    year: 'numeric',
     day: 'numeric',
     month: 'short',
   });

@@ -4,6 +4,18 @@
   <app-standings-table [standings]="standings()" />
 
   <!--
+    The evening as a file, directly under the table and only once the table is final (ADR-0038 §1).
+    A mid-evening report would be a photograph of a moving table, and it would be forwarded as a
+    result, because a PDF looks like one.
+
+    Outside `StandingsTable` rather than in it: that component is the rendering the spectator's
+    shell shares (ADR-0026 §2), and this line is placed by each screen that wants it.
+  -->
+  @if (ended() && record(); as openRecord) {
+    <app-report-link [record]="openRecord" [standings]="standings()" />
+  }
+
+  <!--
     The ending sits at the bottom of the screen rather than under the last row, for the reason the
     advance card does on the Round tab: a table longer than the screen scrolls, and the button
     arrives at the end of the scroll instead of floating over it.

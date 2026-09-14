@@ -1,0 +1,30 @@
+<!--
+  A plain text link, weighted exactly as `Back to current round` is and for the same reason: this
+  is a retrieval, not a decision. The gradient pill every primary action in the app wears
+  (ADR-0035 §2, move 4) would sell taking the evening home as the thing to tap on a screen whose
+  subject is the final table.
+
+  Left-aligned under the card rather than centred, so it reads as a line belonging to the table
+  above it rather than as a control floating between two blocks.
+
+  It goes quiet while the library is on its way. `disabled` rather than a spinner: the wait is one
+  fetch on a phone that has just been asked to do something, and a second tap in that window would
+  build the document twice.
+-->
+<button
+  type="button"
+  class="text-meta font-bold text-brand underline"
+  [disabled]="busy()"
+  (click)="save()"
+>
+  {{ copy.report.link }}
+</button>
+
+<!--
+  The chunk did not arrive (ADR-0030). A sentence rather than a button that does nothing, exactly
+  as the QR's is — and it says what still works without a connection, because the table it sits
+  under is the answer.
+-->
+@if (unavailable()) {
+  <p class="text-meta text-pretty text-ink-muted">{{ copy.report.unavailable }}</p>
+}

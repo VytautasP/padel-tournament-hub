@@ -247,8 +247,12 @@ export class SessionStore implements OnDestroy {
    * session reaches the screen showing it with nothing to keep in step — and so that discarding or
    * deleting whatever is open closes it rather than leaving a screen reading a record the app no
    * longer holds.
+   *
+   * Public because a report is written from the record and not from the session (ADR-0038 §5): the
+   * day the evening was created and the names of its courts are the app's fields, and the engine's
+   * document carries neither (ADR-0017).
    */
-  private readonly openRecord = computed<SessionRecord | null>(() => {
+  readonly openRecord = computed<SessionRecord | null>(() => {
     const id = this.openId();
     if (id === null) {
       return null;

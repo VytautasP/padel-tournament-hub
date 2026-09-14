@@ -32,6 +32,7 @@ import { destinationsAt, panelAt } from '../session/destinations';
 import type { Panel } from '../session/destinations';
 import { LAYOUT } from '../layout/layout';
 import { LanguageToggle } from './language-toggle';
+import { ReportLink } from '../report/report-link';
 import { RosterList } from '../players/roster-list';
 import { RoundBoard } from '../round/round-board';
 import { rosterView } from '../players/roster-view';
@@ -48,6 +49,7 @@ import type { SessionRecord } from '../session/session-record';
   imports: [
     LanguageToggle,
     NgTemplateOutlet,
+    ReportLink,
     RosterList,
     RoundBoard,
     SessionRail,
@@ -74,7 +76,17 @@ export class SpectatorShell {
   protected readonly current = computed(() => panelAt(this.atDesk(), this.requested()));
 
   protected readonly session = computed(() => this.record().session);
+
   protected readonly courtNames = computed(() => this.record().courtNames);
+
+  /**
+   * Whether the evening has ended, which is the whole of whether there is a report to offer
+   * (ADR-0038 §1).
+   *
+   * The engine's own status, read exactly as the round board reads it: the standings are derived
+   * on every read, so a report taken mid-evening would be a photograph of a moving table.
+   */
+  protected readonly ended = computed(() => this.session().status === 'finished');
 
   /** Which evening this is: the same sentence the organizer's rail says about the same night. */
   protected readonly summary = computed(() =>

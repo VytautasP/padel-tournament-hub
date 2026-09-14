@@ -781,6 +781,80 @@ export const copyEn = {
     compensated: 'Compensated',
   },
 
+  /**
+   * The evening as a file (ADR-0038).
+   *
+   * Every word here is read somewhere the app is not, which is why the section exists at all: the
+   * table on screen is four columns wide because a phone is, and the three figures that explain
+   * how a total was reached have never been anywhere a reader could see them. The link is the
+   * only thing in here that is on a screen; everything else is on paper.
+   */
+  report: {
+    /**
+     * The link under the standings table, on the organizer's tab and the spectator's alike.
+     *
+     * Plain text rather than the gradient pill every primary action wears (ADR-0035 §2, move 4),
+     * because this is a retrieval and not a decision: the evening is already over, and nothing
+     * this link does changes anything about it.
+     */
+    link: 'Save this evening as a PDF',
+    /**
+     * The report's library did not arrive — a court with no signal, and there is still no service
+     * worker to have kept it (decision #15, ADR-0030).
+     *
+     * A sentence rather than a button that does nothing, which is exactly `share.qrUnavailable`'s
+     * bargain: say what is missing, and say what still works without it.
+     */
+    unavailable: 'The report needs a connection to build. The table above does not.',
+    /**
+     * The five columns the phone had no room for, over a page that has room for them.
+     *
+     * Abbreviated because nine headings across A4 beside a column of names is still a tight line,
+     * and expanded in the legend underneath — the same bargain the screen's `W–T–L` makes with its
+     * caption.
+     */
+    played: 'P',
+    won: 'W',
+    tied: 'T',
+    lost: 'L',
+    bench: 'Bench',
+    /** Only ever printed where the evening paid compensation (ADR-0038 §4). */
+    compensated: 'Comp',
+    /** Written out rather than `PTS`: the column it heads is not 52px wide here. */
+    points: 'Points',
+    /**
+     * What the abbreviated headings stand for, growing a clause per thing the page actually shows.
+     *
+     * Two clauses are conditional because both the things they explain are. `Comp` is printed only
+     * on an evening that compensated something, and the joint mark only where the engine declared
+     * a shared place — a legend explaining a column that is not there teaches a reader nothing and
+     * invites them to go looking for it.
+     */
+    legend: (compensated: boolean, joint: boolean): string =>
+      [
+        'P = Played · W = Wins · T = Ties · L = Losses · Bench = Rounds sat out',
+        ...(compensated ? ['Comp = Abandoned rounds paid for'] : []),
+        ...(joint ? ['= Position shared'] : []),
+      ].join(' · '),
+    /**
+     * A shared place, marked (ADR-0038 §3).
+     *
+     * Decision #8 went to real trouble to make a joint position a result rather than an unfinished
+     * tie-break, and two rows reading `2` followed by a row reading `4` — on a page nobody can tap
+     * to ask a question of — reads as a bug in the generator rather than as the finding it is.
+     */
+    jointPosition: (position: number): string => `=${position}`,
+    /**
+     * The mark on a round the evening abandoned (ADR-0037 §2).
+     *
+     * Printed rather than dropped, because a report that silently left them out could not explain
+     * the `Comp` column sitting above them.
+     */
+    unplayed: 'Not played',
+    /** The last line on the page: whose app made this, and when. */
+    footer: (day: string): string => `${appName} · ${day}`,
+  },
+
   history: {
     heading: 'Session history',
     /**

@@ -60,7 +60,7 @@
               }
             ],
             "styles": ["projects/padel-app/src/styles.css"],
-            "allowedCommonJsDependencies": ["qrcode", "dijkstrajs"]
+            "allowedCommonJsDependencies": ["qrcode", "dijkstrajs", "pdfmake"]
           },
           "configurations": {
             "production": {

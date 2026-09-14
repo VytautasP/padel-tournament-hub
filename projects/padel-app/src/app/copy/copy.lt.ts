@@ -346,6 +346,28 @@ export const copyLt = {
     compensated: 'Atlyginta raundų',
   },
 
+  report: {
+    link: 'Išsaugoti šį vakarą PDF formatu',
+    unavailable: 'Ataskaitai sukurti reikia ryšio. Lentelei viršuje — ne.',
+    played: 'Sž',
+    won: 'Perg.',
+    tied: 'Lyg.',
+    lost: 'Pral.',
+    bench: 'Suolas',
+    compensated: 'Atlyg.',
+    points: 'Taškai',
+    legend: (compensated: boolean, joint: boolean): string =>
+      [
+        'Sž = Sužaista · Perg. = Pergalės · Lyg. = Lygiosios · Pral. = Pralaimėjimai · ' +
+          'Suolas = Praleista raundų',
+        ...(compensated ? ['Atlyg. = Atlyginti nesužaisti raundai'] : []),
+        ...(joint ? ['= Vieta dalijamasi'] : []),
+      ].join(' · '),
+    jointPosition: (position: number): string => `=${position}`,
+    unplayed: 'Nesužaista',
+    footer: (day: string): string => `${appName} · ${day}`,
+  },
+
   history: {
     heading: 'Sesijų istorija',
     row: (day: string, mode: SessionMode, playerCount: number): string =>
