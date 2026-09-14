@@ -185,8 +185,8 @@ _Avoid_: Bench points, sit-out points, bonus, compensation
 
 **Record**:
 A competitor's wins, ties and losses across the matches they have actually played, written as one
-triple. A bench round is none of the three, which is why the record does not add up to the total
-on its own and why the count of benched rounds is shown beside it.
+triple. A bench round is none of the three (ADR-0023 §5), so the record does not account for the
+whole of a competitor's total on its own.
 _Avoid_: Form, results, W/L, win rate
 
 **Joint position**:
