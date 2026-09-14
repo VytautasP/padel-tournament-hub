@@ -227,6 +227,16 @@ places a joint position occupies are used up: a joint second is followed by four
 within a joint position means nothing.
 _Avoid_: Tie, draw, shared rank
 
+### The report
+
+**Report**:
+One ended session written out in full and taken out of the app: the final standings, then every
+round it played. A report is produced on request and stored nowhere, so it says whatever the
+engine says about the session now — and because only an ended session has one, what it says is
+final.
+_Avoid_: Summary, recap, export (the verb, not the thing), record (a **record** is a competitor's
+W-T-L), printout
+
 ### The app itself
 
 Every section above is about the evening. These three are not: they are about the thing the evening
