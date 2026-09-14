@@ -17,12 +17,13 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Confirm } from '../confirm/confirm-sheet';
 import { copy } from '../copy/copy';
+import { ReportLink } from '../report/report-link';
 import { SessionStore } from '../session/session-store';
 import { StandingsTable } from './standings-table';
 
 @Component({
   selector: 'app-standings-tab',
-  imports: [StandingsTable],
+  imports: [ReportLink, StandingsTable],
   templateUrl: './standings-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -35,6 +36,14 @@ export class StandingsTab {
 
   /** Whether this table is a record rather than a scoreboard: the evening has been ended. */
   protected readonly ended = this.store.ended;
+
+  /**
+   * The evening the report is written from — the record, not the session.
+   *
+   * `createdAt` names the day in the report's header and its filename, and the court names are
+   * what the round blocks call each court; neither is on the engine's document (ADR-0017).
+   */
+  protected readonly record = this.store.openRecord;
 
   /**
    * End the evening, once the organizer has read what that freezes — and, where the evening has

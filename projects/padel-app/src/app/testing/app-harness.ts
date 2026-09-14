@@ -46,6 +46,8 @@ import { InMemorySessionRepository } from '../session/in-memory-session-reposito
 import { SESSION_REPOSITORY } from '../session/session-repository';
 import { BUILD_RELOAD } from '../share/build-reload';
 import { CLIPBOARD } from '../share/clipboard';
+import { pdfMaker, PDF_MAKER } from '../report/pdf-maker';
+import type { PdfMaker } from '../report/pdf-maker';
 import { qrEncoder, QR_ENCODER } from '../share/qr-matrix';
 import type { QrEncoder } from '../share/qr-matrix';
 import { RecordingBuildReload } from './recording-build-reload';
@@ -86,6 +88,14 @@ export interface LaunchOptions {
    * (ADR-0026 §4).
    */
   readonly qrCode?: QrEncoder;
+  /**
+   * A renderer for the report's PDF. The real one unless a spec is about not getting it.
+   *
+   * The real library for `qrCode`'s reason, and with `qrCode`'s one exception: what a spec passes
+   * here is a maker that *fails*, which is the phone at a court with no signal and the only
+   * failure a report has (ADR-0038 §6).
+   */
+  readonly pdf?: PdfMaker;
   /**
    * What a refused chunk means on this device. A network failure unless a spec says otherwise.
    *
@@ -149,6 +159,7 @@ export class AppHarness {
     tier = 'phone',
     identity,
     qrCode = qrEncoder,
+    pdf = pdfMaker,
     buildReload = new RecordingBuildReload(),
     storage = RecordingPreferenceStorage.remembering(),
     reload = new RecordingReload(),
@@ -175,6 +186,7 @@ export class AppHarness {
         { provide: LAYOUT, useValue: new FixedLayout(tier) },
         { provide: CLIPBOARD, useValue: clipboard },
         { provide: QR_ENCODER, useValue: qrCode },
+        { provide: PDF_MAKER, useValue: pdf },
         { provide: BUILD_RELOAD, useValue: buildReload },
         { provide: PREFERENCE_STORAGE, useValue: storage },
         { provide: RELOAD, useValue: reload },
@@ -188,6 +200,7 @@ export class AppHarness {
       tier,
       identity,
       qrCode,
+      pdf,
       buildReload,
       storage,
       reload,

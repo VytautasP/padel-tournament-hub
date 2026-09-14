@@ -86,5 +86,15 @@
   <section class="flex min-h-full flex-col gap-5 px-4 pt-7 pb-3">
     <h1 class="text-title font-bold text-ink">{{ copy.session.standings }}</h1>
     <app-standings-table [standings]="standings()" />
+
+    <!--
+      The evening as a file, on the spectator's side too (ADR-0038 §1). It is the one thing on this
+      page besides the language toggle that can be tapped, and it changes nothing about the evening
+      — the person most likely to want the night on their own phone afterwards is the one who did
+      not run it.
+    -->
+    @if (ended()) {
+      <app-report-link [record]="record()" [standings]="standings()" />
+    }
   </section>
 </ng-template>
