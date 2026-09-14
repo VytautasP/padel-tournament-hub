@@ -359,7 +359,7 @@ export const copyLt = {
     legend: (compensated: boolean, joint: boolean): string =>
       [
         'Sž = Sužaista · Perg. = Pergalės · Lyg. = Lygiosios · Pral. = Pralaimėjimai · ' +
-          'Suolas = Praleista raundų',
+          'Suolas = Nežaidė raundų',
         ...(compensated ? ['Atlyg. = Atlyginti nesužaisti raundai'] : []),
         ...(joint ? ['= Vieta dalijamasi'] : []),
       ].join(' · '),

@@ -10,27 +10,26 @@
  * A cancelled share sheet is silence. `navigator.share` rejects when the person dismisses it, and
  * that is a decision rather than a failure: falling back to a download there would save a file
  * somebody has just said they did not want.
+ *
+ * What is shared is `{ files }` and nothing else. A `title` or a `text` beside it would be a second
+ * sentence naming the evening, and the file already carries its name — which is the one the report
+ * prints in its own header, because `reportFilename` and the header are built from the same record.
  */
 import type { SessionRecord } from '../session/session-record';
 
-/** What the file is called, and is how it stays recognisable in a downloads folder six months on. */
+/** What the file is called, so it stays recognisable in a downloads folder six months later. */
 const EXTENSION = '.pdf';
 
+/** The media type, on the `File` the share sheet reads and on the blob a download saves. */
 const PDF = 'application/pdf';
 
-/**
- * Hand the report to the person who asked for it.
- *
- * `title` is what the share sheet offers as the message — the same sentence the report's own
- * header carries, because a file arriving in a group chat should say what it is before anybody
- * opens it.
- */
-export async function deliver(report: Blob, filename: string, title: string): Promise<void> {
+/** Hand the report to the person who asked for it. */
+export async function deliver(report: Blob, filename: string): Promise<void> {
   const file = new File([report], filename, { type: PDF });
 
   if (navigator.canShare?.({ files: [file] }) === true) {
     try {
-      await navigator.share({ files: [file], title });
+      await navigator.share({ files: [file] });
     } catch {
       // Dismissed, or a sheet the browser would not open. Either way the person is looking at the
       // screen they started on, and a download they did not ask for would be the wrong answer.

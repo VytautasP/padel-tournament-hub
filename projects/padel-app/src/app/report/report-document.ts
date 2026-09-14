@@ -14,16 +14,20 @@
  *
  * **The day formatters are read from `copy.ts` rather than taken as arguments.** They are
  * reassigned by `useLanguage` in the same statement `copy` is, before any screen exists (ADR-0032
- * §3), so the dates and the words on this page always come from one language. What that costs is a
- * caller that hands in the dictionary the app is *not* speaking: the sentences would be one
- * language and the dates the other. Nothing does that outside `tools/print-report.mjs`.
+ * §3), so the dates and the words on this page always come from one language — provided the caller
+ * hands in the dictionary the app is actually speaking, which is why `copy` is a required argument
+ * and both callers pass the live binding rather than a dictionary of their own choosing. Handing in
+ * the other one would print the sentences in one language and the dates in the other.
+ *
+ * The one other thing this function reads from outside its arguments is the clock, once, for the
+ * footer — see `generatedOn` below, where the reasoning is.
  *
  * Nothing here names a colour. The report is monochrome — pdfmake's built-in
  * `lightHorizontalLines` draws the one rule on the page — for ADR-0018's reason and for ADR-0038
  * §3's: the three metals are the one warm thing on the Standings screen, and a print-ready
  * document is not that screen.
  */
-import { copy as currentCopy, formatDate, formatDay } from '../copy/copy';
+import { formatDate, formatDay } from '../copy/copy';
 import { roundView } from '../round/round-view';
 import type { Copy } from '../copy/copy';
 import type { RoundView, SideView } from '../round/round-view';
@@ -57,19 +61,35 @@ const ROUND_GAP = 12;
 export function buildReport(
   record: SessionRecord,
   rows: readonly StandingRow[],
-  copy: Copy = currentCopy,
+  copy: Copy,
 ): TDocumentDefinitions {
   const { session } = record;
 
   /*
    * Whether the page carries a ninth column and a third legend clause.
    *
-   * Both are asked of the rows rather than of the session, because what a column holds is these
-   * figures: `Comp` on every ordinary evening would be a column of zeros, which teaches a reader
-   * nothing and invites them to wonder what they missed (ADR-0038 §4).
+   * `Comp` is asked of the session's own flag rather than of the rows. That is what ADR-0038 §4
+   * says — "`Comp` appears only when `compensatedUnplayed` is set" — and it is also the only
+   * reading that cannot go wrong: the figures in the column are `compensationsFor`'s, and an
+   * evening where every competitor available for its abandoned round was already paid by a court
+   * that did finish pays nobody, which a row-derived predicate would read as an evening that
+   * compensated nothing. The organizer answered the question; the flag is their answer.
+   *
+   * The joint mark is asked of the rows, because that one really is a fact about them: the engine
+   * declares a shared place on the evidence (decision #8), and the session holds no flag for it.
    */
-  const compensated = rows.some((row) => row.compensated > 0);
+  const compensated = session.compensatedUnplayed === true;
   const joint = rows.some((row) => row.joint);
+
+  /*
+   * The clock, read once.
+   *
+   * pdfmake calls `footer` per page, so reading it in there would let a report that renders across
+   * midnight print two dates — and would put an ambient clock inside a structure ADR-0038 §5 wants
+   * assertable. This is the one impurity in this function and it is here, in one place, on purpose:
+   * §4's footer is the date the file was *generated*, which `endedAt` is not.
+   */
+  const generatedOn = formatDate(new Date().toISOString());
 
   return {
     pageSize: 'A4',
@@ -83,7 +103,7 @@ export function buildReport(
     defaultStyle: { font: 'Roboto', fontSize: TYPE.body },
     content: [
       {
-        text: copy.history.row(formatDay(record.createdAt), session.mode, session.roster.length),
+        text: reportTitle(record, copy),
         fontSize: TYPE.title,
         bold: true,
         margin: [0, 0, 0, 14],
@@ -103,12 +123,22 @@ export function buildReport(
      * is which app made it and when, and the rounds already number themselves.
      */
     footer: () => ({
-      text: copy.report.footer(formatDate(new Date().toISOString())),
+      text: copy.report.footer(generatedOn),
       fontSize: TYPE.legend,
       alignment: 'center',
       margin: [MARGINS[0], 0, MARGINS[2], 0],
     }),
   };
+}
+
+/**
+ * What this evening is called: the sentence a history row names it by (ADR-0013 §4 — there is no
+ * session name, so this is the whole of a session's identity).
+ */
+function reportTitle(record: SessionRecord, copy: Copy): string {
+  const { session } = record;
+
+  return copy.history.row(formatDay(record.createdAt), session.mode, session.roster.length);
 }
 
 /**
@@ -130,14 +160,24 @@ function standingsBlock(
    * columns wide and not eight columns and a gap. The widths, the headings and every row are built
    * from this one condition, which is what stops a heading and its column drifting one apart.
    */
-  const comp = <Cell>(cell: Cell): readonly Cell[] => (compensated ? [cell] : []);
+  const whenCompensated = <Cell>(cell: Cell): readonly Cell[] => (compensated ? [cell] : []);
 
   return [
     { text: copy.session.standings, fontSize: TYPE.section, bold: true, margin: [0, 0, 0, 6] },
     {
       table: {
         headerRows: 1,
-        widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto', ...comp('auto'), 'auto'],
+        widths: [
+          'auto',
+          '*',
+          'auto',
+          'auto',
+          'auto',
+          'auto',
+          'auto',
+          ...whenCompensated('auto'),
+          'auto',
+        ],
         body: [
           [
             heading(copy.standings.position),
@@ -147,7 +187,7 @@ function standingsBlock(
             heading(copy.report.tied, 'right'),
             heading(copy.report.lost, 'right'),
             heading(copy.report.bench, 'right'),
-            ...comp(heading(copy.report.compensated, 'right')),
+            ...whenCompensated(heading(copy.report.compensated, 'right')),
             heading(copy.report.points, 'right'),
           ],
           ...rows.map((row) => [
@@ -157,14 +197,14 @@ function standingsBlock(
              * followed by a `4`. Unmarked, that reads as a bug in the generator on a page nobody
              * can ask a question of (ADR-0038 §3).
              */
-            text(row.joint ? copy.report.jointPosition(row.position) : String(row.position)),
-            text(row.name),
+            cell(row.joint ? copy.report.jointPosition(row.position) : String(row.position)),
+            cell(row.name),
             figure(row.matchesPlayed),
             figure(row.won),
             figure(row.tied),
             figure(row.lost),
             figure(row.benched),
-            ...comp(figure(row.compensated)),
+            ...whenCompensated(figure(row.compensated)),
             /*
              * The total, through the same sentence the screen reads it with — so a dash is a dash
              * and a half is a half, in both places, decided once (ADR-0023 §2).
@@ -247,7 +287,7 @@ function roundBlock(round: RoundView | null, copy: Copy, roundCount: number): re
           table: {
             widths: ['auto', '*', 'auto', '*'],
             body: round.courts.map((court) => [
-              text(court.name),
+              cell(court.name),
               { text: sideName(court.sideA, copy), alignment: 'right' as const },
               /*
                * The result, or `v` where the court never finished. Both sides' figures, because
@@ -262,7 +302,7 @@ function roundBlock(round: RoundView | null, copy: Copy, roundCount: number): re
                 alignment: 'center' as const,
                 bold: court.score !== undefined,
               },
-              text(sideName(court.sideB, copy)),
+              cell(sideName(court.sideB, copy)),
             ]),
           },
           layout: 'noBorders',
@@ -294,7 +334,8 @@ function heading(label: string, alignment: 'left' | 'right' = 'left'): Content {
   return { text: label, bold: true, alignment };
 }
 
-function text(value: string): Content {
+/** A cell that is only its words: no weight, no alignment, nothing to say about itself. */
+function cell(value: string): Content {
   return { text: value };
 }
 

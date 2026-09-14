@@ -832,7 +832,7 @@ export const copyEn = {
      */
     legend: (compensated: boolean, joint: boolean): string =>
       [
-        'P = Played · W = Wins · T = Ties · L = Losses · Bench = Rounds sat out',
+        'P = Played · W = Wins · T = Ties · L = Losses · Bench = Rounds benched',
         ...(compensated ? ['Comp = Abandoned rounds paid for'] : []),
         ...(joint ? ['= Position shared'] : []),
       ].join(' · '),

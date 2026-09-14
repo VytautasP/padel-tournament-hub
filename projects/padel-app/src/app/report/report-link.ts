@@ -18,7 +18,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   inject,
   input,
   PendingTasks,
@@ -26,7 +25,7 @@ import {
 } from '@angular/core';
 import { buildReport } from './report-document';
 import { BUILD_RELOAD } from '../share/build-reload';
-import { copy, formatDay } from '../copy/copy';
+import { copy } from '../copy/copy';
 import { deliver, reportFilename } from './report-file';
 import { PDF_MAKER } from './pdf-maker';
 import type { SessionRecord } from '../session/session-record';
@@ -61,17 +60,6 @@ export class ReportLink {
   protected readonly unavailable = this.failed.asReadonly();
   protected readonly busy = this.building.asReadonly();
 
-  /** What the share sheet offers as the message: the sentence the report's own header carries. */
-  private readonly title = computed(() => {
-    const { session } = this.record();
-
-    return copy.history.row(
-      formatDay(this.record().createdAt),
-      session.mode,
-      session.roster.length,
-    );
-  });
-
   protected save(): void {
     if (this.building()) {
       return;
@@ -85,7 +73,7 @@ export class ReportLink {
     let report: Blob;
 
     try {
-      report = await this.make(buildReport(this.record(), this.standings()));
+      report = await this.make(buildReport(this.record(), this.standings(), copy));
     } catch {
       /*
        * The library did not arrive, and there are two ways that happens: a court with no signal,
@@ -105,10 +93,16 @@ export class ReportLink {
     this.building.set(false);
 
     /*
-     * Delivery is outside the `catch` above on purpose. A dismissed share sheet rejects, and it is
-     * not a missing library — telling somebody who has just tapped Cancel that they need a
-     * connection would be the app inventing a fault out of their own decision.
+     * Delivery has a `catch` of its own rather than joining the one above, and the difference is
+     * what each failure means. A dismissed share sheet is somebody's decision, and telling them
+     * they need a connection would be the app inventing a fault out of it; a download the browser
+     * refused is nothing this sentence would help with either. So neither sets it — but both are
+     * caught, because an escaping rejection here is an unhandled one inside `PendingTasks`.
      */
-    await deliver(report, reportFilename(this.record()), this.title());
+    try {
+      await deliver(report, reportFilename(this.record()));
+    } catch {
+      // The document was built. Whatever the browser did with it is between it and its owner.
+    }
   }
 }

@@ -44,6 +44,16 @@ const DICTIONARIES: Readonly<Record<Language, Copy>> = {
 export let copy: Copy = copyEn;
 
 /**
+ * The two shapes a day is written in, side by side so the one field between them is visible.
+ *
+ * `DAY` is which Tuesday, for somebody scrolling a list of their own evenings. `DATE` is which
+ * Tuesday of which year, for a report that has left the app and has no list around it to say
+ * (ADR-0038). Each drops what the other needs, which is why neither can serve both.
+ */
+const DAY: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
+const DATE: Intl.DateTimeFormatOptions = { year: 'numeric', day: 'numeric', month: 'short' };
+
+/**
  * The day an evening was played, as a history row says it: `Wed 26 Aug`, or `tr 26 rugp.`.
  *
  * It is here rather than in a dictionary because there is nothing to translate — the weekday and
@@ -54,7 +64,7 @@ export let copy: Copy = copyEn;
  * The formatter is rebuilt when the language is, rather than being constructed per call: history
  * formats a row per evening and `Intl.DateTimeFormat` is not cheap to make.
  */
-let dayFormat = formatterFor('en');
+let dayFormat = formatterFor('en', DAY);
 
 export function formatDay(instant: string): string {
   return dayFormat.format(new Date(instant));
@@ -71,7 +81,7 @@ export function formatDay(instant: string): string {
  * The weekday goes, for the same reason the year arrives: which Wednesday is a question somebody
  * scrolling their own history asks, and not one anybody asks of a footer.
  */
-let dateFormat = fullFormatterFor('en');
+let dateFormat = formatterFor('en', DATE);
 
 export function formatDate(instant: string): string {
   return dateFormat.format(new Date(instant));
@@ -86,22 +96,10 @@ export function formatDate(instant: string): string {
  */
 export function useLanguage(language: Language): void {
   copy = DICTIONARIES[language];
-  dayFormat = formatterFor(language);
-  dateFormat = fullFormatterFor(language);
+  dayFormat = formatterFor(language, DAY);
+  dateFormat = formatterFor(language, DATE);
 }
 
-function formatterFor(language: Language): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(LOCALES[language], {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function fullFormatterFor(language: Language): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(LOCALES[language], {
-    year: 'numeric',
-    day: 'numeric',
-    month: 'short',
-  });
+function formatterFor(language: Language, fields: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(LOCALES[language], fields);
 }

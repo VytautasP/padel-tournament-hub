@@ -106,7 +106,8 @@ function awkwardSession() {
     for (const match of round.matches) {
       // A walk through 12, 24 and 18 rather than random numbers: a draw, a whitewash and a
       // comfortable win, in a repeating order, so the table has ties, blowouts and close games in
-      // it and the document is the same one twice. These three in this order are also what lands
+      // it and the document is the same one twice — bar the date in its footer, which is the day
+      // it was generated. These three in this order are also what lands
       // the joint second place below — a tie that survives all three of decision #8's tiers is not
       // something that can be arranged after the fact, so the pattern was searched for it.
       const points = [12, 24, 18][index % 3];
@@ -133,7 +134,8 @@ async function loadAppModules() {
     stdin: {
       contents:
         `export { buildReport } from './report/report-document';\n` +
-        `export { rowsOf } from './standings/standing-row';\n`,
+        `export { rowsOf } from './standings/standing-row';\n` +
+        `export { copy } from './copy/copy';\n`,
       resolveDir: appRoot,
       loader: 'ts',
     },
@@ -171,7 +173,7 @@ function useRoboto() {
 }
 
 const out = path.resolve(process.argv[2] ?? path.join(repoRoot, 'tools', 'report.pdf'));
-const { buildReport, rowsOf } = await loadAppModules();
+const { buildReport, copy, rowsOf } = await loadAppModules();
 const session = awkwardSession();
 
 useRoboto();
@@ -186,6 +188,10 @@ const document = buildReport(
   // The same rows the screen renders, through the same function (ADR-0038 §5), so this script
   // cannot be the place the report and the table drift apart.
   rowsOf(session),
+  // English, which is what this binding is until `useLanguage` says otherwise and nothing here
+  // does (ADR-0032 §2). It is passed rather than defaulted because `buildReport` requires it: an
+  // argument nobody supplies is one nobody can get wrong, and also one nobody can use.
+  copy,
 );
 
 fs.writeFileSync(out, await pdfmake.createPdf(document).getBuffer());
